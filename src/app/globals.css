@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* 基础样式 */
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+}
+
+/* 模态框遮罩层 */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}

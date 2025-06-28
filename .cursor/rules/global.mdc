@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+页面中使用原生HTML和Tailwind CSS而不是Ant Design
+
+新写代码时，如果有模态框，后面遮罩层的背景用： bg-black/50
+
+API具体请求都放在services/auth.ts 文件中，用统一的验证逻辑。不要写在每个分页逻辑中

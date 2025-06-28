@@ -1,0 +1,76 @@
+---
+description: 
+globs: *.tsx
+alwaysApply: false
+---
+
+# React Hooks 最佳实践
+
+## useEffect 依赖处理
+
+### 问题说明
+当在`useEffect`中使用组件内的函数或状态时，必须将这些依赖项添加到依赖数组中，否则会导致ESLint警告和潜在的逻辑bug。
+
+### 解决方案
+
+以下是处理`useEffect`函数依赖的几种方法：
+
+#### 1. 使用useCallback包装函数
+
+```jsx
+// ❌ 错误示例
+function Component() {
+  const processData = (data) => {
+    // 处理数据
+  };
+
+  useEffect(() => {
+    // 使用了processData但没有添加到依赖中
+    fetchData().then(processData);
+  }, []); // 缺少依赖项
+}
+
+// ✅ 正确示例
+function Component() {
+  const processData = useCallback((data) => {
+    // 处理数据
+  }, []);
+
+  useEffect(() => {
+    fetchData().then(processData);
+  }, [processData]); // 正确添加依赖
+}
+```
+
+#### 2. 将函数移入useEffect内部
+
+```jsx
+// ✅ 另一种正确方式
+function Component() {
+  useEffect(() => {
+    const processData = (data) => {
+      // 处理数据
+    };
+    
+    fetchData().then(processData);
+  }, []); // 不需要外部依赖
+}
+```
+
+#### 3. 使用useRef存储不需要触发重新渲染的函数
+
+```jsx
+// ✅ 适用于复杂函数
+function Component() {
+  const processDataRef = useRef((data) => {
+    // 复杂处理逻辑
+  });
+
+  useEffect(() => {
+    fetchData().then(processDataRef.current);
+  }, []); // 不需要依赖processDataRef
+}
+```
+
+### 警告标识
+如果看到以下ESLint警告，说明需要修复依赖项：

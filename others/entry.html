@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录角色选择</title>
+    <script src="./statics/js/tailwindcss.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        .role-card {
+            transition: all 0.2s ease;
+        }
+        
+        .role-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-3xl mx-auto">
+        <!-- 标题区域 -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-semibold text-gray-800 mb-3">教学管理系统</h1>
+            <p class="text-lg text-gray-600">请选择您的登录角色</p>
+        </div>
+        
+        <!-- 角色选择卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-lg mx-auto">
+            <!-- 教师端按钮 -->
+            <div class="role-card bg-white border border-gray-200 rounded-lg p-6 shadow-sm cursor-pointer hover:border-blue-300" onclick="goToTeacherLogin()">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-800 mb-2">教师端</h3>
+                    <!-- <p class="text-sm text-gray-500 mb-4">教学管理、课程发布、学生管理</p> -->
+                    <div class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm font-medium transition-colors">
+                        点击进入
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 学生端按钮 -->
+            <div class="role-card bg-white border border-gray-200 rounded-lg p-6 shadow-sm cursor-pointer hover:border-green-300" onclick="goToStudentLogin()">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-800 mb-2">学生端</h3>
+                    <!-- <p class="text-sm text-gray-500 mb-4">校园课程学习</p> -->
+                    <div class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded text-sm font-medium transition-colors">
+                        点击进入
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部信息 -->
+        <div class="text-center mt-12">
+            <p class="text-gray-400 text-sm">© 浦东华曜学校教学管理系统</p>
+        </div>
+    </div>
+    
+    <script>
+        function goToTeacherLogin() {
+            // 这里可以跳转到教师登录页面
+            window.location.href = '/teacher/login';
+        }
+        
+        function goToStudentLogin() {
+            // 这里可以跳转到学生登录页面
+            window.location.href = '/student/login';
+        }
+    </script>
+</body>
+</html>
