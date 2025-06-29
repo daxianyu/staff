@@ -11,6 +11,12 @@ export const PERMISSIONS = {
   
   // 课程相关
   VIEW_SCHEDULE: 'view_schedule',
+  
+  // Demo页面
+  VIEW_DEMO: 'view_demo',
+  CREATE_DEMO: 'create_demo',
+  EDIT_DEMO: 'edit_demo',
+  DELETE_DEMO: 'delete_demo',
 } as const;
 
 export interface Menu {

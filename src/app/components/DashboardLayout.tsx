@@ -51,6 +51,7 @@ const navigation: MenuItem[] = [
       { name: 'Schedule', href: '/schedule', icon: CalendarIcon, permission: PERMISSIONS.VIEW_SCHEDULE },
     ]
   },
+  { name: 'Demo页面', href: '/demo', icon: TableCellsIcon, permission: PERMISSIONS.VIEW_DEMO },
 ];
 
 export default function DashboardLayout({

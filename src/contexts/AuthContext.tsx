@@ -49,6 +49,10 @@ const ROLES = {
     permissions: [
       PERMISSIONS.VIEW_DASHBOARD,
       PERMISSIONS.VIEW_SCHEDULE,
+      PERMISSIONS.VIEW_DEMO,
+      PERMISSIONS.CREATE_DEMO,
+      PERMISSIONS.EDIT_DEMO,
+      PERMISSIONS.DELETE_DEMO,
     ]
   },
   TEACHER: {
@@ -57,12 +61,17 @@ const ROLES = {
     permissions: [
       PERMISSIONS.VIEW_DASHBOARD,
       PERMISSIONS.VIEW_SCHEDULE,
+      PERMISSIONS.VIEW_DEMO,
+      PERMISSIONS.CREATE_DEMO,
+      PERMISSIONS.EDIT_DEMO,
     ]
   },
   OTHER: {
     id: 'other',
     name: '其他',
-    permissions: []
+    permissions: [
+      PERMISSIONS.VIEW_DEMO,
+    ]
   }
 };
 
