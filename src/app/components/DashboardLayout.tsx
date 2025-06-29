@@ -43,60 +43,14 @@ interface MenuItem {
 }
 
 const navigation: MenuItem[] = [
-  { name: 'My Notification', href: '/notification', icon: BellIcon, permission: PERMISSIONS.VIEW_NOTIFICATION },
-  { name: 'My Profile', href: '/my-profile', icon: KeyIcon, permission: PERMISSIONS.MY_PROFILE },
-  { name: 'My Test', href: '/my-test', icon: DocumentTextIcon, permission: PERMISSIONS.MY_TEST },
-  { name: 'Interview', href: '/interview', icon: UserGroupIcon, permission: PERMISSIONS.INTERVIEW },
-  { name: 'Test Score', href: '/test-score', icon: ChartBarIcon, permission: PERMISSIONS.TEST_SCORE },
-  {
-    name: 'School Life',
-    icon: HomeIcon,
-    children: [
-      { name: 'Book Service', href: '/service', icon: WrenchScrewdriverIcon, permission: PERMISSIONS.VIEW_SERVICE },
-      { name: 'Book Locker', href: '/book-locker', icon: LockClosedIcon, permission: PERMISSIONS.VIEW_BOOK_LOCKER },
-      { name: 'Exit Permit', href: '/exit-permit', icon: ArrowRightOnRectangleIcon, permission: PERMISSIONS.VIEW_EXIT_PERMIT },
-      { name: 'My Card', href: '/card', icon: CreditCardIcon, permission: PERMISSIONS.VIEW_CARD },
-      { name: 'Weekend Plan', href: '/weekend-plan', icon: CalendarIcon, permission: PERMISSIONS.VIEW_WEEKEND_PLAN },
-    ]
-  },
+  { name: 'Dashboard', href: '/dashboard', icon: UserGroupIcon, permission: PERMISSIONS.VIEW_DASHBOARD },
   {
     name: 'Schedule',
     icon: CalendarIcon,
     children: [
       { name: 'Schedule', href: '/schedule', icon: CalendarIcon, permission: PERMISSIONS.VIEW_SCHEDULE },
-      { name: 'Lesson Table', href: '/lesson-table', icon: TableCellsIcon, permission: PERMISSIONS.VIEW_LESSON_TABLE },
-      { name: 'Class Signup', href: '/class-signup', icon: PencilSquareIcon, permission: PERMISSIONS.VIEW_CLASS_SIGNUP },
     ]
   },
-  {
-    name: 'Library',
-    icon: BookOpenIcon,
-    children: [
-      { name: 'Buy Textbook', href: '/textbook', icon: BookOpenIcon, permission: PERMISSIONS.VIEW_TEXTBOOK },
-      { name: 'Pastpaper&Textbooks', href: '/pastpaper-textbooks', icon: DocumentTextIcon, permission: PERMISSIONS.VIEW_PASTPAPER_TEXTBOOKS },
-    ]
-  },
-  {
-    name: 'Exam',
-    icon: AcademicCapIcon,
-    children: [
-      { name: 'Exam Signup', href: '/exam-signup', icon: DocumentTextIcon, permission: PERMISSIONS.VIEW_EXAM_SIGNUP },
-      { name: 'Score Report', href: '/score-report', icon: ChartBarIcon, permission: PERMISSIONS.VIEW_SCORE_REPORT },
-      { name: 'Late Cashin', href: '/late-cashin', icon: BanknotesIcon, permission: PERMISSIONS.VIEW_LATE_CASHIN },
-      { name: 'Remarking', href: '/remarking', icon: PencilIcon, permission: PERMISSIONS.VIEW_REMARKING },
-      { name: 'Exam Withdrawal', href: '/exam-withdrawal', icon: XMarkIcon, permission: PERMISSIONS.VIEW_EXAM_WITHDRAWAL },
-    ]
-  },
-  {
-    name: 'My Account',
-    icon: UserIcon,
-    children: [
-      { name: 'My Warning', href: '/student-warn', icon: ExclamationTriangleIcon, permission: PERMISSIONS.VIEW_WARNINGS },
-      { name: 'Edit Profile', href: '/profile', icon: KeyIcon, permission: PERMISSIONS.EDIT_PROFILE },
-      { name: 'Certificate Apply', href: '/certificate-apply', icon: DocumentCheckIcon, permission: PERMISSIONS.VIEW_CERTIFICATE_APPLY },
-      { name: 'File Complaint', href: '/complaint', icon: ChatBubbleLeftRightIcon, permission: PERMISSIONS.FILE_COMPLAINT },
-    ]
-  }
 ];
 
 export default function DashboardLayout({
@@ -202,7 +156,8 @@ export default function DashboardLayout({
           <div className="flex items-center gap-2">
             {/* 移动端汉堡菜单按钮 */}
             <button 
-              className="md:hidden mr-2 text-white"
+              className="md:hidden mr-2 hover:opacity-80 transition-opacity duration-200"
+              style={{ color: 'var(--header-text)' }}
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="菜单"
             >
@@ -218,20 +173,17 @@ export default function DashboardLayout({
           </div>
           <div className="flex items-center gap-4">
             {user && (
-              <div className="flex items-center">
-                <UserIcon className="h-5 w-5 text-white/70 mr-2 hidden sm:inline" />
-                <span className="text-white font-medium truncate max-w-[100px] whitespace-nowrap">
+              <div className="flex items-center" style={{ color: 'var(--header-text)' }}>
+                <UserIcon className="h-5 w-5 opacity-70 mr-2 hidden sm:inline" />
+                <span className="font-medium truncate max-w-[100px] whitespace-nowrap">
                   {user.username || (user.data && user.data.name) || '用户'}
                 </span>
               </div>
             )}
             <button
               onClick={handleLogout}
-              style={{
-                '--hover-bg': 'var(--header-hover-bg)',
-                '--active-bg': 'var(--header-active-bg)'
-              } as React.CSSProperties}
-              className="flex items-center px-2 sm:px-4 py-2 text-white/85 hover:text-white rounded-lg transition-all duration-200 hover:bg-[var(--hover-bg)] active:bg-[var(--active-bg)]"
+              className="flex items-center px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white/10 active:bg-white/20"
+              style={{ color: 'var(--header-text)' }}
             >
               <ArrowLeftOnRectangleIcon className="h-5 w-5 sm:mr-2" />
               <span className="hidden sm:inline">退出</span>
@@ -243,7 +195,7 @@ export default function DashboardLayout({
       {/* 移动端菜单遮罩层 */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-20 modal-backdrop md:hidden"
+          className="fixed inset-0 z-20 bg-black/50 md:hidden"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
@@ -261,12 +213,13 @@ export default function DashboardLayout({
             <div className="flex justify-end px-4 pt-4 md:hidden">
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="text-white/80 hover:text-white"
+                className="opacity-80 hover:opacity-100 transition-opacity duration-200"
+                style={{ color: 'var(--sidebar-text)' }}
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            <div className="py-6 px-3">
+            <div className="py-2 px-1">
               <div className="space-y-1">
                 {authorizedNavigation.map((item) => {
                   const isActive = isMenuActive(item);
@@ -278,21 +231,22 @@ export default function DashboardLayout({
                       <button
                         onClick={() => hasChildren ? toggleSubmenu(item.name) : item.href && router.push(item.href)}
                         className={`
-                          group flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg
+                          group flex w-full items-center justify-between px-3 py-2.5 text-md font-medium rounded-lg
                           transition-all duration-200 ease-in-out
                           ${
                             isActive
-                              ? 'text-white bg-white/20'
-                              : 'text-white/90 hover:text-white hover:bg-white/10'
+                              ? 'bg-white/20'
+                              : 'hover:bg-white/10'
                           }
                         `}
+                        style={{ color: isActive ? 'var(--sidebar-text)' : 'rgba(255,255,255,0.9)' }}
                       >
                         <div className="flex items-center">
                           <item.icon
-                            className={`
-                              mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200
-                              ${isActive ? 'text-white' : 'text-white/70 group-hover:text-white'}
-                            `}
+                            className="mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200"
+                            style={{ 
+                              color: isActive ? 'var(--sidebar-text)' : 'rgba(255,255,255,0.7)'
+                            }}
                             aria-hidden="true"
                           />
                           {item.name}
@@ -318,20 +272,23 @@ export default function DashboardLayout({
                                 transition-all duration-200 ease-in-out
                                 ${
                                   child.href && isChildActive(child.href)
-                                    ? 'text-white bg-white/20'
-                                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                                    ? 'bg-white/20'
+                                    : 'hover:bg-white/10'
                                 }
                               `}
+                              style={{ 
+                                color: child.href && isChildActive(child.href) 
+                                  ? 'var(--sidebar-text)' 
+                                  : 'rgba(255,255,255,0.8)' 
+                              }}
                             >
                               <child.icon
-                                className={`
-                                  mr-3 h-4 w-4 flex-shrink-0 transition-colors duration-200
-                                  ${
-                                    child.href && isChildActive(child.href)
-                                      ? 'text-white'
-                                      : 'text-white/70 group-hover:text-white'
-                                  }
-                                `}
+                                className="mr-3 h-4 w-4 flex-shrink-0 transition-colors duration-200"
+                                style={{ 
+                                  color: child.href && isChildActive(child.href)
+                                    ? 'var(--sidebar-text)'
+                                    : 'rgba(255,255,255,0.7)'
+                                }}
                                 aria-hidden="true"
                               />
                               {child.name}

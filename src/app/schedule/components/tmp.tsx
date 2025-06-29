@@ -60,25 +60,22 @@ export default function AddEventModal({
   const DAY_START_TIME = '06:00'; // 早上6点
   const DAY_END_TIME = '22:00';   // 晚上10点
 
-  // 添加ESC键关闭功能
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, onClose]);
-
   // 拖拽开始
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const isCloseButton = target.closest('button');
     
+    console.log('🖱️ MouseDown 事件触发:', {
+      target: e.target,
+      currentTarget: e.currentTarget,
+      tagName: target.tagName,
+      className: target.className,
+      isCloseButton: !!isCloseButton,
+      clientX: e.clientX,
+      clientY: e.clientY,
+      currentDragOffset: dragOffset
+    });
+
     // 检查是否点击在标题区域（排除关闭按钮）
     if (!isCloseButton) {
       e.preventDefault();
@@ -94,8 +91,10 @@ export default function AddEventModal({
       dragRef.current = newDragState;
       setIsDragging(true);
       
+
       // 直接添加事件监听器
       const handleMove = (e: MouseEvent) => {
+
         if (dragRef.current.isDragging) {
           const newOffset = {
             x: dragRef.current.startOffsetX + (e.clientX - dragRef.current.startX),
@@ -103,23 +102,45 @@ export default function AddEventModal({
           };
           
           setDragOffset(newOffset);
+        } else {
+          console.warn('⚠️ MouseMove 但 isDragging = false');
         }
       };
 
       const handleUp = () => {
+        
         dragRef.current.isDragging = false;
         setIsDragging(false);
         document.removeEventListener('mousemove', handleMove);
         document.removeEventListener('mouseup', handleUp);
+        
       };
 
       document.addEventListener('mousemove', handleMove);
       document.addEventListener('mouseup', handleUp);
+      
+    } else {
+      console.log('❌ 拖拽条件不满足，忽略事件');
     }
   };
 
+  // 添加ESC键关闭功能
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   // 动画控制
   useEffect(() => {
+    
     if (isOpen) {
       // 重置拖拽偏移量
       setDragOffset({ x: 0, y: 0 });
@@ -132,7 +153,9 @@ export default function AddEventModal({
         startOffsetY: 0
       };
       setShouldShow(true);
-      setTimeout(() => setIsAnimating(true), 10);
+      setTimeout(() => {
+        setIsAnimating(true);
+      }, 10);
     } else {
       setIsAnimating(false);
       const timer = setTimeout(() => {
@@ -143,29 +166,8 @@ export default function AddEventModal({
     }
   }, [isOpen, onAnimationComplete]);
 
-  // 确保每次新的select操作时重置拖拽偏移
-  useEffect(() => {
-    if (isOpen && (selectedTimeRange || position)) {
-      setDragOffset({ x: 0, y: 0 });
-      setIsDragging(false);
-      dragRef.current = {
-        isDragging: false,
-        startX: 0,
-        startY: 0,
-        startOffsetX: 0,
-        startOffsetY: 0
-      };
-    }
-  }, [selectedTimeRange, position, isOpen]);
-
     // 自动填充选中的时间范围
   useEffect(() => {
-    console.log('📋 自动填充检查:', {
-      hasSelectedTimeRange: !!selectedTimeRange,
-      isOpen,
-      selectedDate,
-      selectedTimeRange
-    });
 
     if (selectedTimeRange && isOpen) {
       const startTimeStr = moment(selectedTimeRange.start).format('HH:mm');
@@ -174,11 +176,6 @@ export default function AddEventModal({
       setStartTime(startTimeStr);
       setEndTime(endTimeStr);
       
-      console.log('🕐 自动填充时间:', {
-        start: startTimeStr,
-        end: endTimeStr,
-        range: selectedTimeRange
-      });
     }
      }, [selectedTimeRange, isOpen, selectedDate]);
 
@@ -200,12 +197,7 @@ export default function AddEventModal({
 
   // 更新时间范围并通知父组件
   const updateTimeRange = useCallback((newStartTime: string, newEndTime: string) => {
-    console.log('🔄 updateTimeRange 被调用:', {
-      newStartTime,
-      newEndTime,
-      selectedDate,
-      hasOnTimeRangeChange: !!onTimeRangeChange
-    });
+
 
     if (!selectedDate) {
       console.warn('❌ selectedDate 为空，无法更新时间范围');
@@ -227,13 +219,7 @@ export default function AddEventModal({
       const end = new Date(selectedDate);
       end.setHours(endHour, endMin, 0, 0);
 
-      console.log('📅 计算的时间范围:', {
-        startTime: newStartTime,
-        endTime: newEndTime,
-        startDate: start,
-        endDate: end,
-        isValidRange: end > start
-      });
+
 
       // 确保结束时间晚于开始时间
       if (end > start) {
@@ -326,18 +312,6 @@ export default function AddEventModal({
       // 找到了选中事件的DOM元素，获取其在视口中的实际位置
       const rect = selectedEventElement.getBoundingClientRect();
       
-      console.log('🎯 找到选中事件DOM元素:', {
-        element: selectedEventElement,
-        rect: {
-          left: rect.left,
-          top: rect.top,
-          right: rect.right,
-          bottom: rect.bottom,
-          width: rect.width,
-          height: rect.height
-        }
-      });
-      
       // === 水平位置计算 ===
       const leftSpace = rect.left;
       const rightSpace = screenWidth - rect.right;
@@ -347,17 +321,14 @@ export default function AddEventModal({
         // 右侧空间充足，从选中区域右边缘开始，向右偏移20px
         adjustedX = rect.right + 20;
         finalSlideDirection = 'right';
-        console.log('✅ 右侧显示，空间充足');
       } else if (leftSpace >= modalNeedsSpace) {
         // 左侧空间充足，模态框右边缘距离选中区域左边缘20px
         adjustedX = rect.left - modalWidth - 20;
         finalSlideDirection = 'left';
-        console.log('✅ 左侧显示，空间充足');
       } else {
         // 左右空间都不够，居中显示
         adjustedX = Math.max(margin, (screenWidth - modalWidth) / 2);
         finalSlideDirection = 'center';
-        console.log('✅ 水平居中显示，左右空间不足');
       }
       
       // 确保水平位置在安全范围内
@@ -377,15 +348,12 @@ export default function AddEventModal({
       if (idealY >= margin && idealY + modalHeight <= screenHeight - margin) {
         // 理想位置可行，居中对齐
         adjustedY = idealY;
-        console.log('✅ 垂直居中对齐选中区域');
       } else if (spaceBelow >= modalHeight + 20) {
         // 下方空间充足
         adjustedY = Math.min(rect.bottom + 10, screenHeight - modalHeight - margin);
-        console.log('✅ 选中区域下方显示');
       } else if (spaceAbove >= modalHeight + 20) {
         // 上方空间充足
         adjustedY = Math.max(margin, rect.top - modalHeight - 10);
-        console.log('✅ 选中区域上方显示');
       } else {
         // 空间不足，智能调整
         if (selectionCenterY < screenHeight / 2) {
@@ -407,19 +375,10 @@ export default function AddEventModal({
             )
           );
         }
-        console.log('✅ 智能避让显示');
       }
-      
-      console.log('🎯 基于DOM计算的最终位置:', {
-        选中区域: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
-        模态框位置: { x: adjustedX, y: adjustedY },
-        滑动方向: finalSlideDirection,
-        空间分析: { leftSpace, rightSpace, spaceAbove, spaceBelow }
-      });
       
     } else if (position) {
       // 没找到DOM元素，回退到传入的位置参数
-      console.log('⚠️ 未找到选中事件DOM，使用传入位置');
       
       const { x, y, slideDirection = 'right' } = position;
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -440,14 +399,6 @@ export default function AddEventModal({
       // 检查选中区域是否在当前视口范围内
       const isSelectionVisible = viewportY >= -50 && viewportY <= screenHeight + 50;
       
-      console.log('📐 位置分析:', {
-        页面坐标: { x, y },
-        视口坐标: { x: viewportX, y: viewportY },
-        滚动位置: { scrollTop, scrollLeft },
-        选中区域是否可见: isSelectionVisible,
-        视口范围: [0, screenHeight]
-      });
-      
       if (isSelectionVisible) {
         // 选中区域在视口内，尝试贴近选中区域
         const idealBelowY = Math.max(margin, viewportY + 10);
@@ -461,12 +412,10 @@ export default function AddEventModal({
           // 下方有空间
           adjustedY = idealBelowY;
           finalSlideDirection = slideDirection;
-          console.log('✅ 贴近选中区域下方显示');
         } else if (spaceAbove >= 0) {
           // 上方有空间
           adjustedY = idealAboveY;
           finalSlideDirection = slideDirection;
-          console.log('✅ 贴近选中区域上方显示');
         } else {
           // 空间不足，智能调整到最佳位置
           if (viewportY < screenHeight / 2) {
@@ -483,7 +432,6 @@ export default function AddEventModal({
             );
           }
           finalSlideDirection = slideDirection;
-          console.log('✅ 智能调整位置，避开选中区域');
         }
       } else {
         // 选中区域不在当前视口内，智能选择位置
@@ -495,7 +443,6 @@ export default function AddEventModal({
             screenHeight * 0.6 - modalHeight / 2
           );
           finalSlideDirection = 'center';
-          console.log('✅ 选中区域在视口上方，显示在屏幕下半部分');
         } else {
           // 选中区域在视口下方（用户向上滚动了很多）
           // 模态框显示在屏幕上半部分
@@ -504,13 +451,11 @@ export default function AddEventModal({
             screenHeight * 0.4 - modalHeight / 2
           );
           finalSlideDirection = 'center';
-          console.log('✅ 选中区域在视口下方，显示在屏幕上半部分');
         }
       }
       
     } else {
       // 默认居中显示
-      console.log('⚠️ 无位置信息，默认居中显示');
       adjustedX = (screenWidth - modalWidth) / 2;
       adjustedY = Math.max(margin, (screenHeight - modalHeight) / 2);
       finalSlideDirection = 'center';
@@ -551,13 +496,6 @@ export default function AddEventModal({
       opacity: isAnimating ? 1 : 0,
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     };
-    
-    console.log('🎯 最终位置结果:', {
-      计算的位置: { x: adjustedX, y: adjustedY },
-      模态框尺寸: { width: modalWidth, height: modalHeight },
-      滑动方向: finalSlideDirection,
-      是否基于DOM: !!document.querySelector('[class*="rbc-event"][style*="rgb(216, 27, 96)"]')
-    });
     
     return { modalStyle, modalClassName, needsScroll, contentMaxHeight };
   };
@@ -684,12 +622,6 @@ export default function AddEventModal({
                         const finalEndTime = newEndTime <= DAY_END_TIME ? newEndTime : DAY_END_TIME;
                         setEndTime(finalEndTime);
                         updateTimeRange(newStartTime, finalEndTime);
-                        
-                        console.log('🔄 自动调整结束时间:', {
-                          原始结束时间: endTime,
-                          新开始时间: newStartTime,
-                          调整后结束时间: finalEndTime
-                        });
                       } else {
                         updateTimeRange(newStartTime, endTime);
                       }
@@ -717,11 +649,6 @@ export default function AddEventModal({
                         setStartTime(finalStartTime);
                         updateTimeRange(finalStartTime, newEndTime);
                         
-                        console.log('🔄 自动调整开始时间:', {
-                          原始开始时间: startTime,
-                          新结束时间: newEndTime,
-                          调整后开始时间: finalStartTime
-                        });
                       } else {
                         updateTimeRange(startTime, newEndTime);
                       }

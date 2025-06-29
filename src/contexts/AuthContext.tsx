@@ -47,90 +47,22 @@ const ROLES = {
     id: 'admin',
     name: '管理员',
     permissions: [
-      PERMISSIONS.VIEW_WARNINGS,
+      PERMISSIONS.VIEW_DASHBOARD,
       PERMISSIONS.VIEW_SCHEDULE,
-      PERMISSIONS.VIEW_LESSON_TABLE,
-      PERMISSIONS.VIEW_CARD,
-      PERMISSIONS.FILE_COMPLAINT,
-      PERMISSIONS.EDIT_PROFILE,
-      PERMISSIONS.VIEW_BOOK_LOCKER,
-      PERMISSIONS.VIEW_PASTPAPER_TEXTBOOKS,
-      PERMISSIONS.VIEW_WEEKEND_PLAN,
-      PERMISSIONS.VIEW_CERTIFICATE_APPLY,
-      PERMISSIONS.VIEW_EXIT_PERMIT,
-      PERMISSIONS.VIEW_CLASS_SIGNUP,
-      PERMISSIONS.VIEW_SERVICE,
-      PERMISSIONS.VIEW_LATE_CASHIN,
-      PERMISSIONS.VIEW_REMARKING,
-      PERMISSIONS.VIEW_EXAM_WITHDRAWAL,
-      PERMISSIONS.VIEW_SCORE_REPORT,
-      PERMISSIONS.VIEW_TEXTBOOK,
-      PERMISSIONS.VIEW_NOTIFICATION,
-      PERMISSIONS.VIEW_EXAM_SIGNUP
     ]
   },
   TEACHER: {
     id: 'teacher',
     name: '教师',
     permissions: [
-      PERMISSIONS.VIEW_WARNINGS,
+      PERMISSIONS.VIEW_DASHBOARD,
       PERMISSIONS.VIEW_SCHEDULE,
-      PERMISSIONS.VIEW_LESSON_TABLE,
-      PERMISSIONS.VIEW_CARD,
-      PERMISSIONS.FILE_COMPLAINT,
-      PERMISSIONS.EDIT_PROFILE,
-      PERMISSIONS.VIEW_BOOK_LOCKER,
-      PERMISSIONS.VIEW_PASTPAPER_TEXTBOOKS,
-      PERMISSIONS.VIEW_WEEKEND_PLAN,
-      PERMISSIONS.VIEW_CERTIFICATE_APPLY,
-      PERMISSIONS.VIEW_EXIT_PERMIT,
-      PERMISSIONS.VIEW_CLASS_SIGNUP,
-      PERMISSIONS.VIEW_SERVICE,
-      PERMISSIONS.VIEW_LATE_CASHIN,
-      PERMISSIONS.VIEW_REMARKING,
-      PERMISSIONS.VIEW_EXAM_WITHDRAWAL,
-      PERMISSIONS.VIEW_SCORE_REPORT,
-      PERMISSIONS.VIEW_TEXTBOOK,
-      PERMISSIONS.VIEW_NOTIFICATION,
-      PERMISSIONS.VIEW_EXAM_SIGNUP
     ]
   },
-  STUDENT: {
-    id: 'student',
-    name: '学生',
-    permissions: [
-      PERMISSIONS.VIEW_SCHEDULE,
-      PERMISSIONS.VIEW_LESSON_TABLE,
-      PERMISSIONS.VIEW_WARNINGS,
-      PERMISSIONS.VIEW_CARD,
-      PERMISSIONS.FILE_COMPLAINT,
-      PERMISSIONS.EDIT_PROFILE,
-      PERMISSIONS.VIEW_BOOK_LOCKER,
-      PERMISSIONS.VIEW_PASTPAPER_TEXTBOOKS,
-      PERMISSIONS.VIEW_WEEKEND_PLAN,
-      PERMISSIONS.VIEW_CERTIFICATE_APPLY,
-      PERMISSIONS.VIEW_EXIT_PERMIT,
-      PERMISSIONS.VIEW_CLASS_SIGNUP,
-      PERMISSIONS.VIEW_SERVICE,
-      PERMISSIONS.VIEW_LATE_CASHIN,
-      PERMISSIONS.VIEW_REMARKING,
-      PERMISSIONS.VIEW_EXAM_WITHDRAWAL,
-      PERMISSIONS.VIEW_SCORE_REPORT,
-      PERMISSIONS.VIEW_TEXTBOOK,
-      PERMISSIONS.VIEW_NOTIFICATION,
-      PERMISSIONS.VIEW_EXAM_SIGNUP
-    ]
-  },
-  PRE_STUDENT: { // 报名学生，不是正式学生
-    id: 'pre_student',
-    name: '报名学生',
-    permissions: [
-      PERMISSIONS.INTERVIEW,
-      PERMISSIONS.MY_PROFILE,
-      PERMISSIONS.TEST_SCORE,
-      PERMISSIONS.MY_TEST,
-      PERMISSIONS.INTERVIEW
-    ]
+  OTHER: {
+    id: 'other',
+    name: '其他',
+    permissions: []
   }
 };
 
@@ -158,10 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: '未知',
             permissions: [] as string[]
           };
-          if (userData.type === 1) {
-            role = ROLES.STUDENT;
-          } else if (userData.type === 4) {
-            role = ROLES.PRE_STUDENT;
+          if (userData.type === 0) {
+            role = ROLES.ADMIN;
+          } else if (userData.type === 2) {
+            role = ROLES.TEACHER;
+          } else {
+            role = ROLES.OTHER;
           }
           
           const user: ExtendedUser = {
@@ -218,10 +152,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         permissions: [] as string[]
       };
       
-      if (userData.type === 1) {
-        role = ROLES.STUDENT;
-      } else if (userData.type === 4) {
-        role = ROLES.PRE_STUDENT;
+      if (userData.type === 0) {
+        role = ROLES.ADMIN;
+      } else if (userData.type === 2) {
+        role = ROLES.TEACHER;
+      } else {
+        role = ROLES.OTHER;
       }
       
       const user: ExtendedUser = {

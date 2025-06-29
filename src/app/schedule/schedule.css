@@ -1,0 +1,162 @@
+/* 日历容器样式 */
+.rbc-calendar {
+  overflow: visible !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+  height: auto !important;
+}
+
+/* 优化日历整体布局 */
+.rbc-calendar .rbc-month-view,
+.rbc-calendar .rbc-time-view,
+.rbc-calendar .rbc-agenda-view {
+  border: none !important;
+  padding-top: 0 !important;
+  overflow: visible !important;
+  height: auto !important;
+}
+
+/* 时间网格和时间列样式 */
+.rbc-time-view .rbc-time-gutter,
+.rbc-time-header-gutter {
+  background-color: #f9fafb !important;
+  border-right: 1px solid #e5e7eb !important;
+  width: 80px !important;
+  min-width: 80px !important;
+  max-width: 80px !important;
+  font-size: 12px !important;
+}
+
+/* 时间槽样式 */
+.rbc-time-slot {
+  border-top: 1px solid #f3f4f6 !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+}
+
+/* 时间槽组 */
+.rbc-timeslot-group {
+  border-bottom: 1px solid #e5e7eb !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+/* 今天的日期高亮 */
+.rbc-today {
+  background-color: #eff6ff !important;
+}
+
+/* 月视图今天日期 */
+.rbc-month-view .rbc-today {
+  background-color: #eff6ff !important;
+}
+
+/* 日期头部样式 */
+.rbc-header {
+  border-bottom: 1px solid #e5e7eb !important;
+  border-right: 1px solid #e5e7eb !important;
+  background-color: #f9fafb !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.rbc-header:last-child {
+  border-right: none !important;
+}
+
+/* 时间头部的日期头部 */
+.rbc-time-header .rbc-header {
+  border-bottom: none !important;
+}
+
+/* 选中区域样式 */
+.rbc-slot-selection {
+  z-index: 20 !important;
+  background-color: rgba(216, 27, 96, 0.8) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(216, 27, 96, 0.2) !important;
+}
+
+/* 确保选择后的背景保持白色 */
+.rbc-day-bg.rbc-selected-bg,
+.rbc-off-range-bg {
+  background-color: white !important;
+}
+
+/* 事件样式 */
+.rbc-event {
+  border-radius: 8px !important;
+  border: none !important;
+  padding: 2px 8px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.25), 0 1px 4px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 月视图样式 */
+.rbc-month-view .rbc-date-cell {
+  border-right: 1px solid #e5e7eb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  height: 120px !important;
+  min-height: 120px !important;
+  max-height: 120px !important;
+  overflow: hidden !important;
+}
+
+.rbc-month-view .rbc-date-cell:last-child {
+  border-right: none !important;
+}
+
+.rbc-month-row {
+  border-bottom: 1px solid #e5e7eb !important;
+  height: 120px !important;
+  min-height: 120px !important;
+  max-height: 120px !important;
+}
+
+.rbc-month-row:last-child {
+  border-bottom: none !important;
+}
+
+/* 周视图和日视图的日期列 */
+.rbc-day-slot {
+  border-right: 1px solid #e5e7eb !important;
+}
+
+.rbc-day-slot:last-child {
+  border-right: none !important;
+}
+
+/* 时间内容区域 */
+.rbc-time-content {
+  border-top: 1px solid #e5e7eb !important;
+  overflow: visible !important;
+}
+
+/* 当前时间指示线 */
+.rbc-current-time-indicator {
+  background-color: #ef4444 !important;
+  height: 2px !important;
+  z-index: 10 !important;
+}
+
+/* 隐藏全天事件区域 */
+.rbc-allday-cell,
+.rbc-allday-events,
+.rbc-row .rbc-row-segment,
+.rbc-row-content .rbc-row-segment,
+.rbc-time-header .rbc-allday-cell {
+  display: none !important;
+}
+
+/* 模态框遮罩层 */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+

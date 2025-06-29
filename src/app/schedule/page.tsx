@@ -4,7 +4,8 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { PlusIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import './schedule.css';
+import { PlusIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import AddEventModal from './components/AddEventModal';
 
 // 设置中文
@@ -19,7 +20,7 @@ interface ScheduleEvent {
   end: Date;
   teacherId: string;
   teacherName: string;
-  type: 'course' | 'available' | 'unavailable' | 'selected';
+  type: 'lesson' | 'available' | 'unavailable' | 'selected';
   description?: string;
 }
 
@@ -28,28 +29,28 @@ const mockEvents: ScheduleEvent[] = [
   {
     id: '1',
     title: '高三数学',
-    start: new Date(2025, 0, 20, 9, 0),
-    end: new Date(2025, 0, 20, 10, 30),
+    start: new Date(2025, 5, 25, 9, 0),
+    end: new Date(2025, 5, 25, 10, 30),
     teacherId: 'teacher1',
     teacherName: '张老师',
-    type: 'course',
+    type: 'lesson',
     description: '微积分基础'
   },
   {
     id: '2',
     title: '高二物理',
-    start: new Date(2025, 0, 20, 14, 0),
-    end: new Date(2025, 0, 20, 15, 30),
+    start: new Date(2025, 5, 26, 14, 0),
+    end: new Date(2025, 5, 26, 15, 30),
     teacherId: 'teacher1',
     teacherName: '张老师',
-    type: 'course',
+    type: 'lesson',
     description: '力学原理'
   },
   {
     id: '3',
-    title: '可用时段',
-    start: new Date(2025, 0, 21, 8, 0),
-    end: new Date(2025, 0, 21, 12, 0),
+    title: '已确认可用时段',
+    start: new Date(2025, 5, 27, 8, 0),
+    end: new Date(2025, 5, 27, 12, 0),
     teacherId: 'teacher1',
     teacherName: '张老师',
     type: 'available',
@@ -58,8 +59,8 @@ const mockEvents: ScheduleEvent[] = [
   {
     id: '4',
     title: '教师会议',
-    start: new Date(2025, 0, 22, 15, 0),
-    end: new Date(2025, 0, 22, 17, 0),
+    start: new Date(2025, 5, 28, 15, 0),
+    end: new Date(2025, 5, 28, 17, 0),
     teacherId: 'teacher1',
     teacherName: '张老师',
     type: 'unavailable',
@@ -69,24 +70,24 @@ const mockEvents: ScheduleEvent[] = [
 
 // 事件样式配置
 const eventStyleGetter = (event: ScheduleEvent) => {
-  let backgroundColor = '#3174ad';
+  let backgroundColor = 'rgba(49, 116, 173, 0.8)';
   let borderColor = '#3174ad';
   
   switch (event.type) {
-    case 'course':
-      backgroundColor = '#10b981';
-      borderColor = '#059669';
+    case 'lesson':
+      backgroundColor = 'rgba(59, 130, 246, 0.8)'; // 蓝色 + 透明度
+      borderColor = '#2563eb';
       break;
     case 'available':
-      backgroundColor = '#22c55e';
-      borderColor = '#16a34a';
+      backgroundColor = 'rgba(16, 185, 129, 0.8)'; // 绿色 + 透明度 (confirmed available)
+      borderColor = '#059669';
       break;
     case 'unavailable':
-      backgroundColor = '#ef4444';
-      borderColor = '#dc2626';
+      backgroundColor = 'rgba(107, 114, 128, 0.8)'; // 灰色 + 透明度
+      borderColor = '#4b5563';
       break;
     case 'selected':
-      backgroundColor = 'rgb(216, 27, 96)';
+      backgroundColor = 'rgba(216, 27, 96, 0.8)'; // 选中色 + 透明度
       borderColor = 'rgb(216, 27, 96)';
       break;
   }
@@ -156,7 +157,6 @@ export default function SchedulePage() {
 
   // 处理时间段选择
   const handleSelectSlot = useCallback(({ start, end, box }: { start: Date; end?: Date; box?: { x: number; y: number; clientX: number; clientY: number } }) => {
-    // 🔥 首先清除上一次的选中状态和模态框
     clearSelectedState();
     if (showAddModal) {
       setShowAddModal(false);
@@ -313,6 +313,57 @@ export default function SchedulePage() {
     return eventsWithSelection;
   }, [events, selectedTimeRange]);
 
+  // 导航函数
+  const navigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
+    let newDate = new Date(date);
+    
+    switch (action) {
+      case 'PREV':
+        if (view === Views.MONTH) {
+          newDate.setMonth(date.getMonth() - 1);
+        } else if (view === Views.WEEK) {
+          newDate.setDate(date.getDate() - 7);
+        } else if (view === Views.DAY) {
+          newDate.setDate(date.getDate() - 1);
+        }
+        break;
+      case 'NEXT':
+        if (view === Views.MONTH) {
+          newDate.setMonth(date.getMonth() + 1);
+        } else if (view === Views.WEEK) {
+          newDate.setDate(date.getDate() + 7);
+        } else if (view === Views.DAY) {
+          newDate.setDate(date.getDate() + 1);
+        }
+        break;
+      case 'TODAY':
+        newDate = new Date();
+        break;
+    }
+    
+    setDate(newDate);
+  }, [date, view]);
+
+  // 格式化日期标题
+  const getDateTitle = useCallback(() => {
+    if (view === Views.MONTH) {
+      return moment(date).format('YYYY年MM月');
+    } else if (view === Views.WEEK) {
+      const start = moment(date).startOf('week');
+      const end = moment(date).endOf('week');
+      if (start.year() === end.year() && start.month() === end.month()) {
+        return `${start.format('YYYY年MM月DD日')} - ${end.format('DD日')}`;
+      } else if (start.year() === end.year()) {
+        return `${start.format('YYYY年MM月DD日')} - ${end.format('MM月DD日')}`;
+      } else {
+        return `${start.format('YYYY年MM月DD日')} - ${end.format('YYYY年MM月DD日')}`;
+      }
+    } else if (view === Views.DAY) {
+      return moment(date).format('YYYY年MM月DD日 dddd');
+    }
+    return '';
+  }, [date, view]);
+
   // 监听虚拟事件的渲染，自动调整模态框位置
   useEffect(() => {
     if (selectedTimeRange && showAddModal) {
@@ -453,32 +504,72 @@ export default function SchedulePage() {
         {/* 图例 */}
         <div className="flex items-center flex-wrap gap-3 sm:gap-6 mt-4 text-xs sm:text-sm">
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded"></div>
-            <span className="text-gray-600 whitespace-nowrap">课程安排</span>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded"></div>
+            <span className="text-gray-600 whitespace-nowrap">课程</span>
           </div>
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded"></div>
+            <span className="text-gray-600 whitespace-nowrap">确认可用</span>
+          </div>
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white border border-gray-300 rounded"></div>
             <span className="text-gray-600 whitespace-nowrap">可用时段</span>
           </div>
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded"></div>
-            <span className="text-gray-600 whitespace-nowrap">不可用时段</span>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gray-500 rounded"></div>
+            <span className="text-gray-600 whitespace-nowrap">不可用</span>
           </div>
         </div>
       </div>
+
       {/* 日历主体 */}
       <div className="flex-1 pt-3 sm:pt-6">
         <div 
           ref={calendarRef} 
           className="bg-white rounded-lg shadow-sm border border-gray-200"
         >
+          {/* 日期导航和标题 */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            {/* 左侧：导航按钮 */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => navigate('PREV')}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="上一页"
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => navigate('TODAY')}
+                className="px-3 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+              >
+                今天
+              </button>
+              <button
+                onClick={() => navigate('NEXT')}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="下一页"
+              >
+                <ChevronRightIcon className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* 中间：日期标题 */}
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+              {getDateTitle()}
+            </h2>
+            
+            {/* 右侧：占位，保持平衡 */}
+            <div className="w-20"></div>
+          </div>
+
           <Calendar
             localizer={localizer}
             events={allEvents}
             startAccessor="start"
             endAccessor="end"
             style={{ 
-              padding: '20px'
+              padding: '0 20px 20px 20px'
             }}
             view={view}
             onView={setView}
@@ -488,7 +579,8 @@ export default function SchedulePage() {
             onSelectEvent={handleSelectEvent}
             selectable={!isClosingModal}
             eventPropGetter={eventStyleGetter}
-            min={new Date(2025, 0, 1, 9, 0, 0)} // 早上6点开始
+            toolbar={false} // 隐藏默认工具栏
+            min={new Date(2025, 0, 1, 9, 0, 0)} // 早上9点开始
             max={new Date(2025, 0, 1, 22, 0, 0)} // 晚上10点结束
             step={15} // 15分钟间隔
             timeslots={2} // 每小时2个时间槽

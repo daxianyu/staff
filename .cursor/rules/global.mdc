@@ -3,8 +3,41 @@ description:
 globs: 
 alwaysApply: true
 ---
-页面中使用原生HTML和Tailwind CSS而不是Ant Design
+页面中使用原生HTML和Tailwind CSS + 自定义CSS
 
 新写代码时，如果有模态框，后面遮罩层的背景用： bg-black/50
 
 API具体请求都放在services/auth.ts 文件中，用统一的验证逻辑。不要写在每个分页逻辑中
+
+每个页面的样式和功能需要兼容手机端
+
+## 权限与菜单规范（简化版）
+
+- 当前项目专注于课程安排核心功能，采用简化的权限体系
+- 页面中使用原生HTML和Tailwind CSS，避免使用重型UI库
+- 新增页面必须先在`types/auth.ts`中定义权限常量
+- 菜单采用扁平化结构，配置在`DashboardLayout.tsx`中
+- 权限检查统一使用`useAuth()`钩子的`hasPermission`方法
+- 用户登录状态检查统一在AuthContext中处理
+
+## 当前功能状态
+
+### 已实现页面
+- `/schedule` - 课程安排（主要功能）
+- `/login` - 登录页面  
+- `/403` - 无权限访问页面
+
+### 预留功能页面
+- `/my-profile` - 个人资料
+- `/notifications` - 通知
+
+## 新建页面检查清单
+- [ ] 在 `types/auth.ts` 中定义权限常量
+- [ ] 在 `contexts/AuthContext.tsx` 中为相应角色添加权限
+- [ ] 在 `DashboardLayout.tsx` 中添加菜单项（如需要）
+- [ ] 创建页面文件 `app/页面名/page.tsx`
+- [ ] 在页面中添加权限检查（推荐）
+- [ ] 添加相关API服务（如需要）
+- [ ] 测试权限过滤和页面访问
+
+详细文档请参考：`/docs/permission-system.md` 和 `/docs/new-page-guide.md`
