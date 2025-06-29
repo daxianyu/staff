@@ -57,7 +57,7 @@ export default function AddEventModal({
   });
 
   // 时间限制配置（从SchedulePage的日历配置同步）
-  const DAY_START_TIME = '06:00'; // 早上6点
+  const DAY_START_TIME = '09:00'; // 早上9点
   const DAY_END_TIME = '22:00';   // 晚上10点
 
   // 添加ESC键关闭功能
