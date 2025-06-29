@@ -3,7 +3,6 @@
 import "./globals.css";
 import ClientLayout from "./components/ClientLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { SalesInfoProvider } from "@/contexts/SalesInfoContext";
 import { NotifyProvider } from "@/components/Notify";
 import { ENV } from '@/config/env'
 import { ApiDebugger } from '@/components/ApiDebugger'
@@ -22,11 +21,9 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          <SalesInfoProvider>
-            <NotifyProvider>
-          <ClientLayout>{children}</ClientLayout>
-            </NotifyProvider>
-          </SalesInfoProvider>
+          <NotifyProvider>
+            <ClientLayout>{children}</ClientLayout>
+          </NotifyProvider>
         </AuthProvider>
         {ENV.enableApiDebugger && <ApiDebugger />}
       </body>

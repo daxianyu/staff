@@ -4,7 +4,6 @@ import DashboardLayout from './DashboardLayout';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
-import { useSalesInfo } from '@/contexts/SalesInfoContext';
 
 // 定义SalesInfo接口已移动到SalesInfoContext中
 
@@ -12,7 +11,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
-  const { salesInfo, isLoading } = useSalesInfo();
   
   // 不需要权限检查的路由
   const publicRoutes = ['/login', '/403'];
@@ -26,14 +24,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       return;
     }
 
-    // 处理pre_student用户限制：type为4且info_sign为0时只能访问my-profile页面
-    if (user.data?.type === 4 && !isLoading) {
-      // 使用Context中的salesInfo而不是直接调用API
-      if (salesInfo?.info_sign === 0 && pathname !== '/my-profile') {
-        router.push('/my-profile');
-      }
-    }
-  }, [user, isPublicRoute, router, pathname, salesInfo, isLoading]);
+  }, [user, isPublicRoute, router, pathname]);
 
   // 如果是公开路由，直接渲染
   if (isPublicRoute) {
