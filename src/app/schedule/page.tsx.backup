@@ -156,15 +156,20 @@ export default function SchedulePage() {
 
   // 处理时间段选择
   const handleSelectSlot = useCallback(({ start, end, box }: { start: Date; end?: Date; box?: { x: number; y: number; clientX: number; clientY: number } }) => {
+    console.log('=== 开始新的时间段选择 ===');
+    console.log('🧹 清除上一次的选中状态...');
+    
     // 🔥 首先清除上一次的选中状态和模态框
-    clearSelectedState();
+    setSelectedTimeRange(null); // 立即清除虚拟事件
+    
     if (showAddModal) {
+      console.log('🔴 关闭现有模态框...');
       setShowAddModal(false);
       setIsClosingModal(false);
     }
     
+    // 立即设置新的选中状态
     setSelectedDate(start);
-    console.log('=== 时间段选择事件 ===');
     console.log('时间范围:', { start, end });
     console.log('box参数:', box);
     console.log('lastMousePosition:', lastMousePosition);
@@ -172,7 +177,8 @@ export default function SchedulePage() {
     // 保存选中的时间范围，用于创建虚拟选中事件
     const actualEnd = end || new Date(start.getTime() + 30 * 60 * 1000); // 默认30分钟
     setSelectedTimeRange({ start, end: actualEnd });
-    console.log('保存选中时间范围:', { start, end: actualEnd });
+    console.log('✅ 设置新的选中时间范围:', { start, end: actualEnd });
+    
     // 计算模态框位置，优先使用box坐标，然后是鼠标位置，最后基于时间计算位置
     let modalX = 0;
     let modalY = 0;
@@ -233,27 +239,27 @@ export default function SchedulePage() {
           setShowAddModal(true);
           console.log('使用即时计算位置:', { x: modalX, y: modalY, slideDirection });
           return; // 提前返回，不执行后续逻辑
-                 } else {
-            modalX = rect.right + 10;
-            modalY = rect.top;
+        } else {
+          modalX = rect.right + 10;
+          modalY = rect.top;
           console.log('使用时间槽位置:', { x: modalX, y: modalY });
         }
       }
-         } else {
-       // 最后的fallback：使用屏幕中心，然后异步查找虚拟事件位置
-       modalX = window.innerWidth / 2;
-       modalY = window.innerHeight / 2;
-       console.log('使用屏幕中心位置:', { x: modalX, y: modalY });
-       
-       // 尝试异步查找虚拟事件的位置
-       calculatePositionFromTime(start, actualEnd);
-     }
+    } else {
+      // 最后的fallback：使用屏幕中心，然后异步查找虚拟事件位置
+      modalX = window.innerWidth / 2;
+      modalY = window.innerHeight / 2;
+      console.log('使用屏幕中心位置:', { x: modalX, y: modalY });
+      
+      // 尝试异步查找虚拟事件的位置
+      calculatePositionFromTime(start, actualEnd);
+    }
     
     setModalPosition({ x: modalX, y: modalY, slideDirection: 'right' });
     
     setIsClosingModal(false);
     setShowAddModal(true);
-  }, [lastMousePosition, clearSelectedState, showAddModal]);
+  }, [lastMousePosition, selectedTimeRange, showAddModal]);
 
   // 处理事件选择
   const handleSelectEvent = useCallback((event: ScheduleEvent) => {
