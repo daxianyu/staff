@@ -159,4 +159,16 @@
   background-color: rgba(0, 0, 0, 0.5);
 }
 
+/* ===== 时间段背景色样式 ===== */
+
+/* 不可用时间槽样式 */
+.unavailable-time-slot {
+  background-color: rgba(107, 114, 128, 0.15) !important;
+}
+
+/* 不可用时间槽悬停效果 */
+.unavailable-time-slot:hover {
+  background-color: rgba(107, 114, 128, 0.25) !important;
+}
+
 

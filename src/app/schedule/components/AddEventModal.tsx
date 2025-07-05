@@ -10,7 +10,7 @@ interface ScheduleEvent {
   end: Date;
   teacherId: string;
   teacherName: string;
-  type: 'lesson' | 'available' | 'unavailable';
+  type: 'lesson' | 'unavailable';  // 移除 'available'，只保留课程和不可用事件
   description?: string;
 }
 
@@ -38,7 +38,7 @@ export default function AddEventModal({
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('09:15');
-  const [eventType, setEventType] = useState<'lesson' | 'available' | 'unavailable'>('lesson');
+  const [eventType, setEventType] = useState<'lesson' | 'unavailable'>('lesson');
   const [description, setDescription] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
@@ -658,7 +658,6 @@ export default function AddEventModal({
                     className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="lesson">课程</option>
-                    <option value="available">确认可用时段</option>
                     <option value="unavailable">不可用时段</option>
                   </select>
                 </div>
