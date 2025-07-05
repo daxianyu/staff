@@ -22,7 +22,7 @@ interface AddEventModalProps {
   selectedTimeRange?: { start: Date; end: Date };
   position?: { x: number; y: number; slideDirection?: 'left' | 'right' | 'center' };
   onAnimationComplete?: () => void;
-  onTimeRangeChange?: (timeRange: { start: Date; end: Date }) => void;
+  onConflictCheck?: (start: Date, end: Date) => Array<{ start: Date; end: Date }>;
 }
 
 export default function AddEventModal({ 
@@ -33,7 +33,7 @@ export default function AddEventModal({
   selectedTimeRange,
   position,
   onAnimationComplete,
-  onTimeRangeChange
+  onConflictCheck
 }: AddEventModalProps) {
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('09:00');
@@ -42,6 +42,7 @@ export default function AddEventModal({
   const [description, setDescription] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
+  const [currentConflicts, setCurrentConflicts] = useState<Array<{ start: Date; end: Date }>>([]);
 
   // 拖拽相关状态
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -131,6 +132,7 @@ export default function AddEventModal({
         startOffsetX: 0,
         startOffsetY: 0
       };
+
       setShouldShow(true);
       setTimeout(() => setIsAnimating(true), 10);
     } else {
@@ -160,27 +162,36 @@ export default function AddEventModal({
 
     // 自动填充选中的时间范围
   useEffect(() => {
-    console.log('📋 自动填充检查:', {
-      hasSelectedTimeRange: !!selectedTimeRange,
-      isOpen,
-      selectedDate,
-      selectedTimeRange
-    });
-
     if (selectedTimeRange && isOpen) {
       const startTimeStr = moment(selectedTimeRange.start).format('HH:mm');
       const endTimeStr = moment(selectedTimeRange.end).format('HH:mm');
       
       setStartTime(startTimeStr);
       setEndTime(endTimeStr);
-      
-      console.log('🕐 自动填充时间:', {
-        start: startTimeStr,
-        end: endTimeStr,
-        range: selectedTimeRange
-      });
     }
-     }, [selectedTimeRange, isOpen, selectedDate]);
+  }, [selectedTimeRange, isOpen]);
+
+  // 当时间发生变化时，自主进行冲突检查
+  useEffect(() => {
+    if (!selectedDate || !isOpen || !onConflictCheck) {
+      setCurrentConflicts([]);
+      return;
+    }
+    
+    const start = moment(selectedDate).set({
+      hour: parseInt(startTime.split(':')[0]),
+      minute: parseInt(startTime.split(':')[1])
+    }).toDate();
+    
+    const end = moment(selectedDate).set({
+      hour: parseInt(endTime.split(':')[0]),
+      minute: parseInt(endTime.split(':')[1])
+    }).toDate();
+    
+    // 自主进行冲突检查
+    const conflicts = onConflictCheck(start, end);
+    setCurrentConflicts(conflicts);
+  }, [startTime, endTime, selectedDate, isOpen, onConflictCheck]);
 
   // 计算开始时间的限制
   const getStartTimeConstraints = useCallback(() => {
@@ -198,54 +209,7 @@ export default function AddEventModal({
     };
   }, [startTime]);
 
-  // 更新时间范围并通知父组件
-  const updateTimeRange = useCallback((newStartTime: string, newEndTime: string) => {
-    console.log('🔄 updateTimeRange 被调用:', {
-      newStartTime,
-      newEndTime,
-      selectedDate,
-      hasOnTimeRangeChange: !!onTimeRangeChange
-    });
 
-    if (!selectedDate) {
-      console.warn('❌ selectedDate 为空，无法更新时间范围');
-      return;
-    }
-
-    if (!onTimeRangeChange) {
-      console.warn('❌ onTimeRangeChange 回调函数不存在');
-      return;
-    }
-
-    try {
-      const [startHour, startMin] = newStartTime.split(':').map(Number);
-      const [endHour, endMin] = newEndTime.split(':').map(Number);
-      
-      const start = new Date(selectedDate);
-      start.setHours(startHour, startMin, 0, 0);
-      
-      const end = new Date(selectedDate);
-      end.setHours(endHour, endMin, 0, 0);
-
-      console.log('📅 计算的时间范围:', {
-        startTime: newStartTime,
-        endTime: newEndTime,
-        startDate: start,
-        endDate: end,
-        isValidRange: end > start
-      });
-
-      // 确保结束时间晚于开始时间
-      if (end > start) {
-        onTimeRangeChange({ start, end });
-        console.log('✅ 时间范围已更新并通知父组件');
-      } else {
-        console.warn('⚠️ 结束时间不晚于开始时间，跳过更新');
-      }
-    } catch (error) {
-      console.error('❌ 时间范围更新失败:', error);
-    }
-  }, [selectedDate, onTimeRangeChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,17 +290,7 @@ export default function AddEventModal({
       // 找到了选中事件的DOM元素，获取其在视口中的实际位置
       const rect = selectedEventElement.getBoundingClientRect();
       
-      console.log('🎯 找到选中事件DOM元素:', {
-        element: selectedEventElement,
-        rect: {
-          left: rect.left,
-          top: rect.top,
-          right: rect.right,
-          bottom: rect.bottom,
-          width: rect.width,
-          height: rect.height
-        }
-      });
+
       
       // === 水平位置计算 ===
       const leftSpace = rect.left;
@@ -347,17 +301,14 @@ export default function AddEventModal({
         // 右侧空间充足，从选中区域右边缘开始，向右偏移20px
         adjustedX = rect.right + 20;
         finalSlideDirection = 'right';
-        console.log('✅ 右侧显示，空间充足');
       } else if (leftSpace >= modalNeedsSpace) {
         // 左侧空间充足，模态框右边缘距离选中区域左边缘20px
         adjustedX = rect.left - modalWidth - 20;
         finalSlideDirection = 'left';
-        console.log('✅ 左侧显示，空间充足');
       } else {
         // 左右空间都不够，居中显示
         adjustedX = Math.max(margin, (screenWidth - modalWidth) / 2);
         finalSlideDirection = 'center';
-        console.log('✅ 水平居中显示，左右空间不足');
       }
       
       // 确保水平位置在安全范围内
@@ -377,49 +328,25 @@ export default function AddEventModal({
       if (idealY >= margin && idealY + modalHeight <= screenHeight - margin) {
         // 理想位置可行，居中对齐
         adjustedY = idealY;
-        console.log('✅ 垂直居中对齐选中区域');
-      } else if (spaceBelow >= modalHeight + 20) {
-        // 下方空间充足
-        adjustedY = Math.min(rect.bottom + 10, screenHeight - modalHeight - margin);
-        console.log('✅ 选中区域下方显示');
-      } else if (spaceAbove >= modalHeight + 20) {
-        // 上方空间充足
-        adjustedY = Math.max(margin, rect.top - modalHeight - 10);
-        console.log('✅ 选中区域上方显示');
       } else {
-        // 空间不足，智能调整
-        if (selectionCenterY < screenHeight / 2) {
-          // 选中区域在屏幕上半部分，模态框偏下显示
-          adjustedY = Math.max(
-            margin,
-            Math.min(
-              selectionCenterY + 50,
-              screenHeight - modalHeight - margin
-            )
-          );
+        // 理想位置不可行，根据溢出方向决定对齐策略
+        
+        if (idealY < margin) {
+          // 理想位置会让弹出框顶部超出屏幕，说明上方区域不够
+          adjustedY = Math.max(margin, rect.top);
+        } else if (idealY + modalHeight > screenHeight - margin) {
+          // 理想位置会让弹出框底部超出屏幕，说明下方区域不够
+          adjustedY = Math.max(margin, rect.bottom - modalHeight);
         } else {
-          // 选中区域在屏幕下半部分，模态框偏上显示
-          adjustedY = Math.max(
-            margin,
-            Math.min(
-              selectionCenterY - modalHeight - 50,
-              screenHeight - modalHeight - margin
-            )
-          );
+          // 这种情况理论上不应该出现，因为前面的条件已经检查过了
+          adjustedY = idealY;
         }
-        console.log('✅ 智能避让显示');
       }
       
-      console.log('🎯 基于DOM计算的最终位置:', {
-        选中区域: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
-        模态框位置: { x: adjustedX, y: adjustedY },
-        滑动方向: finalSlideDirection,
-        空间分析: { leftSpace, rightSpace, spaceAbove, spaceBelow }
-      });
+
       
     } else if (position) {
       // 没找到DOM元素，回退到传入的位置参数
-      console.log('⚠️ 未找到选中事件DOM，使用传入位置');
       
       const { x, y, slideDirection = 'right' } = position;
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -440,13 +367,7 @@ export default function AddEventModal({
       // 检查选中区域是否在当前视口范围内
       const isSelectionVisible = viewportY >= -50 && viewportY <= screenHeight + 50;
       
-      console.log('📐 位置分析:', {
-        页面坐标: { x, y },
-        视口坐标: { x: viewportX, y: viewportY },
-        滚动位置: { scrollTop, scrollLeft },
-        选中区域是否可见: isSelectionVisible,
-        视口范围: [0, screenHeight]
-      });
+
       
       if (isSelectionVisible) {
         // 选中区域在视口内，尝试贴近选中区域
@@ -461,12 +382,10 @@ export default function AddEventModal({
           // 下方有空间
           adjustedY = idealBelowY;
           finalSlideDirection = slideDirection;
-          console.log('✅ 贴近选中区域下方显示');
         } else if (spaceAbove >= 0) {
           // 上方有空间
           adjustedY = idealAboveY;
           finalSlideDirection = slideDirection;
-          console.log('✅ 贴近选中区域上方显示');
         } else {
           // 空间不足，智能调整到最佳位置
           if (viewportY < screenHeight / 2) {
@@ -482,8 +401,7 @@ export default function AddEventModal({
               Math.min(viewportY - modalHeight - 20, screenHeight - modalHeight - margin)
             );
           }
-          finalSlideDirection = slideDirection;
-          console.log('✅ 智能调整位置，避开选中区域');
+                      finalSlideDirection = slideDirection;
         }
       } else {
         // 选中区域不在当前视口内，智能选择位置
@@ -495,22 +413,19 @@ export default function AddEventModal({
             screenHeight * 0.6 - modalHeight / 2
           );
           finalSlideDirection = 'center';
-          console.log('✅ 选中区域在视口上方，显示在屏幕下半部分');
         } else {
           // 选中区域在视口下方（用户向上滚动了很多）
           // 模态框显示在屏幕上半部分
           adjustedY = Math.min(
             screenHeight - modalHeight - margin,
             screenHeight * 0.4 - modalHeight / 2
-          );
-          finalSlideDirection = 'center';
-          console.log('✅ 选中区域在视口下方，显示在屏幕上半部分');
+                      );
+            finalSlideDirection = 'center';
         }
       }
       
     } else {
       // 默认居中显示
-      console.log('⚠️ 无位置信息，默认居中显示');
       adjustedX = (screenWidth - modalWidth) / 2;
       adjustedY = Math.max(margin, (screenHeight - modalHeight) / 2);
       finalSlideDirection = 'center';
@@ -552,12 +467,7 @@ export default function AddEventModal({
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     };
     
-    console.log('🎯 最终位置结果:', {
-      计算的位置: { x: adjustedX, y: adjustedY },
-      模态框尺寸: { width: modalWidth, height: modalHeight },
-      滑动方向: finalSlideDirection,
-      是否基于DOM: !!document.querySelector('[class*="rbc-event"][style*="rgb(216, 27, 96)"]')
-    });
+
     
     return { modalStyle, modalClassName, needsScroll, contentMaxHeight };
   };
@@ -592,6 +502,7 @@ export default function AddEventModal({
       <div 
         style={finalModalStyle}
         className={modalClassName}
+        data-modal="add-event"
       >
         {/* 统一的3段式布局：固定头部 + 可滚动内容 + 固定底部 */}
         <div className="flex flex-col h-full overflow-hidden">
@@ -614,6 +525,33 @@ export default function AddEventModal({
                 </svg>
               </button>
             </div>
+            
+            {/* 时间冲突提示 */}
+            {currentConflicts && currentConflicts.length > 0 && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-2">
+                    <p className="text-xs font-medium text-yellow-800">
+                      时间冲突提示
+                    </p>
+                    <p className="text-xs text-yellow-700">
+                      所选时间段与不可用时间段重合：
+                      {currentConflicts.map((slot, index) => (
+                        <span key={index} className="ml-1 font-medium">
+                          {moment(slot.start).format('HH:mm')}-{moment(slot.end).format('HH:mm')}
+                          {index < currentConflicts.length - 1 && '，'}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* 可滚动内容区域 */}
@@ -682,15 +620,6 @@ export default function AddEventModal({
                         // 确保新的结束时间不超过当天的最晚时间
                         const finalEndTime = newEndTime <= DAY_END_TIME ? newEndTime : DAY_END_TIME;
                         setEndTime(finalEndTime);
-                        updateTimeRange(newStartTime, finalEndTime);
-                        
-                        console.log('🔄 自动调整结束时间:', {
-                          原始结束时间: endTime,
-                          新开始时间: newStartTime,
-                          调整后结束时间: finalEndTime
-                        });
-                      } else {
-                        updateTimeRange(newStartTime, endTime);
                       }
                     }}
                     {...getStartTimeConstraints()}
@@ -714,15 +643,6 @@ export default function AddEventModal({
                         // 确保新的开始时间不早于当天的最早时间
                         const finalStartTime = newStartTime >= DAY_START_TIME ? newStartTime : DAY_START_TIME;
                         setStartTime(finalStartTime);
-                        updateTimeRange(finalStartTime, newEndTime);
-                        
-                        console.log('🔄 自动调整开始时间:', {
-                          原始开始时间: startTime,
-                          新结束时间: newEndTime,
-                          调整后开始时间: finalStartTime
-                        });
-                      } else {
-                        updateTimeRange(startTime, newEndTime);
                       }
                     }}
                     {...getEndTimeConstraints()}

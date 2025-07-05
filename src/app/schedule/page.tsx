@@ -151,14 +151,27 @@ export default function SchedulePage() {
 
   // 处理点击外部区域取消选择
   const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
-      // 点击在日历外部，清除选中状态和关闭模态框
-      if (selectedTimeRange || showAddModal) {
-        clearSelectedState();
-        if (showAddModal) {
-          setIsClosingModal(true);
-          setShowAddModal(false);
-        }
+    const target = e.target as Node;
+    
+    // 检查是否点击在日历内部
+    if (calendarRef.current && calendarRef.current.contains(target)) {
+      return;
+    }
+    
+    // 检查是否点击在模态框内部
+    if (target instanceof Element) {
+      const modalElement = target.closest('[data-modal="add-event"]');
+      if (modalElement) {
+        return; // 点击在模态框内部，不处理
+      }
+    }
+    
+    // 点击在日历和模态框外部，清除选中状态和关闭模态框
+    if (selectedTimeRange || showAddModal) {
+      clearSelectedState();
+      if (showAddModal) {
+        setIsClosingModal(true);
+        setShowAddModal(false);
       }
     }
   }, [selectedTimeRange, showAddModal, clearSelectedState]);
@@ -172,10 +185,27 @@ export default function SchedulePage() {
     };
   }, [handleMouseDown, handleClickOutside]);
 
-  // 处理时间范围变化
-  const handleTimeRangeChange = useCallback((newTimeRange: { start: Date; end: Date }) => {
-    setSelectedTimeRange(newTimeRange);
+  // 检查时间段是否与不可用时间段重合
+  const checkTimeConflict = useCallback((start: Date, end: Date) => {
+    const conflictingSlots = unavailableTimeSlots.filter(slot => {
+      // 检查时间段是否在同一天
+      const sameDay = moment(start).isSame(moment(slot.start), 'day');
+      if (!sameDay) return false;
+      
+      // 检查时间段是否重合
+      const startTime = moment(start);
+      const endTime = moment(end);
+      const slotStart = moment(slot.start);
+      const slotEnd = moment(slot.end);
+      
+      // 时间段重合的条件：开始时间小于另一个结束时间，且结束时间大于另一个开始时间
+      return startTime.isBefore(slotEnd) && endTime.isAfter(slotStart);
+    });
+    
+    return conflictingSlots;
   }, []);
+
+
 
 
 
@@ -618,7 +648,7 @@ export default function SchedulePage() {
         selectedTimeRange={selectedTimeRange || undefined}
         position={modalPosition}
         onAnimationComplete={handleAnimationComplete}
-        onTimeRangeChange={handleTimeRangeChange}
+        onConflictCheck={checkTimeConflict}
       />
     </div>
   );

@@ -1,0 +1,463 @@
+/* 手机端日程页面样式 */
+
+/* 基础优化 */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* 确保触摸事件可以正常触发 */
+.rbc-calendar,
+.rbc-time-view,
+.rbc-time-content,
+.rbc-time-slot {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+/* 优化时间槽的触摸响应 */
+.rbc-time-slot {
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* 不可用时间槽背景 - 与PC端保持一致 */
+.unavailable-time-slot {
+  background-color: rgba(107, 114, 128, 0.15) !important;
+  position: relative;
+}
+
+/* 不可用时间槽悬停效果 */
+.unavailable-time-slot:hover,
+.unavailable-time-slot:active {
+  background-color: rgba(107, 114, 128, 0.25) !important;
+}
+
+/* 不可用时间槽的斜纹图案 */
+.unavailable-time-slot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    rgba(107, 114, 128, 0.2) 3px,
+    rgba(107, 114, 128, 0.2) 6px
+  );
+  pointer-events: none;
+}
+
+/* 手机端日历样式优化 - 与PC端保持一致 */
+.rbc-calendar {
+  font-size: 12px !important;
+  overflow: visible !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+  height: auto !important;
+}
+
+/* 优化日历整体布局 */
+.rbc-calendar .rbc-month-view,
+.rbc-calendar .rbc-time-view,
+.rbc-calendar .rbc-agenda-view {
+  border: none !important;
+  padding-top: 0 !important;
+  overflow: visible !important;
+  height: auto !important;
+}
+
+/* 时间网格和时间列样式 */
+.rbc-time-view .rbc-time-gutter,
+.rbc-time-header-gutter {
+  background-color: #f9fafb !important;
+  border-right: 1px solid #e5e7eb !important;
+  width: 60px !important; /* 手机端稍窄 */
+  min-width: 60px !important;
+  max-width: 60px !important;
+  font-size: 10px !important; /* 手机端稍小 */
+}
+
+/* 时间标签优化（合并后的完整样式） */
+.rbc-time-gutter .rbc-label {
+  font-size: 10px !important;
+  color: #6b7280 !important;
+  padding-right: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+  font-weight: 500 !important;
+}
+
+/* 时间槽样式 */
+.rbc-time-slot {
+  border-top: 1px solid #f3f4f6 !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  height: 18px !important; /* 手机端稍矮 */
+  min-height: 18px !important;
+  max-height: 18px !important;
+}
+
+/* 时间槽组 */
+.rbc-timeslot-group {
+  border-bottom: 1px solid #e5e7eb !important;
+  height: 36px !important; /* 手机端稍矮 */
+  min-height: 36px !important;
+  max-height: 36px !important;
+}
+
+/* 事件样式优化 */
+.rbc-event {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  padding: 2px 4px !important;
+  border-radius: 6px !important; /* 与PC端一致的圆角 */
+  border: none !important;
+  font-weight: 500 !important;
+  min-height: 16px !important;
+  box-shadow: 0 1px 8px 0 rgba(0, 0, 0, 0.2), 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important; /* 与PC端一致的阴影 */
+}
+
+.rbc-event-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 日历头部样式（合并后的完整样式） */
+.rbc-header:last-child {
+  border-right: none !important;
+}
+
+/* 时间头部的日期头部 */
+.rbc-time-header .rbc-header {
+  border-bottom: none !important;
+}
+
+/* 选中区域样式 - 与PC端一致 */
+.rbc-slot-selection {
+  z-index: 20 !important;
+  background-color: rgba(216, 27, 96, 0.8) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(216, 27, 96, 0.2) !important;
+}
+
+/* 确保选择后的背景保持白色 */
+.rbc-day-bg.rbc-selected-bg,
+.rbc-off-range-bg {
+  background-color: white !important;
+}
+
+/* 今日高亮 - 与PC端一致 */
+.rbc-today {
+  background-color: #eff6ff !important;
+}
+
+/* 日历网格线优化 */
+.rbc-time-content {
+  border-top: 1px solid #e5e7eb !important;
+  overflow: visible !important;
+}
+
+/* 周视图和日视图的日期列 */
+.rbc-day-slot {
+  border-right: 1px solid #e5e7eb !important;
+}
+
+.rbc-day-slot:last-child {
+  border-right: none !important;
+}
+
+/* 当前时间指示线 - 与PC端一致 */
+.rbc-current-time-indicator {
+  background-color: #ef4444 !important;
+  height: 2px !important;
+  z-index: 10 !important;
+  border-radius: 1px !important;
+}
+
+/* 隐藏全天事件区域 */
+.rbc-allday-cell,
+.rbc-allday-events,
+.rbc-row .rbc-row-segment,
+.rbc-row-content .rbc-row-segment,
+.rbc-time-header .rbc-allday-cell {
+  display: none !important;
+}
+
+/* 活动状态优化 */
+button:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* 触摸反馈 */
+.rbc-time-slot:active {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  transition: background-color 0.15s ease;
+}
+
+/* 事件悬停效果 */
+.rbc-event:hover,
+.rbc-event:active {
+  transform: scale(1.02);
+  transition: transform 0.15s ease;
+}
+
+/* 时间标签区域渐变效果 */
+.rbc-time-view .rbc-time-gutter {
+  background: linear-gradient(to right, #f9fafb 0%, #f3f4f6 100%) !important;
+}
+
+/* 日历头部渐变效果 */
+.rbc-header {
+  background: linear-gradient(to bottom, #f9fafb 0%, #f1f5f9 100%) !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-right: 1px solid #e5e7eb !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+  font-weight: 600 !important;
+  height: 35px !important;
+  min-height: 35px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+}
+
+/* 优化日历容器的阴影 */
+.rbc-calendar {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+/* 时间线的脉动效果 */
+.rbc-current-time-indicator {
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5) !important;
+  animation: pulse-line 2s infinite !important;
+}
+
+@keyframes pulse-line {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+  }
+}
+
+/* 选中区域的闪烁动画 */
+.rbc-slot-selection {
+  animation: selection-glow 0.3s ease-out !important;
+}
+
+@keyframes selection-glow {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 滚动条优化 */
+.rbc-time-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 移动端适配 */
+@media (max-width: 640px) {
+  .rbc-calendar {
+    font-size: 11px !important;
+  }
+  
+  .rbc-event {
+    font-size: 9px !important;
+    min-height: 14px !important;
+    padding: 1px 3px !important;
+    border-radius: 5px !important;
+  }
+  
+  .rbc-time-gutter .rbc-label {
+    font-size: 9px !important;
+  }
+  
+  .rbc-time-slot {
+    height: 16px !important;
+    min-height: 16px !important;
+    max-height: 16px !important;
+  }
+  
+  .rbc-timeslot-group {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+  }
+  
+  .rbc-time-view .rbc-time-gutter,
+  .rbc-time-header-gutter {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+  }
+  
+  .rbc-header {
+    height: 30px !important;
+    min-height: 30px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* 超小屏优化 */
+@media (max-width: 375px) {
+  .rbc-calendar {
+    font-size: 10px !important;
+  }
+  
+  .rbc-event {
+    font-size: 8px !important;
+    min-height: 12px !important;
+    padding: 1px 2px !important;
+    border-radius: 4px !important;
+  }
+  
+  .rbc-time-slot {
+    height: 14px !important;
+    min-height: 14px !important;
+    max-height: 14px !important;
+  }
+  
+  .rbc-timeslot-group {
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+  }
+  
+  .rbc-time-view .rbc-time-gutter,
+  .rbc-time-header-gutter {
+    width: 45px !important;
+    min-width: 45px !important;
+    max-width: 45px !important;
+    font-size: 8px !important;
+  }
+  
+  .rbc-time-gutter .rbc-label {
+    font-size: 8px !important;
+    padding-right: 2px !important;
+  }
+  
+  .rbc-header {
+    height: 28px !important;
+    min-height: 28px !important;
+    font-size: 10px !important;
+  }
+  
+  /* 优化选中区域在小屏幕上的显示 */
+  .rbc-slot-selection {
+    border-radius: 4px !important;
+    box-shadow: 0 1px 10px 0 rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(216, 27, 96, 0.2) !important;
+  }
+}
+
+/* 安全区域适配 */
+.safe-area-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* iOS Safari 视口修复 */
+@supports (-webkit-touch-callout: none) {
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* 禁用长按选择 */
+.touch-manipulation * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* 保持输入框可选择 */
+.touch-manipulation input,
+.touch-manipulation textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* 优化日历边框和分隔线 - 增强版 */
+.rbc-time-slot:nth-child(2n) {
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+/* 主要时间槽分隔线（整点）- 加强 */
+.rbc-timeslot-group {
+  border-bottom: 1px solid #d1d5db !important;
+}
+
+/* 今天的特殊样式 */
+.rbc-today .rbc-time-slot {
+  background-color: rgba(239, 246, 255, 0.5) !important;
+}
+
+/* 优化事件在今天的显示 */
+.rbc-today .rbc-event {
+  box-shadow: 0 2px 10px 0 rgba(59, 130, 246, 0.3), 0 1px 4px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 以上样式已合并到前面的定义中 */
+
+/* 微调不可用时间槽的透明度 */
+.unavailable-time-slot {
+  transition: background-color 0.2s ease !important;
+}
+
+/* 添加细微的呼吸效果给当前时间线 */
+.rbc-current-time-indicator::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: -1px;
+  right: -2px;
+  bottom: -1px;
+  background-color: #ef4444;
+  border-radius: 2px;
+  opacity: 0.3;
+  animation: breath 3s ease-in-out infinite;
+}
+
+@keyframes breath {
+  0%, 100% {
+    transform: scaleY(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scaleY(1.2);
+    opacity: 0.6;
+  }
+} 

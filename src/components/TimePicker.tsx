@@ -55,6 +55,7 @@ export default function TimePicker({
 
   // 当下拉菜单打开时，滚动到选中的项目
   useEffect(() => {
+    // 只有当弹出框打开时才滚动，移除value依赖避免无限循环
     if (open && value) {
       // 使用setTimeout确保DOM完全渲染后再执行滚动
       const scrollTimer = setTimeout(() => {
@@ -75,19 +76,12 @@ export default function TimePicker({
             top: Math.max(0, idealScrollTop),
             behavior: 'smooth'
           });
-          
-          console.log('🎯 TimePicker 自动滚动到选中项:', {
-            value,
-            itemOffsetTop,
-            idealScrollTop,
-            containerHeight
-          });
         }
-      }, 50); // 延迟50ms确保渲染完成
+      }, 100); // 增加延迟确保渲染完成
       
       return () => clearTimeout(scrollTimer);
     }
-  }, [open, value]);
+  }, [open]); // 只依赖open状态，移除value依赖
 
   return (
     <div className="space-y-1">
@@ -145,7 +139,6 @@ export default function TimePicker({
                     }}
                     type="button"
                     onClick={() => {
-                      console.log('🕐 TimePicker 时间选择:', time);
                       onChange(time);
                       setOpen(false);
                     }}
