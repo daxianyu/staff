@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { PERMISSIONS } from '@/types/auth';
+import { getFilteredMenuConfig } from '@/utils/menuFilter';
+import { MenuItem } from '@/types/permission';
 import {
   HomeIcon,
   UserIcon,
@@ -13,46 +14,34 @@ import {
   CalendarIcon,
   TableCellsIcon,
   UserGroupIcon,
-  AcademicCapIcon,
-  UserPlusIcon,
   ChevronDownIcon,
-  ExclamationTriangleIcon,
-  CreditCardIcon,
-  ChatBubbleLeftRightIcon,
-  KeyIcon,
-  BookOpenIcon,
-  LockClosedIcon,
-  DocumentCheckIcon,
-  ArrowRightOnRectangleIcon,
-  PencilSquareIcon,
-  WrenchScrewdriverIcon,
-  BanknotesIcon,
-  PencilIcon,
   XMarkIcon,
-  DocumentTextIcon,
-  BellIcon,
   Bars3Icon,
+  BookOpenIcon,
+  BuildingOffice2Icon,
+  CurrencyDollarIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 
-interface MenuItem {
-  name: string;
-  href?: string;
-  icon: React.ElementType;
-  permission?: string;
-  children?: MenuItem[];
-}
+// 图标映射表
+const iconMap: Record<string, React.ElementType> = {
+  'dashboard': HomeIcon,
+  'calendar': CalendarIcon,
+  'users': UserGroupIcon,
+  'graduation-cap': AcademicCapIcon,
+  'book': BookOpenIcon,
+  'building': BuildingOffice2Icon,
+  'dollar-sign': CurrencyDollarIcon,
+  'settings': Cog6ToothIcon,
+  'table': TableCellsIcon,
+  'user': UserIcon,
+  'chart': ChartBarIcon,
+};
 
-const navigation: MenuItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: UserGroupIcon, permission: PERMISSIONS.VIEW_DASHBOARD },
-  {
-    name: 'Schedule',
-    icon: CalendarIcon,
-    children: [
-      { name: 'Schedule', href: '/schedule', icon: CalendarIcon, permission: PERMISSIONS.VIEW_SCHEDULE },
-    ]
-  },
-  { name: 'Demo页面', href: '/demo', icon: TableCellsIcon, permission: PERMISSIONS.VIEW_DEMO },
-];
+// 获取图标组件
+const getIcon = (iconName?: string): React.ElementType => {
+  return iconName ? iconMap[iconName] || TableCellsIcon : TableCellsIcon;
+};
 
 export default function DashboardLayout({
   children,
@@ -63,8 +52,11 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
-  const { logout, hasPermission, user } = useAuth();
+  const { logout, user } = useAuth();
   const initialRenderRef = useRef(true);
+
+  // 获取过滤后的菜单配置
+  const authorizedNavigation = getFilteredMenuConfig(user);
 
   // 检查是否是移动设备
   useEffect(() => {
@@ -94,56 +86,31 @@ export default function DashboardLayout({
   };
 
   const isMenuActive = (item: MenuItem): boolean => {
-    if (item.href) {
-      return pathname === item.href;
+    if (item.path) {
+      return pathname === item.path;
     }
-    return item.children?.some((child) => pathname === child.href) || false;
+    return item.children?.some((child) => pathname === child.path) || false;
   };
 
-  const isChildActive = (href: string): boolean => {
-    return pathname === href;
+  const isChildActive = (path: string): boolean => {
+    return pathname === path;
   };
 
-  const toggleSubmenu = (menuName: string) => {
-    setExpandedMenu(expandedMenu === menuName ? null : menuName);
+  const toggleSubmenu = (menuKey: string) => {
+    setExpandedMenu(expandedMenu === menuKey ? null : menuKey);
   };
-
-  // 过滤掉没有权限的菜单项
-  const filterMenuByPermission = (items: MenuItem[]): MenuItem[] => {
-    return items.filter(item => {
-      // 如果是父菜单项且有子菜单
-      if (item.children && item.children.length > 0) {
-        // 过滤子菜单
-        const filteredChildren = item.children.filter(child => 
-          !child.permission || hasPermission(child.permission)
-        );
-        
-        // 如果过滤后还有子菜单，则保留父菜单，并更新其子菜单
-        if (filteredChildren.length > 0) {
-          item.children = filteredChildren;
-          return true;
-        }
-        return false;
-      }
-      
-      // 如果是普通菜单项，检查权限
-      return !item.permission || hasPermission(item.permission);
-    });
-  };
-
-  const authorizedNavigation = filterMenuByPermission(navigation);
 
   // 仅在组件初始挂载时自动展开当前路径对应的菜单，不干扰用户后续手动操作
   useEffect(() => {
     if (initialRenderRef.current) {
       // 检查当前路径是否在某个有子菜单的菜单项内
       const menuWithActivePath = authorizedNavigation.find(item => 
-        item.children?.some(child => pathname === child.href)
+        item.children?.some(child => pathname === child.path)
       );
       
       // 如果找到了匹配的菜单项，则自动展开它
       if (menuWithActivePath) {
-        setExpandedMenu(menuWithActivePath.name);
+        setExpandedMenu(menuWithActivePath.key);
       }
       initialRenderRef.current = false;
     }
@@ -177,7 +144,7 @@ export default function DashboardLayout({
               <div className="flex items-center" style={{ color: 'var(--header-text)' }}>
                 <UserIcon className="h-5 w-5 opacity-70 mr-2 hidden sm:inline" />
                 <span className="font-medium truncate max-w-[100px] whitespace-nowrap">
-                  {user.username || (user.data && user.data.name) || '用户'}
+                  {user.name || '用户'}
                 </span>
               </div>
             )}
@@ -225,12 +192,13 @@ export default function DashboardLayout({
                 {authorizedNavigation.map((item) => {
                   const isActive = isMenuActive(item);
                   const hasChildren = item.children && item.children.length > 0;
-                  const isExpanded = expandedMenu === item.name;
+                  const isExpanded = expandedMenu === item.key;
+                  const IconComponent = getIcon(item.icon);
 
                   return (
-                    <div key={item.name} className="space-y-1">
+                    <div key={item.key} className="space-y-1">
                       <button
-                        onClick={() => hasChildren ? toggleSubmenu(item.name) : item.href && router.push(item.href)}
+                        onClick={() => hasChildren ? toggleSubmenu(item.key) : item.path && router.push(item.path)}
                         className={`
                           group flex w-full items-center justify-between px-3 py-2.5 text-md font-medium rounded-lg
                           transition-all duration-200 ease-in-out
@@ -243,14 +211,14 @@ export default function DashboardLayout({
                         style={{ color: isActive ? 'var(--sidebar-text)' : 'rgba(255,255,255,0.9)' }}
                       >
                         <div className="flex items-center">
-                          <item.icon
+                          <IconComponent
                             className="mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200"
                             style={{ 
                               color: isActive ? 'var(--sidebar-text)' : 'rgba(255,255,255,0.7)'
                             }}
                             aria-hidden="true"
                           />
-                          {item.name}
+                          {item.label}
                         </div>
                         {hasChildren && (
                           <ChevronDownIcon
@@ -264,37 +232,40 @@ export default function DashboardLayout({
                       {/* 二级菜单 */}
                       {hasChildren && isExpanded && item.children && (
                         <div className="ml-4 space-y-1 pt-1">
-                          {item.children.map((child) => (
-                            <button
-                              key={child.name}
-                              onClick={() => child.href && router.push(child.href)}
-                              className={`
-                                group flex w-full items-center px-3 py-2 text-sm font-medium rounded-lg
-                                transition-all duration-200 ease-in-out
-                                ${
-                                  child.href && isChildActive(child.href)
-                                    ? 'bg-white/20'
-                                    : 'hover:bg-white/10'
-                                }
-                              `}
-                              style={{ 
-                                color: child.href && isChildActive(child.href) 
-                                  ? 'var(--sidebar-text)' 
-                                  : 'rgba(255,255,255,0.8)' 
-                              }}
-                            >
-                              <child.icon
-                                className="mr-3 h-4 w-4 flex-shrink-0 transition-colors duration-200"
+                          {item.children.map((child) => {
+                            const ChildIconComponent = getIcon(child.icon);
+                            return (
+                              <button
+                                key={child.key}
+                                onClick={() => child.path && router.push(child.path)}
+                                className={`
+                                  group flex w-full items-center px-3 py-2 text-sm font-medium rounded-lg
+                                  transition-all duration-200 ease-in-out
+                                  ${
+                                    child.path && isChildActive(child.path)
+                                      ? 'bg-white/20'
+                                      : 'hover:bg-white/10'
+                                  }
+                                `}
                                 style={{ 
-                                  color: child.href && isChildActive(child.href)
-                                    ? 'var(--sidebar-text)'
-                                    : 'rgba(255,255,255,0.7)'
+                                  color: child.path && isChildActive(child.path) 
+                                    ? 'var(--sidebar-text)' 
+                                    : 'rgba(255,255,255,0.8)' 
                                 }}
-                                aria-hidden="true"
-                              />
-                              {child.name}
-                            </button>
-                          ))}
+                              >
+                                <ChildIconComponent
+                                  className="mr-3 h-4 w-4 flex-shrink-0 transition-colors duration-200"
+                                  style={{ 
+                                    color: child.path && isChildActive(child.path)
+                                      ? 'var(--sidebar-text)'
+                                      : 'rgba(255,255,255,0.7)'
+                                  }}
+                                  aria-hidden="true"
+                                />
+                                {child.label}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

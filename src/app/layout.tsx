@@ -6,6 +6,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { NotifyProvider } from "@/components/Notify";
 import { ENV } from '@/config/env'
 import { ApiDebugger } from '@/components/ApiDebugger'
+import PermissionDebugger from '@/components/PermissionDebugger'
+import MenuDebugger from '@/components/MenuDebugger'
 
 export default function RootLayout({
   children,
@@ -23,6 +25,8 @@ export default function RootLayout({
         <AuthProvider>
           <NotifyProvider>
             <ClientLayout>{children}</ClientLayout>
+            <PermissionDebugger />
+            <MenuDebugger />
           </NotifyProvider>
         </AuthProvider>
         {ENV.enableApiDebugger && <ApiDebugger />}

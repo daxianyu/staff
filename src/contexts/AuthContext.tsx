@@ -1,84 +1,34 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, PERMISSIONS } from '@/types/auth';
+import { UserInfo, AuthContextType } from '@/types/permission';
 import { authService } from '@/services/authService';
 import { handleUserRedirect } from '@/services/auth';
 
-interface UserInfoResponse {
-  id: number;
-  name: string;
-  type: number;
-  campus_id: number;
-  day_student: number;
-  email: string;
-  enrolment_date: number;
-  exp: number;
-  fill_in_details: number;
-  first_name: string;
-  gender: number;
-  graduation_date: number;
-  last_name: string;
-  mentor_id: number;
-  phone_number: string;
-}
-
-interface SalesInfoResponse {
-  info_sign: number;
-  // 其他可能的字段
-}
-
-// 扩展User类型以包含data属性
-interface ExtendedUser extends User {
-  data?: UserInfoResponse;
-}
-
-interface AuthContextType {
-  user: ExtendedUser | null;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
-  hasPermission: (permissionCode: string) => boolean;
-}
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 预定义角色
-const ROLES = {
-  ADMIN: {
-    id: 'admin',
-    name: '管理员',
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_SCHEDULE,
-      PERMISSIONS.VIEW_DEMO,
-      PERMISSIONS.CREATE_DEMO,
-      PERMISSIONS.EDIT_DEMO,
-      PERMISSIONS.DELETE_DEMO,
-    ]
-  },
-  TEACHER: {
-    id: 'teacher',
-    name: '教师',
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_SCHEDULE,
-      PERMISSIONS.VIEW_DEMO,
-      PERMISSIONS.CREATE_DEMO,
-      PERMISSIONS.EDIT_DEMO,
-    ]
-  },
-  OTHER: {
-    id: 'other',
-    name: '其他',
-    permissions: [
-      PERMISSIONS.VIEW_DEMO,
-    ]
-  }
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<ExtendedUser | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [permissionOverrides, setPermissionOverrides] = useState<{[key: string]: boolean}>({});
   const router = useRouter();
+
+  // 合并用户的所有权限
+  const baseRights = user ? [...user.rights, ...user.operation_right] : [];
+  
+  // 应用权限覆盖（仅在开发/调试模式下）
+  const rights = baseRights.filter(right => {
+    // 如果有覆盖设置，使用覆盖设置
+    if (permissionOverrides.hasOwnProperty(right)) {
+      return permissionOverrides[right];
+    }
+    // 否则使用原始权限
+    return true;
+  }).concat(
+    // 添加通过覆盖启用的新权限
+    Object.keys(permissionOverrides).filter(right => 
+      permissionOverrides[right] && !baseRights.includes(right)
+    )
+  );
 
   useEffect(() => {
     // 检查用户登录状态
@@ -91,30 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (response.code === 200 && response.data) {
           // API返回了用户信息，用户已登录
-          const userData = response.data as UserInfoResponse;
-          
-          // 根据用户类型设置角色
-          let role = {
-            id: 'unknown',
-            name: '未知',
-            permissions: [] as string[]
-          };
-          if (userData.type === 0) {
-            role = ROLES.ADMIN;
-          } else if (userData.type === 2) {
-            role = ROLES.TEACHER;
-          } else {
-            role = ROLES.OTHER;
-          }
-          
-          const user: ExtendedUser = {
-            id: String(userData.id),
-            username: String(userData.name),
-            role,
-            data: userData as any
-          };
-          setUser(user);
-          localStorage.setItem('user', JSON.stringify(user));
+          const userData = response.data as UserInfo;
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
         } else {
           // API返回失败，用户未登录，清除本地信息并跳转到登录页
           setUser(null);
@@ -152,32 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // 获取用户信息
       const userReq = await authService.getUserInfo();
-      const userData = userReq.data as UserInfoResponse;
+      const userData = userReq.data as UserInfo;
       
-      // 根据用户类型设置角色
-      let role = {
-        id: 'unknown',
-        name: '未知',
-        permissions: [] as string[]
-      };
-      
-      if (userData.type === 0) {
-        role = ROLES.ADMIN;
-      } else if (userData.type === 2) {
-        role = ROLES.TEACHER;
-      } else {
-        role = ROLES.OTHER;
-      }
-      
-      const user: ExtendedUser = {
-        id: String(userData.id),
-        username: userData.name,
-        role,
-        data: userData
-      };
-
-      setUser(user);
-      localStorage.setItem('user', JSON.stringify(user));
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
 
       // 使用统一的重定向函数
       await handleUserRedirect(userData, router);
@@ -207,13 +114,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const hasPermission = (permissionCode: string): boolean => {
+  // 检查单个权限
+  const hasPermission = (permission: string): boolean => {
     if (!user) return false;
-    return user.role.permissions.includes(permissionCode);
+    return rights.includes(permission);
+  };
+
+  // 检查多个权限（任意一个满足）
+  const hasAnyPermission = (permissions: string[]): boolean => {
+    if (!user || !permissions.length) return false;
+    return permissions.some(permission => rights.includes(permission));
+  };
+
+  // 检查多个权限（全部满足）
+  const hasAllPermissions = (permissions: string[]): boolean => {
+    if (!user || !permissions.length) return false;
+    return permissions.every(permission => rights.includes(permission));
+  };
+
+  // 权限覆盖相关函数（仅用于调试）
+  const setPermissionOverride = (permission: string, enabled: boolean) => {
+    setPermissionOverrides(prev => ({
+      ...prev,
+      [permission]: enabled
+    }));
+  };
+
+  const clearPermissionOverrides = () => {
+    setPermissionOverrides({});
+  };
+
+  const getPermissionOverrides = () => permissionOverrides;
+  const getBaseRights = () => baseRights;
+
+  const contextValue: AuthContextType = {
+    user,
+    rights,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    login,
+    logout,
+    // 调试相关功能
+    setPermissionOverride,
+    clearPermissionOverrides,
+    getPermissionOverrides,
+    getBaseRights,
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, hasPermission }}>
+    <AuthContext.Provider value={contextValue}>
       {loading ? <div>加载中...</div> : children}
     </AuthContext.Provider>
   );

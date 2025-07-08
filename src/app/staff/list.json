@@ -1,0 +1,528 @@
+{
+    "status": 0,
+    "message": "",
+    "data": {
+      "campus_lessons": {
+        "1": 91800
+      },
+      "campus_info": {
+        "1": "浦东华曜-P"
+      },
+      "subjects": {
+        "59743": {
+          "class_name": " CIE IG Physics 2025春CIE_IG-Physics备考班 金鹏 李胥刘邱",
+          "class_id": 50845,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            7,
+            66,
+            81,
+            116
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1235034,
+              "start_time": 1748928600,
+              "end_time": 1748934000,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 5400
+        },
+        "59791": {
+          "class_name": " CIE IG Physics 2025春CIE_IG-Physics预学班 金鹏 俞乔杨韩",
+          "class_id": 50893,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            10,
+            62,
+            34,
+            64,
+            2,
+            30,
+            53
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1225169,
+              "start_time": 1749177000,
+              "end_time": 1749182400,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 5400
+        },
+        "59804": {
+          "class_name": " CIE IG Physics 2025春CIE_IG-Physics预学班 金鹏 陈沈",
+          "class_id": 50906,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            63,
+            37,
+            32,
+            28
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1225437,
+              "start_time": 1748939400,
+              "end_time": 1748944800,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 5400
+        },
+        "59896": {
+          "class_name": " CIE Physics-AS 2025春CIE_AS-Physics预学班 金鹏 柴刘李",
+          "class_id": 50998,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 357,
+          "description": "",
+          "students": [
+            15,
+            39,
+            102,
+            119
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1227356,
+              "start_time": 1749085200,
+              "end_time": 1749090600,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 5400
+        },
+        "59913": {
+          "class_name": " CIE IG Physics 2025春CIE_IG-Physics预学班 金鹏 徐张章邱",
+          "class_id": 51015,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            68,
+            8,
+            58,
+            52
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1241000,
+              "start_time": 1748946600,
+              "end_time": 1748952000,
+              "feedback_given": 2
+            },
+            {
+              "lesson_id": 1235165,
+              "start_time": 1749106800,
+              "end_time": 1749112200,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 10800
+        },
+        "59940": {
+          "class_name": " CIE IG Physics 2025春CIE_IG-Physics备考班 金鹏 丁葛余沈",
+          "class_id": 51042,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            54,
+            83,
+            56,
+            76,
+            88,
+            7,
+            120
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1235099,
+              "start_time": 1748917800,
+              "end_time": 1748923200,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 5400
+        },
+        "59975": {
+          "class_name": " CIE Physics-AS 2025春CIE_AS-Physics预学班 金鹏 魏",
+          "class_id": 51077,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 357,
+          "description": "",
+          "students": [
+            29,
+            80,
+            45,
+            115,
+            92
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1235067,
+              "start_time": 1748912400,
+              "end_time": 1748917800,
+              "feedback_given": 2
+            },
+            {
+              "lesson_id": 1235083,
+              "start_time": 1749025800,
+              "end_time": 1749031200,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 10800
+        },
+        "59995": {
+          "class_name": " CIE IG Physics 2025春CIE_IG-Physics预学班 金鹏 艾刘陈",
+          "class_id": 51097,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            36,
+            113,
+            31,
+            72,
+            42,
+            6,
+            34
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1235181,
+              "start_time": 1749112200,
+              "end_time": 1749117600,
+              "feedback_given": 2
+            },
+            {
+              "lesson_id": 1235197,
+              "start_time": 1749171600,
+              "end_time": 1749177000,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 10800
+        },
+        "60053": {
+          "class_name": "Edexcel Maths-M1 2025春IAL数学M1",
+          "class_id": 51152,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 337,
+          "description": "",
+          "students": [
+            15,
+            49,
+            114,
+            95,
+            102
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60068": {
+          "class_name": "2025春CIE-IG-Physics预学班",
+          "class_id": 51164,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            85,
+            29,
+            97
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1235148,
+              "start_time": 1748998800,
+              "end_time": 1749004200,
+              "feedback_given": 2
+            },
+            {
+              "lesson_id": 1235147,
+              "start_time": 1749090600,
+              "end_time": 1749096000,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 10800
+        },
+        "60122": {
+          "class_name": "IG物理丁瑞玉",
+          "class_id": 51211,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            54
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60130": {
+          "class_name": "IG物理补",
+          "class_id": 51218,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            7,
+            54,
+            56,
+            76,
+            88,
+            120
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60153": {
+          "class_name": "IG物理",
+          "class_id": 51238,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            29
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60158": {
+          "class_name": "尚奕廷 IG补",
+          "class_id": 51240,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            6
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60192": {
+          "class_name": "2025春IG physics预学班",
+          "class_id": 51268,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            10,
+            41,
+            47,
+            59,
+            27,
+            33,
+            100
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1240538,
+              "start_time": 1749015000,
+              "end_time": 1749020400,
+              "feedback_given": 2
+            },
+            {
+              "lesson_id": 1240540,
+              "start_time": 1749101400,
+              "end_time": 1749106800,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 10800
+        },
+        "60193": {
+          "class_name": "2025春IG physics预学班",
+          "class_id": 51269,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            17,
+            57,
+            69,
+            103,
+            24
+          ],
+          "lessons": [
+            {
+              "lesson_id": 1240550,
+              "start_time": 1748934000,
+              "end_time": 1748939400,
+              "feedback_given": 2
+            },
+            {
+              "lesson_id": 1240552,
+              "start_time": 1749187800,
+              "end_time": 1749193200,
+              "feedback_given": 2
+            }
+          ],
+          "total_lesson_length": 10800
+        },
+        "60256": {
+          "class_name": "IG物理补",
+          "class_id": 51331,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            53
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60262": {
+          "class_name": "IG 物理补",
+          "class_id": 51336,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            30
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60268": {
+          "class_name": "IG物理补",
+          "class_id": 51342,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            100
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60335": {
+          "class_name": "暑期营AS Physics刘柴李应魏",
+          "class_id": 51405,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 357,
+          "description": "",
+          "students": [
+            15,
+            39,
+            45,
+            80,
+            102
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60337": {
+          "class_name": "暑期营IGPhysics刘李赵余易朱",
+          "class_id": 51407,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            18,
+            21,
+            93,
+            101,
+            2,
+            4
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60341": {
+          "class_name": "暑期营IGPhysics郑陈陈黄",
+          "class_id": 51411,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            2,
+            33,
+            59,
+            72,
+            103,
+            64
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60342": {
+          "class_name": "暑期营IGPhysics尚郑贾沈邱",
+          "class_id": 51412,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 356,
+          "description": "",
+          "students": [
+            6,
+            20,
+            28,
+            57,
+            68
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        },
+        "60345": {
+          "class_name": "暑期营物理竞赛IPC",
+          "class_id": 51415,
+          "campus_id": 1,
+          "campus_name": "浦东华曜-P",
+          "topic_id": 403,
+          "description": "",
+          "students": [
+            4,
+            11,
+            14,
+            18,
+            21,
+            28,
+            29,
+            33,
+            41,
+            48,
+            50,
+            64,
+            72,
+            85,
+            93,
+            96
+          ],
+          "lessons": [],
+          "total_lesson_length": 0
+        }
+      },
+      "total_sum": 91800
+    }
+  }
