@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/app/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
@@ -46,13 +46,11 @@ const getSubjectName = (className: string): string => {
 const getMonthDisplayName = (monthId: string): string => {
   try {
     const monthNum = parseInt(monthId);
-    // 基础日期：1970年1月1日
     const baseDate = new Date(1970, 0, 1);
-    // 添加月数
     const targetDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + monthNum, 1);
-    return `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月`;
+    return targetDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
   } catch {
-    return `第${monthId}月`;
+    return `Month ${monthId}`;
   }
 };
 
@@ -60,6 +58,7 @@ const getMonthDisplayName = (monthId: string): string => {
 
 export default function LessonOverviewPage() {
   const params = useParams();
+  const router = useRouter();
   const { hasPermission } = useAuth();
   const [data, setData] = useState<LessonOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +118,7 @@ export default function LessonOverviewPage() {
           time: `${timeInfo.time} - ${endTimeInfo.time}`,
           className: subject.class_name,
           lessonDetails: `Duration: ${formatDuration(duration)}`,
-          feedbackGiven: lesson.feedback_given === 1 ? '已给反馈' : '未给反馈'
+          feedbackGiven: lesson.feedback_given === 1 ? 'Yes' : 'No'
         });
       });
     });
@@ -167,13 +166,33 @@ export default function LessonOverviewPage() {
     );
   }
 
-  function handleMonthChange() {
-    
-  }
+  const handleMonthChange = (increment: number) => {
+    const currentMonthId = parseInt(monthId, 10);
+    if (!isNaN(currentMonthId)) {
+      const newMonthId = currentMonthId + increment;
+      router.push(`/lesson-overview/${userId}/${newMonthId}`);
+    }
+  };
 
   const lessonTableData = generateLessonTableData();
   const subjectStats = generateSubjectStats();
   const campusStats = generateCampusStats();
+
+  // 计算总课时
+  const calculateTotalDuration = () => {
+    if (!data) return 0;
+    
+    let totalSeconds = 0;
+    Object.values(data.subjects).forEach(subject => {
+      subject.lessons.forEach(lesson => {
+        totalSeconds += (lesson.end_time - lesson.start_time);
+      });
+    });
+    
+    return totalSeconds;
+  };
+
+  const totalLessonDuration = calculateTotalDuration();
 
   return (
       <div className="space-y-6">
@@ -181,10 +200,24 @@ export default function LessonOverviewPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">课程概览</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Lesson Overview</h1>
               <p className="text-sm text-gray-600 mt-1">
-                用户ID: {userId} | 月份: {getMonthDisplayName(monthId)}
+                {getMonthDisplayName(monthId)}
               </p>
+            </div>
+            <div className="mt-4 sm:mt-0 flex items-center space-x-2">
+              <button
+                onClick={() => handleMonthChange(-1)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                &lt; Previous Month
+              </button>
+              <button
+                onClick={() => handleMonthChange(1)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Next Month &gt;
+              </button>
             </div>
           </div>
         </div>
@@ -213,7 +246,7 @@ export default function LessonOverviewPage() {
             {/* 第一个表格：课程详情 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">课程详情</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Lesson Details</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -254,6 +287,18 @@ export default function LessonOverviewPage() {
                       </tr>
                     )}
                   </tbody>
+                  <tfoot className="bg-gray-50">
+                    <tr>
+                      <td className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        Total
+                      </td>
+                      <td colSpan={3}></td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                        {formatDuration(totalLessonDuration)}
+                      </td>
+                      <td className="px-6 py-4"></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
