@@ -1,11 +1,10 @@
 'use client';
-
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/app/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { getLessonOverview, LessonOverviewData, SubjectData, LessonData } from '@/services/auth';
+import { getLessonOverview, LessonOverviewData, SubjectData, LessonData, getStaffInfo, StaffInfo } from '@/services/auth';
 
 // 时间工具函数
 const formatTimestamp = (timestamp: number): { date: string; time: string } => {
@@ -57,15 +56,21 @@ const getMonthDisplayName = (monthId: string): string => {
 // API数据类型已从 services/auth.ts 导入
 
 export default function LessonOverviewPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { hasPermission } = useAuth();
   const [data, setData] = useState<LessonOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const userId = params.userId as string;
-  const monthId = params.monthId as string;
+  // 新增：教师信息
+  const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
+  const [staffLoading, setStaffLoading] = useState(true);
+  const [staffError, setStaffError] = useState<string | null>(null);
+
+  // 从查询参数获取 userId 和 monthId
+  const userId = searchParams.get('userId') || '';
+  const monthId = searchParams.get('monthId') || '';
 
   // 权限检查
   const canViewLessonOverview = hasPermission(PERMISSIONS.VIEW_LESSON_OVERVIEW);
@@ -77,13 +82,9 @@ export default function LessonOverviewPage() {
         setLoading(false);
         return;
       }
-
       try {
         setLoading(true);
-        
-        // 调用真实API
         const response = await getLessonOverview(userId, monthId);
-        
         if (response.code === 200 && response.data) {
           setData(response.data as LessonOverviewData);
         } else {
@@ -96,9 +97,28 @@ export default function LessonOverviewPage() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [userId, monthId, canViewLessonOverview]);
+
+  // 新增：获取教师姓名
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        setStaffLoading(true);
+        const res = await getStaffInfo(userId);
+        if (res.code === 200 && res.data) {
+          setStaffInfo(res.data);
+        } else {
+          setStaffError(res.message || '获取教师信息失败');
+        }
+      } catch (e) {
+        setStaffError('获取教师信息失败');
+      } finally {
+        setStaffLoading(false);
+      }
+    };
+    if (userId) fetchStaff();
+  }, [userId]);
 
   // 生成课程详情表格数据
   const generateLessonTableData = () => {
@@ -168,9 +188,10 @@ export default function LessonOverviewPage() {
 
   const handleMonthChange = (increment: number) => {
     const currentMonthId = parseInt(monthId, 10);
-    if (!isNaN(currentMonthId)) {
+    if (!isNaN(currentMonthId) && userId) {
       const newMonthId = currentMonthId + increment;
-      router.push(`/lesson-overview/${userId}/${newMonthId}`);
+      // 用查询参数跳转
+      router.push(`/lesson-overview?userId=${userId}&monthId=${newMonthId}`);
     }
   };
 
@@ -201,9 +222,23 @@ export default function LessonOverviewPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Lesson Overview</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                {getMonthDisplayName(monthId)}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <span className="text-sm text-gray-600">{getMonthDisplayName(monthId)}</span>
+                {/* 教师姓名链接 */}
+                {staffLoading ? (
+                  <span className="text-gray-400 text-sm">教师信息加载中...</span>
+                ) : staffError ? (
+                  <span className="text-red-500 text-sm">{staffError}</span>
+                ) : staffInfo ? (
+                  <a
+                    href={`/staff/user?userId=${userId}`}
+                    className="text-blue-600 hover:underline ml-2 text-gray-700 text-sm"
+                    rel="noopener noreferrer"
+                  >
+                    {staffInfo.staff_name}
+                  </a>
+                ) : null}
+              </div>
             </div>
             <div className="mt-4 sm:mt-0 flex items-center space-x-2">
               <button

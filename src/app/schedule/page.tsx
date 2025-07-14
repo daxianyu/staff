@@ -1,12 +1,14 @@
 'use client';
-
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
 import moment from 'moment';
+import 'moment/locale/zh-cn';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './schedule.css';
 import { PlusIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import AddEventModal from './components/AddEventModal';
+import { getStaffSchedule } from '@/services/auth';
+import { useSearchParams } from 'next/navigation';
 
 // 设置中文
 moment.locale('zh-cn');
@@ -15,12 +17,12 @@ const localizer = momentLocalizer(moment);
 // 模拟数据类型
 interface ScheduleEvent {
   id: string;
-  title: string;
+  title: string; // 添加title字段
   start: Date;
   end: Date;
   teacherId: string;
   teacherName: string;
-  type: 'lesson' | 'unavailable' | 'selected';
+  type: 'lesson' | 'unavailable' | 'selected' | 'selectedRepeat';
   description?: string;
 }
 
@@ -34,7 +36,7 @@ interface TimeSlotWrapperProps {
 const mockEvents: ScheduleEvent[] = [
   {
     id: '1',
-    title: '高三数学',
+    title: '微积分基础',
     start: new Date(2025, 6, 1, 9, 0),
     end: new Date(2025, 6, 1, 10, 30),
     teacherId: 'teacher1',
@@ -44,7 +46,7 @@ const mockEvents: ScheduleEvent[] = [
   },
   {
     id: '2',
-    title: '高二物理',
+    title: '力学原理',
     start: new Date(2025, 6, 1, 14, 0),
     end: new Date(2025, 6, 1, 15, 30),
     teacherId: 'teacher1',
@@ -86,8 +88,6 @@ const unavailableTimeSlots = [
   }
 ];
 
-
-
 // 事件样式配置
 const eventStyleGetter = (event: ScheduleEvent) => {
   let backgroundColor = 'rgba(49, 116, 173, 0.8)';
@@ -106,6 +106,10 @@ const eventStyleGetter = (event: ScheduleEvent) => {
       backgroundColor = 'rgba(216, 27, 96, 0.8)'; // 选中色 + 透明度
       borderColor = 'rgb(216, 27, 96)';
       break;
+    case 'selectedRepeat':
+      backgroundColor = 'rgba(245, 158, 11, 0.8)'; // 橙色
+      borderColor = '#f59e0b';
+      break;
   }
 
   return {
@@ -122,7 +126,22 @@ const eventStyleGetter = (event: ScheduleEvent) => {
   };
 };
 
+// 定义课表数据结构
+interface StaffScheduleData {
+  lessons: any[];
+  special_day: any[];
+  staff_class: Record<string, string>;
+  students: Record<string, string>;
+  campus_info: Record<string, string>;
+  room_info: Record<string, string>;
+  unavailable: any[];
+}
+
+type SelectedRange = { start: Date; end: Date; repeat?: 'none' | 'weekly' };
+
 export default function SchedulePage() {
+  const searchParams = useSearchParams();
+  const staffId = searchParams.get('staffId') || '';
   const [events, setEvents] = useState<ScheduleEvent[]>(mockEvents);
   const [view, setView] = useState<View>(Views.WEEK);
   const [date, setDate] = useState(new Date()); // 默认显示当天
@@ -132,7 +151,35 @@ export default function SchedulePage() {
   const [isClosingModal, setIsClosingModal] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number; target?: EventTarget | null }>();
   const calendarRef = useRef<HTMLDivElement>(null);
-  const [selectedTimeRange, setSelectedTimeRange] = useState<{ start: Date; end: Date } | null>(null);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<SelectedRange | null>(null);
+
+  // 新增：保存完整课表数据
+  const [scheduleData, setScheduleData] = useState<StaffScheduleData | null>(null);
+
+  // 统一处理课表数据的函数
+  const handleScheduleData = useCallback((resp: any) => {
+    if (resp && resp.data) {
+      setScheduleData(resp.data);
+      if (Array.isArray(resp.data.lessons)) {
+        const newEvents = resp.data.lessons.map((lesson: any) => ({
+          id: lesson.id || String(Math.random()),
+          title: lesson.title || lesson.subject_name || '课程',
+          start: new Date(lesson.start),
+          end: new Date(lesson.end),
+          teacherId: lesson.teacherId || staffId,
+          teacherName: lesson.teacherName || '',
+          type: 'lesson',
+          description: lesson.description || ''
+        }));
+        setEvents(newEvents);
+      } else {
+        setEvents([]);
+      }
+    } else {
+      setScheduleData(null);
+      setEvents([]);
+    }
+  }, [staffId]);
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
     if (calendarRef.current && calendarRef.current.contains(e.target as Node)) {
@@ -204,10 +251,6 @@ export default function SchedulePage() {
     
     return conflictingSlots;
   }, []);
-
-
-
-
 
   // 处理时间段选择
   const handleSelectSlot = useCallback(({ start, end, box }: { start: Date; end?: Date; box?: { x: number; y: number; clientX: number; clientY: number } }) => {
@@ -295,16 +338,63 @@ export default function SchedulePage() {
       return;
     }
     
-    alert(`选择了事件: ${event.title}\n时间: ${moment(event.start).format('YYYY-MM-DD HH:mm')} - ${moment(event.end).format('HH:mm')}\n描述: ${event.description || '无'}`);
   }, []);
 
   // 添加新事件
-  const handleAddEvent = useCallback((newEvent: Partial<ScheduleEvent>) => {
-    const event: ScheduleEvent = {
-      ...newEvent as ScheduleEvent,
-      id: Date.now().toString()
-    };
-    setEvents(prev => [...prev, event]);
+  const handleAddEvent = useCallback((newEvent: Partial<ScheduleEvent> & { 
+    repeat?: 'none' | 'weekly';
+    subject?: string;
+    campus?: string;
+    pickRoom?: string;
+    replaceRoomWhenBooked?: boolean;
+  }) => {
+    if (newEvent.repeat === 'weekly' && newEvent.start && newEvent.end) {
+      const startMoment = moment(newEvent.start);
+      const created: ScheduleEvent[] = [];
+      for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
+        if (d.day() === 0 || d.day() === 6) continue; // skip weekend
+        const start = d.clone().toDate();
+        const duration = moment(newEvent.end).diff(moment(newEvent.start), 'minutes');
+        const end = d.clone().add(duration, 'minutes').toDate();
+        
+        // 根据事件类型生成title
+        let title = '事件';
+        if (newEvent.type === 'lesson' && newEvent.subject) {
+          title = newEvent.subject;
+        } else if (newEvent.type === 'unavailable') {
+          title = '不可用时间段';
+        }
+        
+        created.push({
+          id: `${Date.now()}-${d.day()}`,
+          title,
+          start,
+          end,
+          teacherId: newEvent.teacherId || 'system',
+          teacherName: newEvent.teacherName || '系统',
+          type: newEvent.type || 'lesson',
+          description: newEvent.description || ''
+        });
+      }
+      setEvents(prev => [...prev, ...created]);
+    } else {
+      // 根据事件类型生成title
+      let title = '事件';
+      if (newEvent.type === 'lesson' && newEvent.subject) {
+        title = newEvent.subject;
+      } else if (newEvent.type === 'unavailable') {
+        title = '不可用时间段';
+      }
+      
+      const event: ScheduleEvent = {
+        ...newEvent as ScheduleEvent,
+        id: Date.now().toString(),
+        title
+      };
+      setEvents(prev => [...prev, event]);
+    }
+    // 清除虚拟选中状态
+    setSelectedTimeRange(null);
   }, []);
 
   // 处理模态框关闭
@@ -330,26 +420,64 @@ export default function SchedulePage() {
     
     // 如果有选中的时间范围，添加虚拟选中事件
     if (selectedTimeRange) {
-      const selectedEvent: ScheduleEvent = {
-        id: 'selected-time-range',
-        title: '选中时间段',
-        start: selectedTimeRange.start,
-        end: selectedTimeRange.end,
-        teacherId: 'system',
-        teacherName: '系统',
-        type: 'selected',
-        description: '当前选中的时间段'
-      };
-      eventsWithSelection.push(selectedEvent);
+      if (selectedTimeRange.repeat === 'weekly') {
+        // 生成从选中日期开始到本周周五的工作日虚拟事件
+        const startMoment = moment(selectedTimeRange.start);
+        for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
+          // 只包含工作日 (Monday=1 .. Friday=5)
+          if (d.day() === 0 || d.day() === 6) continue; // 跳过周末
+          const start = d.clone().hour(startMoment.hour()).minute(startMoment.minute()).toDate();
+          const end = d.clone().hour(moment(selectedTimeRange.end).hour()).minute(moment(selectedTimeRange.end).minute()).toDate();
+          const suffix = d.format('YYYYMMDD');
+          eventsWithSelection.push({
+            id: `selected-weekly-${suffix}`,
+            title: '周内重复',
+            start,
+            end,
+            teacherId: 'system',
+            teacherName: '系统',
+            type: 'selectedRepeat',
+            description: '周内重复选择'
+          });
+        }
+      } else {
+        const selectedEvent: ScheduleEvent = {
+          id: 'selected-time-range',
+          title: '选中时间段',
+          start: selectedTimeRange.start,
+          end: selectedTimeRange.end,
+          teacherId: 'system',
+          teacherName: '系统',
+          type: 'selected',
+          description: '当前选中的时间段'
+        };
+        eventsWithSelection.push(selectedEvent);
+      }
     }
     
     return eventsWithSelection;
   }, [events, selectedTimeRange]);
 
-  // 导航函数
-  const navigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
-    let newDate = new Date(date);
+  // 获取当前周编号（1970年1月以来的周数）
+  function getWeekNum(date: Date) {
+    const start = new Date(1970, 0, 1);
+    const diff = date.getTime() - start.getTime();
+    return Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+  }
+
+  // 刷新课表数据的函数
+  const refreshScheduleData = useCallback(async () => {
+    if (!staffId || view !== Views.WEEK) return;
     
+    const weekNum = getWeekNum(date);
+    const resp = await getStaffSchedule(staffId, String(weekNum));
+    handleScheduleData(resp);
+  }, [staffId, date, view, handleScheduleData]);
+
+  // 导航函数
+  const navigate = useCallback(async (action: 'PREV' | 'NEXT' | 'TODAY') => {
+    let newDate = new Date(date);
+
     switch (action) {
       case 'PREV':
         if (view === Views.WEEK) {
@@ -369,9 +497,16 @@ export default function SchedulePage() {
         newDate = new Date();
         break;
     }
-    
+
     setDate(newDate);
-  }, [date, view]);
+
+    // 只在周视图切换时请求课表
+    if (view === Views.WEEK) {
+      const weekNum = getWeekNum(newDate);
+      const resp = await getStaffSchedule(staffId, String(weekNum));
+      handleScheduleData(resp);
+    }
+  }, [date, view, staffId, handleScheduleData]);
 
   // 格式化日期标题
   const getDateTitle = useCallback(() => {
@@ -468,6 +603,15 @@ export default function SchedulePage() {
       });
     }
   }, [selectedTimeRange, showAddModal]);
+
+  useEffect(() => {
+    if (!staffId) return;
+    if (view === Views.WEEK) {
+      const weekNum = getWeekNum(date);
+      getStaffSchedule(staffId, String(weekNum)).then(handleScheduleData);
+    }
+    // eslint-disable-next-line
+  }, [staffId, date, view, handleScheduleData]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 overflow-auto">
@@ -649,6 +793,10 @@ export default function SchedulePage() {
         position={modalPosition}
         onAnimationComplete={handleAnimationComplete}
         onConflictCheck={checkTimeConflict}
+        scheduleData={scheduleData}
+        staffId={staffId}
+        onRefreshData={refreshScheduleData}
+        onRepeatChange={(rep) => setSelectedTimeRange(prev => prev ? { ...prev, repeat: rep } : prev)}
       />
     </div>
   );

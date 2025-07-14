@@ -23,11 +23,16 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import DropdownPortal from '@/components/DropdownPortal';
-
+import Button from '@/components/Button';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 
 export default function StaffPage() {
   const { hasPermission } = useAuth();
+  const now = new Date();
+  const monthsSince1970 = (now.getFullYear() - 1970) * 12 + now.getMonth();
+  const router = useRouter();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,6 +58,11 @@ export default function StaffPage() {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
+  // 分页相关 state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // 每页10条
+
+  // const canView = true; // 临时禁用权限检查用于测试
   const canView = hasPermission(PERMISSIONS.VIEW_STAFF) || hasPermission(PERMISSIONS.FINANCE) || hasPermission(PERMISSIONS.SALES_PERSON);
   // 权限检查 - 按功能分类
   const canViewStaffDetails = hasPermission(PERMISSIONS.VIEW_STAFF); // 查看类功能：Lesson Overview, Staff Info, Staff Schedule, Default Availability
@@ -279,6 +289,12 @@ export default function StaffPage() {
     staff.campus.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 分页逻辑
+  const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentStaff = filteredStaff.slice(startIndex, endIndex);
+
   if (!canView) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -351,7 +367,7 @@ export default function StaffPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredStaff.map((staff) => (
+                  {currentStaff.map((staff) => (
                     <tr key={staff.staff_id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap w-1/4 sm:w-auto">
                         <div className="text-sm font-medium text-gray-900 truncate">{staff.name}</div>
@@ -402,7 +418,7 @@ export default function StaffPage() {
                   ))}
                   
                   {/* Portal下拉菜单 - 渲染在表格外部，避免被裁剪 */}
-                  {filteredStaff.map((staff) => (
+                  {currentStaff.map((staff) => (
                     <DropdownPortal
                       key={`dropdown-${staff.staff_id}`}
                       isOpen={hasAnyActionPermission && expandedRows.has(staff.staff_id)}
@@ -412,47 +428,36 @@ export default function StaffPage() {
                     >
                       {/* Lesson overview - 需要 view_staff 权限 */}
                       {canViewStaffDetails && (
-                        <button
-                          onClick={() => {
-                            console.log('Lesson overview for:', staff.name);
-                            setExpandedRows(new Set());
-                            // 获取当前月份编号（从1970年1月开始计算）
-                            const now = new Date();
-                            const monthsSince1970 = (now.getFullYear() - 1970) * 12 + now.getMonth();
-                            // 跳转到课程概览页面
-                            window.location.href = `/lesson-overview/${staff.staff_id}/${monthsSince1970}`;
-                          }}
+                        <Link
+                          href={`/lesson-overview?userId=${staff.staff_id}&monthId=${monthsSince1970}`}
                           className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition-colors touch-manipulation"
                         >
                           <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                           </svg>
                           Lesson Overview
-                        </button>
+                        </Link>
                       )}
 
                       {/* Staff info - 需要 view_staff 权限 */}
                       {canViewStaffDetails && (
-                        <button
-                          onClick={() => {
-                            console.log('Staff info for:', staff.name);
-                            setExpandedRows(new Set());
-                            // TODO: 实现员工信息功能
-                          }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 flex items-center gap-3 transition-colors touch-manipulation"
-                        >
-                          <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Staff Info
-                        </button>
+                        <Link href={`/staff/user?userId=${staff.staff_id}`} legacyBehavior>
+                          <a
+                            className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 flex items-center gap-3 transition-colors touch-manipulation"
+                            onClick={() => setExpandedRows(new Set())}
+                          >
+                            <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Staff Info
+                          </a>
+                        </Link>
                       )}
 
                       {/* Staff edit - 需要 edit_staff 权限 */}
                       {canEditStaff && (
                         <button
                           onClick={() => {
-                            console.log('Staff edit for:', staff.name);
                             setExpandedRows(new Set());
                             // TODO: 实现员工编辑功能
                           }}
@@ -467,26 +472,23 @@ export default function StaffPage() {
 
                       {/* Staff schedule - 需要 view_staff 权限 */}
                       {canViewStaffDetails && (
-                        <button
-                          onClick={() => {
-                            console.log('Staff schedule for:', staff.name);
-                            setExpandedRows(new Set());
-                            // TODO: 实现员工课表功能
-                          }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors touch-manipulation"
-                        >
-                          <svg className="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          Staff Schedule
-                        </button>
+                        <Link href={`/schedule?staffId=${staff.staff_id}`} legacyBehavior>
+                          <a
+                            className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors touch-manipulation"
+                            onClick={() => setExpandedRows(new Set())}
+                          >
+                            <svg className="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Staff Schedule
+                          </a>
+                        </Link>
                       )}
 
                       {/* Default availability - 需要 view_staff 权限 */}
                       {canViewStaffDetails && (
                         <button
                           onClick={() => {
-                            console.log('Default availability for:', staff.name);
                             setExpandedRows(new Set());
                             // TODO: 实现默认可用性功能
                           }}
@@ -542,6 +544,47 @@ export default function StaffPage() {
                   <p className="text-gray-500">
                     {searchTerm ? 'No matching staff members found' : 'No staff members have been added yet'}
                   </p>
+                </div>
+              )}
+              {/* 分页按钮区域 */}
+              {totalPages > 1 && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="text-sm text-gray-600">
+                      显示第 {startIndex + 1}-{Math.min(endIndex, filteredStaff.length)} 条，共 {filteredStaff.length} 条
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                      >
+                        上一页
+                      </Button>
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <Button
+                            key={page}
+                            size="sm"
+                            variant={currentPage === page ? 'primary' : 'outline'}
+                            onClick={() => setCurrentPage(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                      >
+                        下一页
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

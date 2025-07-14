@@ -1,5 +1,4 @@
 'use client';
-
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,7 +10,7 @@ export default function Home() {
   
   useEffect(() => {
     if (user) {
-      handleUserRedirect(user.data, router);
+      handleUserRedirect(user, router);
     } else {
       router.push('/login');
     }

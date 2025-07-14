@@ -1,14 +1,13 @@
 'use client';
-
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
-import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import moment from 'moment';
+import 'moment/locale/zh-cn';
 import './mobile-schedule.css';
 import { PlusIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import MobileAddEventModal from './components/MobileAddEventModal';
 
-// 设置中文
 moment.locale('zh-cn');
 const localizer = momentLocalizer(moment);
 

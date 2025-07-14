@@ -265,7 +265,7 @@ export const handleUserRedirect = async (userData: any, router: any, useWindowLo
       } else {
         // 获取销售信息失败，默认导向my-profile
         if (useWindowLocation) {
-          window.location.href = '/student/my-profile';
+          window.location.href = '/staff/my-profile';
         } else {
           router.push('/my-profile');
         }
@@ -549,6 +549,30 @@ export const getTeacherSchedule = async (staffId: number, weekNum: number): Prom
   }
 };
 
+// 获取员工课表
+export const getStaffSchedule = async (staffId: string, weekNum: string): Promise<any> => {
+  try {
+    const url = `/api/staff/schedule/${staffId}/${weekNum}`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('获取员工课表异常:', error);
+    return {
+      status: 500,
+      message: error instanceof Error ? error.message : '获取员工课表失败',
+      data: null,
+    };
+  }
+};
+
 // 课程概览相关接口定义
 export interface LessonOverviewData {
   campus_lessons: { [key: string]: number };
@@ -575,6 +599,55 @@ export interface LessonData {
   end_time: number;
   feedback_given: number;
 }
+
+// 导师信息相关接口定义
+export interface StaffInfo {
+  total_info: {
+    total_lesson_count: number;
+    total_lesson_hours: number;
+    lesson_this_week: number;
+    lesson_this_month: number;
+    average_rating: number;
+    average_test_result: string;
+    result_count: number;
+  };
+  subject_teacher_feedback_comment: Record<string, any[]>;
+  mentee_student_list: string[];
+  staff_name: string;
+}
+
+export const getStaffInfo = async (staffId: string): Promise<ApiResponse<StaffInfo>> => {
+  try {
+    const url = `/api/staff/staff_info/${staffId}`;
+    console.log('获取导师信息请求URL:', url);
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+    console.log('获取导师信息响应状态:', response.status);
+    console.log('获取导师信息响应结果:', data);
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取导师信息异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取导师信息失败',
+    };
+  }
+};
 
 export const getLessonOverview = async (staffId: string, monthId: string): Promise<ApiResponse> => {
   try {
@@ -607,3 +680,78 @@ export const getLessonOverview = async (staffId: string, monthId: string): Promi
     };
   }
 };
+
+export interface LessonEvent {
+  type: 'lesson';
+  subject: string;                // 科目
+  campus: string;                 // 校区
+  pickRoom: string;               // 教室
+  replaceRoomWhenBooked: boolean; // 是否自动换教室
+  date: string;                   // 日期（如 '2024-07-12'）
+  startTime: string;              // 开始时间（如 '09:00'）
+  endTime: string;                // 结束时间（如 '10:00'）
+}
+
+export interface UnavailableEvent {
+  type: 'unavailable';
+  date: string;                   // 日期
+  startTime: string;              // 开始时间
+  endTime: string;                // 结束时间
+}
+
+export type ScheduleEvent = LessonEvent | UnavailableEvent;
+
+// 新的API数据结构
+export interface LessonEventAPI {
+  event_type: 2;
+  time_list: Array<{
+    subject: string;
+    campus: string;
+    pickRoom: string;
+    replaceRoomWhenBooked: boolean;
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>;
+}
+
+export interface UnavailableEventAPI {
+  event_type: 1;
+  time_list: Array<{
+    start_time: number;
+    end_time: number;
+  }>;
+}
+
+export type ScheduleEventAPI = LessonEventAPI | UnavailableEventAPI;
+
+export async function updateScheduleEvent(event: ScheduleEvent) {
+  const url = `/api/staff/schedule/update`;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...getAuthHeader(),
+  };
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(event),
+  });
+  const data = await response.json();
+  return data;
+}
+
+// 新的API函数，支持批量操作和用户要求的数据结构
+export async function updateScheduleEventBatch(eventData: ScheduleEventAPI) {
+  const url = `/api/staff/schedule/update`;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...getAuthHeader(),
+  };
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(eventData),
+  });
+  const data = await response.json();
+  return data;
+}

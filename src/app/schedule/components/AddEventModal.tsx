@@ -2,40 +2,55 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import moment from 'moment';
 import TimePicker from '../../../components/TimePicker';
 import Button from '../../../components/Button';
+import { updateScheduleEventBatch, type ScheduleEventAPI } from '@/services/auth';
 
 interface ScheduleEvent {
   id: string;
-  title: string;
+  title: string; // 添加title字段
   start: Date;
   end: Date;
   teacherId: string;
   teacherName: string;
   type: 'lesson' | 'unavailable';  // 移除 'available'，只保留课程和不可用事件
   description?: string;
+  repeat?: 'none' | 'weekly';
 }
 
 interface AddEventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (event: Partial<ScheduleEvent>) => void;
+  onSave: (event: Partial<ScheduleEvent> & { 
+    repeat?: 'none' | 'weekly';
+    subject?: string;
+    campus?: string;
+    pickRoom?: string;
+    replaceRoomWhenBooked?: boolean;
+  }) => void;
+  onRepeatChange?: (repeat: 'none' | 'weekly') => void;
   selectedDate?: Date;
   selectedTimeRange?: { start: Date; end: Date };
   position?: { x: number; y: number; slideDirection?: 'left' | 'right' | 'center' };
   onAnimationComplete?: () => void;
   onConflictCheck?: (start: Date, end: Date) => Array<{ start: Date; end: Date }>;
+  scheduleData?: any;
+  staffId?: string;
+  onRefreshData?: () => void; // 添加刷新数据的回调
 }
 
 export default function AddEventModal({ 
   isOpen, 
   onClose, 
   onSave,
+  onRepeatChange,
   selectedDate,
   selectedTimeRange,
   position,
   onAnimationComplete,
-  onConflictCheck
+  onConflictCheck,
+  scheduleData,
+  staffId = '',
+  onRefreshData
 }: AddEventModalProps) {
-  const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('09:15');
   const [eventType, setEventType] = useState<'lesson' | 'unavailable'>('lesson');
@@ -43,6 +58,16 @@ export default function AddEventModal({
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
   const [currentConflicts, setCurrentConflicts] = useState<Array<{ start: Date; end: Date }>>([]);
+  const [repeat, setRepeat] = useState<'none' | 'weekly'>('none');
+
+  // 课程相关表单字段
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedCampus, setSelectedCampus] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState('');
+  const [replaceRoomWhenBooked, setReplaceRoomWhenBooked] = useState(false);
+
+  // 保存状态
+  const [isSaving, setIsSaving] = useState(false);
 
   // 拖拽相关状态
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -60,6 +85,35 @@ export default function AddEventModal({
   // 时间限制配置（从SchedulePage的日历配置同步）
   const DAY_START_TIME = '09:00'; // 早上9点
   const DAY_END_TIME = '22:00';   // 晚上10点
+
+  useEffect(() => {
+    if (!isOpen) {
+      setStartTime('09:00');
+      setEndTime('09:15');
+      setEventType('lesson');
+      setDescription('');
+      setRepeat('none');
+      setSelectedSubject('');
+      setSelectedCampus('');
+      setSelectedRoom('');
+      setReplaceRoomWhenBooked(false);
+      setIsSaving(false);
+    } else {
+      // 初始化默认值
+      if (scheduleData?.staff_class) {
+        const firstSubject = Object.keys(scheduleData.staff_class)[0];
+        setSelectedSubject(firstSubject || '');
+      }
+      if (scheduleData?.campus_info) {
+        const firstCampus = Object.keys(scheduleData.campus_info)[0];
+        setSelectedCampus(firstCampus || '');
+      }
+      if (scheduleData?.room_info) {
+        const firstRoom = Object.keys(scheduleData.room_info)[0];
+        setSelectedRoom(firstRoom || '');
+      }
+    }
+  }, [isOpen, scheduleData]);
 
   // 添加ESC键关闭功能
   useEffect(() => {
@@ -211,39 +265,122 @@ export default function AddEventModal({
 
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !selectedDate) return;
+    if (!selectedDate || isSaving) return;
 
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    
-    const start = new Date(selectedDate);
-    start.setHours(startHour, startMin, 0, 0);
-    
-    const end = new Date(selectedDate);
-    end.setHours(endHour, endMin, 0, 0);
+    setIsSaving(true);
 
-    onSave({
-      title,
-      start,
-      end,
-      type: eventType,
-      description,
-      teacherId: 'teacher1',
-      teacherName: '张老师'
-    });
+    try {
+      const [startHour, startMin] = startTime.split(':').map(Number);
+      const [endHour, endMin] = endTime.split(':').map(Number);
+      
+      const start = new Date(selectedDate);
+      start.setHours(startHour, startMin, 0, 0);
+      
+      const end = new Date(selectedDate);
+      end.setHours(endHour, endMin, 0, 0);
 
-    // 重置表单
-    setTitle('');
-    setStartTime('09:00');
-    setEndTime('09:15');
-    setEventType('lesson');
-    setDescription('');
-    
-    // 触发关闭动画
-    onClose();
+      // 构造API数据结构
+      let apiEventData: ScheduleEventAPI;
+      
+      if (eventType === 'lesson') {
+        // 课程事件：event_type = 2
+        const lessonTimeData = {
+          subject: selectedSubject,
+          campus: selectedCampus,
+          pickRoom: selectedRoom,
+          replaceRoomWhenBooked,
+          date: moment(selectedDate).format('YYYY-MM-DD'),
+          startTime: startTime,
+          endTime: endTime
+        };
+
+        // 如果是周内重复，生成多个时间条目
+        let timeList = [lessonTimeData];
+        if (repeat === 'weekly') {
+          timeList = [];
+          const startMoment = moment(selectedDate);
+          for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
+            if (d.day() === 0 || d.day() === 6) continue; // 跳过周末
+            timeList.push({
+              ...lessonTimeData,
+              date: d.format('YYYY-MM-DD')
+            });
+          }
+        }
+
+        apiEventData = {
+          event_type: 2,
+          time_list: timeList
+        };
+      } else {
+        // 不可用事件：event_type = 1
+        const unavailableTimeData = {
+          start_time: start.getTime(),
+          end_time: end.getTime()
+        };
+
+        // 如果是周内重复，生成多个时间条目
+        let timeList = [unavailableTimeData];
+        if (repeat === 'weekly') {
+          timeList = [];
+          const startMoment = moment(selectedDate);
+          for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
+            if (d.day() === 0 || d.day() === 6) continue; // 跳过周末
+            const dayStart = d.clone().hour(startHour).minute(startMin).toDate();
+            const dayEnd = d.clone().hour(endHour).minute(endMin).toDate();
+            timeList.push({
+              start_time: dayStart.getTime(),
+              end_time: dayEnd.getTime()
+            });
+          }
+        }
+
+        apiEventData = {
+          event_type: 1,
+          time_list: timeList
+        };
+      }
+
+      // 调用API
+      const response = await updateScheduleEventBatch(apiEventData);
+      
+      if (response.status === 0) {
+        // 成功后调用原有的onSave以更新UI
+        const subjectName = eventType === 'lesson' && scheduleData?.staff_class 
+          ? scheduleData.staff_class[selectedSubject] 
+          : '';
+
+        onSave({
+          start,
+          end,
+          type: eventType,
+          description,
+          teacherId: 'teacher1',
+          teacherName: '张老师',
+          repeat,
+          subject: subjectName,
+          campus: selectedCampus,
+          pickRoom: selectedRoom,
+          replaceRoomWhenBooked,
+        });
+
+        // 刷新数据
+        onRefreshData?.();
+        
+        onClose();
+      } else {
+        console.error('保存失败:', response.message);
+        alert(`保存失败: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('保存异常:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!shouldShow) return null;
@@ -558,34 +695,7 @@ export default function AddEventModal({
           <div className="flex-1 overflow-y-auto min-h-0 bg-white">
             <div className="p-4">
               <div className="space-y-3">
-               
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    选择日期
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedDate ? moment(selectedDate).format('YYYY-MM-DD') : ''}
-                    readOnly
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-gray-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    标题
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="请输入课程标题"
-                    required
-                  />
-                </div>
-
+                {/* 类型选择放在最顶部 */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     类型
@@ -598,6 +708,96 @@ export default function AddEventModal({
                     <option value="lesson">课程</option>
                     <option value="unavailable">不可用时段</option>
                   </select>
+                </div>
+
+                {/* 课程相关字段，仅在类型为 lesson 时显示 */}
+                {eventType === 'lesson' && (
+                  <>
+                    {scheduleData?.staff_class && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Class Subject</label>
+                        <select 
+                          value={selectedSubject}
+                          onChange={(e) => setSelectedSubject(e.target.value)}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                        >
+                          {Object.entries(scheduleData.staff_class as Record<string, string>).map(([id, name]) => (
+                            <option key={id} value={id}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {scheduleData?.campus_info && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Campus rooms</label>
+                        <select 
+                          value={selectedCampus}
+                          onChange={(e) => setSelectedCampus(e.target.value)}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                        >
+                          {Object.entries(scheduleData.campus_info as Record<string, string>).map(([id, name]) => (
+                            <option key={id} value={id}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {scheduleData?.room_info && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Pick room</label>
+                        <select 
+                          value={selectedRoom}
+                          onChange={(e) => setSelectedRoom(e.target.value)}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                        >
+                          {Object.entries(scheduleData.room_info as Record<string, string>).map(([id, name]) => (
+                            <option key={id} value={id}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {/* 新增字段：replace room when booked */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Replace room when booked</label>
+                      <select 
+                        value={replaceRoomWhenBooked ? 'yes' : 'no'}
+                        onChange={(e) => setReplaceRoomWhenBooked(e.target.value === 'yes')}
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                      >
+                        <option value="yes">是</option>
+                        <option value="no">否</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {/* 重复相关字段，所有类型都显示 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Repeat</label>
+                  <select
+                    value={repeat}
+                    onChange={e => {
+                      const value = e.target.value as 'none' | 'weekly';
+                      setRepeat(value);
+                      onRepeatChange?.(value);
+                    }}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                  >
+                    <option value="none">不重复</option>
+                    <option value="weekly">周内重复</option>
+                  </select>
+                </div>
+
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    选择日期
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedDate ? moment(selectedDate).format('YYYY-MM-DD') : ''}
+                    readOnly
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-gray-50"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -679,9 +879,9 @@ export default function AddEventModal({
                 variant="primary"
                 size="sm"
                 onClick={handleSubmit}
-                disabled={!title || !selectedDate}
+                disabled={!selectedDate || !startTime || !endTime || isSaving}
               >
-                保存
+                {isSaving ? '保存中...' : '保存'}
               </Button>
             </div>
           </div>

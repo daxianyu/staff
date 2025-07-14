@@ -52,5 +52,9 @@
     "not dead",
     "ios >= 16",
     "Android >= 7"
+  ],
+  "sideEffects": [
+    "*.css",
+    "moment/locale/*"
   ]
 }

@@ -148,32 +148,6 @@ export const defaultMenuConfig: MenuItem[] = [
     ],
   },
   {
-    key: 'students',
-    label: '学生管理',
-    icon: 'graduation-cap',
-    requiredPermissions: ['view_students'],
-    children: [
-      {
-        key: 'students-list',
-        label: '学生列表',
-        path: '/students',
-        requiredPermissions: ['view_students'],
-      },
-      {
-        key: 'students-add',
-        label: '新增学生',
-        path: '/students/add',
-        requiredPermissions: ['add_students'],
-      },
-      {
-        key: 'students-contact',
-        label: '学生联系方式',
-        path: '/students/contact',
-        requiredPermissions: ['view_students_contact'],
-      },
-    ],
-  },
-  {
     key: 'classes',
     label: '课程管理',
     icon: 'book',
