@@ -702,19 +702,48 @@ export interface UnavailableEvent {
 export type ScheduleEvent = LessonEvent | UnavailableEvent;
 
 // 新的API数据结构
+/*
+课程相关的interface
+新增：
+event_type = 2
+add_lesson = 1
+subject_id 
+start_time
+end_time
+room_id
+
+删除
+event_type = 2
+delete_ids = "lesson_id, lesson_id"
+
+编辑
+event_type = 2
+change_lesson = 1
+subject_id 
+start_time
+end_time
+lesson_id
+room_id
+*/
 export interface LessonEventAPI {
   event_type: 2;
   time_list: Array<{
+    lesson_id?: string;
     subject: string;
     campus: string;
     pickRoom: string;
     replaceRoomWhenBooked: boolean;
     date: string;
-    startTime: string;
-    endTime: string;
+    start_time: number;
+    end_time: number;
   }>;
 }
 
+/*
+删除相关
+event_type = 1 
+time_list = [{"start_time": 111, "end_time":222},{"start_time": 111, "end_time":222}]
+*/
 export interface UnavailableEventAPI {
   event_type: 1;
   time_list: Array<{
@@ -725,24 +754,38 @@ export interface UnavailableEventAPI {
 
 export type ScheduleEventAPI = LessonEventAPI | UnavailableEventAPI;
 
-export async function updateScheduleEvent(event: ScheduleEvent) {
-  const url = `/api/staff/schedule/update`;
+
+
+// /api/staff/update_staff_schedule/{staff_id} 更新老师课表
+export async function updateStaffSchedule(staffId: string, scheduleData: LessonEventAPI) {
+  const url = `/api/staff/update_staff_schedule/${staffId}`;
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...getAuthHeader(),
   };
+  scheduleData.time_list = scheduleData.time_list.map(item => {
+    return {
+      ...item,
+      start_time: item.start_time / 1000,
+      end_time: item.end_time / 1000
+    }
+  });
   const response = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify(event),
+    body: JSON.stringify(scheduleData),
   });
   const data = await response.json();
   return data;
 }
 
-// 新的API函数，支持批量操作和用户要求的数据结构
-export async function updateScheduleEventBatch(eventData: ScheduleEventAPI) {
-  const url = `/api/staff/schedule/update`;
+// /api/staff/update_staff_unavailable/{staff_id} 更新老师不可用时间
+export async function updateStaffUnavailable(staffId: string, unavailableData: UnavailableEventAPI) {
+  const url = `/api/staff/update_staff_unavailable/${staffId}`;
+  unavailableData.time_list = unavailableData.time_list.map(item => ({
+    start_time: item.start_time / 1000,
+    end_time: item.end_time / 1000
+  }));
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...getAuthHeader(),
@@ -750,8 +793,56 @@ export async function updateScheduleEventBatch(eventData: ScheduleEventAPI) {
   const response = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify(eventData),
+    body: JSON.stringify(unavailableData),
   });
   const data = await response.json();
   return data;
+}
+
+// 新增课程参数
+export interface AddLessonParams {
+  subject_id: string;
+  start_time: string;
+  end_time: string;
+  room_id: string;
+}
+
+// 编辑课程参数
+export interface EditLessonParams {
+  lesson_id: string;
+  subject_id: string;
+  start_time: string;
+  end_time: string;
+  room_id: string;
+}
+
+// 删除课程参数
+export interface DeleteLessonParams {
+  lesson_ids: string[];
+}
+
+// 新增课程
+export async function addStaffLesson(staffId: string, params: AddLessonParams) {
+  return updateStaffSchedule(staffId, {
+    event_type: 2,
+    add_lesson: 1,
+    ...params
+  } as any);
+}
+
+// 编辑课程
+export async function editStaffLesson(staffId: string, params: EditLessonParams) {
+  return updateStaffSchedule(staffId, {
+    event_type: 2,
+    change_lesson: 1,
+    ...params
+  } as any);
+}
+
+// 删除课程
+export async function deleteStaffLesson(staffId: string, params: DeleteLessonParams) {
+  return updateStaffSchedule(staffId, {
+    event_type: 2,
+    delete_ids: params.lesson_ids.join(',')
+  } as any);
 }

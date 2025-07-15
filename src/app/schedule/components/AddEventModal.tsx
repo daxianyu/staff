@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import moment from 'moment';
 import TimePicker from '../../../components/TimePicker';
 import Button from '../../../components/Button';
-import { updateScheduleEventBatch, type ScheduleEventAPI } from '@/services/auth';
 
 interface ScheduleEvent {
   id: string;
@@ -19,12 +18,15 @@ interface ScheduleEvent {
 interface AddEventModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onTimeChange: (startTime: string, endTime: string) => void;
   onSave: (event: Partial<ScheduleEvent> & { 
     repeat?: 'none' | 'weekly';
     subject?: string;
     campus?: string;
     pickRoom?: string;
     replaceRoomWhenBooked?: boolean;
+    id?: string; // 新增id字段
+    mode?: 'add' | 'edit'; // 新增mode字段
   }) => void;
   onRepeatChange?: (repeat: 'none' | 'weekly') => void;
   selectedDate?: Date;
@@ -35,6 +37,11 @@ interface AddEventModalProps {
   scheduleData?: any;
   staffId?: string;
   onRefreshData?: () => void; // 添加刷新数据的回调
+  isSaving?: boolean;
+  mode?: 'add' | 'edit';
+  initialEvent?: any; // ScheduleEvent
+  onDelete?: () => void;
+  onDeleteUnavailable?: (conflicts: Array<{ start: Date; end: Date }>) => void;
 }
 
 export default function AddEventModal({ 
@@ -42,6 +49,7 @@ export default function AddEventModal({
   onClose, 
   onSave,
   onRepeatChange,
+  onTimeChange,
   selectedDate,
   selectedTimeRange,
   position,
@@ -49,7 +57,12 @@ export default function AddEventModal({
   onConflictCheck,
   scheduleData,
   staffId = '',
-  onRefreshData
+  onRefreshData,
+  isSaving = false,
+  mode = 'add',
+  initialEvent,
+  onDelete,
+  onDeleteUnavailable
 }: AddEventModalProps) {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('09:15');
@@ -65,9 +78,6 @@ export default function AddEventModal({
   const [selectedCampus, setSelectedCampus] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [replaceRoomWhenBooked, setReplaceRoomWhenBooked] = useState(false);
-
-  // 保存状态
-  const [isSaving, setIsSaving] = useState(false);
 
   // 拖拽相关状态
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -97,7 +107,7 @@ export default function AddEventModal({
       setSelectedCampus('');
       setSelectedRoom('');
       setReplaceRoomWhenBooked(false);
-      setIsSaving(false);
+      // setIsSaving(false); // 移除重复声明
     } else {
       // 初始化默认值
       if (scheduleData?.staff_class) {
@@ -114,6 +124,21 @@ export default function AddEventModal({
       }
     }
   }, [isOpen, scheduleData]);
+
+  // 如果是编辑模式，初始化表单为 initialEvent
+  useEffect(() => {
+    if (mode === 'edit' && initialEvent) {
+      setStartTime(moment(initialEvent.start).format('HH:mm'));
+      setEndTime(moment(initialEvent.end).format('HH:mm'));
+      setEventType(initialEvent.type);
+      setDescription(initialEvent.description || '');
+      setRepeat(initialEvent.repeat || 'none');
+      setSelectedSubject(initialEvent.subject || '');
+      setSelectedCampus(initialEvent.campus || '');
+      setSelectedRoom(initialEvent.pickRoom || '');
+      setReplaceRoomWhenBooked(!!initialEvent.replaceRoomWhenBooked);
+    }
+  }, [mode, initialEvent, isOpen]);
 
   // 添加ESC键关闭功能
   useEffect(() => {
@@ -265,123 +290,35 @@ export default function AddEventModal({
 
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedDate || isSaving) return;
-
-    setIsSaving(true);
-
-    try {
-      const [startHour, startMin] = startTime.split(':').map(Number);
-      const [endHour, endMin] = endTime.split(':').map(Number);
-      
-      const start = new Date(selectedDate);
-      start.setHours(startHour, startMin, 0, 0);
-      
-      const end = new Date(selectedDate);
-      end.setHours(endHour, endMin, 0, 0);
-
-      // 构造API数据结构
-      let apiEventData: ScheduleEventAPI;
-      
-      if (eventType === 'lesson') {
-        // 课程事件：event_type = 2
-        const lessonTimeData = {
-          subject: selectedSubject,
-          campus: selectedCampus,
-          pickRoom: selectedRoom,
-          replaceRoomWhenBooked,
-          date: moment(selectedDate).format('YYYY-MM-DD'),
-          startTime: startTime,
-          endTime: endTime
-        };
-
-        // 如果是周内重复，生成多个时间条目
-        let timeList = [lessonTimeData];
-        if (repeat === 'weekly') {
-          timeList = [];
-          const startMoment = moment(selectedDate);
-          for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
-            if (d.day() === 0 || d.day() === 6) continue; // 跳过周末
-            timeList.push({
-              ...lessonTimeData,
-              date: d.format('YYYY-MM-DD')
-            });
-          }
-        }
-
-        apiEventData = {
-          event_type: 2,
-          time_list: timeList
-        };
-      } else {
-        // 不可用事件：event_type = 1
-        const unavailableTimeData = {
-          start_time: start.getTime(),
-          end_time: end.getTime()
-        };
-
-        // 如果是周内重复，生成多个时间条目
-        let timeList = [unavailableTimeData];
-        if (repeat === 'weekly') {
-          timeList = [];
-          const startMoment = moment(selectedDate);
-          for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
-            if (d.day() === 0 || d.day() === 6) continue; // 跳过周末
-            const dayStart = d.clone().hour(startHour).minute(startMin).toDate();
-            const dayEnd = d.clone().hour(endHour).minute(endMin).toDate();
-            timeList.push({
-              start_time: dayStart.getTime(),
-              end_time: dayEnd.getTime()
-            });
-          }
-        }
-
-        apiEventData = {
-          event_type: 1,
-          time_list: timeList
-        };
-      }
-
-      // 调用API
-      const response = await updateScheduleEventBatch(apiEventData);
-      
-      if (response.status === 0) {
-        // 成功后调用原有的onSave以更新UI
-        const subjectName = eventType === 'lesson' && scheduleData?.staff_class 
-          ? scheduleData.staff_class[selectedSubject] 
-          : '';
-
-        onSave({
-          start,
-          end,
-          type: eventType,
-          description,
-          teacherId: 'teacher1',
-          teacherName: '张老师',
-          repeat,
-          subject: subjectName,
-          campus: selectedCampus,
-          pickRoom: selectedRoom,
-          replaceRoomWhenBooked,
-        });
-
-        // 刷新数据
-        onRefreshData?.();
-        
-        onClose();
-      } else {
-        console.error('保存失败:', response.message);
-        alert(`保存失败: ${response.message}`);
-      }
-    } catch (error) {
-      console.error('保存异常:', error);
-      alert('保存失败，请重试');
-    } finally {
-      setIsSaving(false);
-    }
+    if (!selectedDate) return;
+    // 收集表单数据
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    const start = new Date(selectedDate);
+    start.setHours(startHour, startMin, 0, 0);
+    const end = new Date(selectedDate);
+    end.setHours(endHour, endMin, 0, 0);
+    // 传递所有表单数据给父组件
+    onSave({
+      start,
+      end,
+      type: eventType,
+      description,
+      teacherId: 'teacher1',
+      teacherName: '张老师',
+      repeat,
+      subject: eventType === 'lesson' && scheduleData?.staff_class ? scheduleData.staff_class[selectedSubject] : '',
+      campus: selectedCampus,
+      pickRoom: selectedRoom,
+      replaceRoomWhenBooked,
+      id: initialEvent?.id,
+      mode
+    });
   };
+
+  const conflictOnlyDelete = currentConflicts && currentConflicts.length > 0;
 
   if (!shouldShow) return null;
 
@@ -650,7 +587,9 @@ export default function AddEventModal({
             style={{ userSelect: 'none' }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-900">添加课程安排</h3>
+              <h3 className="text-base font-semibold text-gray-900">
+                {conflictOnlyDelete ? '删除不可用时间段' : '添加课程安排'}
+              </h3>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
@@ -662,227 +601,252 @@ export default function AddEventModal({
                 </svg>
               </button>
             </div>
-            
-            {/* 时间冲突提示 */}
-            {currentConflicts && currentConflicts.length > 0 && (
+            {conflictOnlyDelete && (
               <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-2">
-                    <p className="text-xs font-medium text-yellow-800">
-                      时间冲突提示
-                    </p>
-                    <p className="text-xs text-yellow-700">
-                      所选时间段与不可用时间段重合：
-                      {currentConflicts.map((slot, index) => (
-                        <span key={index} className="ml-1 font-medium">
-                          {moment(slot.start).format('HH:mm')}-{moment(slot.end).format('HH:mm')}
-                          {index < currentConflicts.length - 1 && '，'}
-                        </span>
-                      ))}
-                    </p>
-                  </div>
-                </div>
+                <p className="text-xs text-yellow-700">
+                  所选时间段与不可用时间段重合，只能删除该不可用时间段。
+                </p>
               </div>
             )}
           </div>
           
           {/* 可滚动内容区域 */}
           <div className="flex-1 overflow-y-auto min-h-0 bg-white">
-            <div className="p-4">
-              <div className="space-y-3">
-                {/* 类型选择放在最顶部 */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    类型
-                  </label>
-                  <select
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value as any)}
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="lesson">课程</option>
-                    <option value="unavailable">不可用时段</option>
-                  </select>
-                </div>
-
-                {/* 课程相关字段，仅在类型为 lesson 时显示 */}
-                {eventType === 'lesson' && (
-                  <>
-                    {scheduleData?.staff_class && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Class Subject</label>
-                        <select 
-                          value={selectedSubject}
-                          onChange={(e) => setSelectedSubject(e.target.value)}
-                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                        >
-                          {Object.entries(scheduleData.staff_class as Record<string, string>).map(([id, name]) => (
-                            <option key={id} value={id}>{name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    {scheduleData?.campus_info && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Campus rooms</label>
-                        <select 
-                          value={selectedCampus}
-                          onChange={(e) => setSelectedCampus(e.target.value)}
-                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                        >
-                          {Object.entries(scheduleData.campus_info as Record<string, string>).map(([id, name]) => (
-                            <option key={id} value={id}>{name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    {scheduleData?.room_info && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Pick room</label>
-                        <select 
-                          value={selectedRoom}
-                          onChange={(e) => setSelectedRoom(e.target.value)}
-                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                        >
-                          {Object.entries(scheduleData.room_info as Record<string, string>).map(([id, name]) => (
-                            <option key={id} value={id}>{name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    {/* 新增字段：replace room when booked */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Replace room when booked</label>
-                      <select 
-                        value={replaceRoomWhenBooked ? 'yes' : 'no'}
-                        onChange={(e) => setReplaceRoomWhenBooked(e.target.value === 'yes')}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+            {conflictOnlyDelete ? (
+              <div className="p-4 text-center text-sm text-gray-700">
+                <p>不可用时间段：{currentConflicts.map((slot, idx) => (
+                  <span key={idx} className="ml-1 font-medium">
+                    {moment(slot.start).format('HH:mm')}-{moment(slot.end).format('HH:mm')}
+                    {idx < currentConflicts.length - 1 && '，'}
+                  </span>
+                ))}</p>
+              </div>
+            ) : (
+              <div className="p-4">
+                <div className="space-y-3">
+                  {/* 类型选择放在最顶部 */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      类型
+                    </label>
+                    {mode === 'edit' ? (
+                      <input
+                        type="text"
+                        value="课程"
+                        readOnly
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-gray-50"
+                      />
+                    ) : (
+                      <select
+                        value={eventType}
+                        onChange={(e) => setEventType(e.target.value as any)}
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="yes">是</option>
-                        <option value="no">否</option>
+                        <option value="lesson">课程</option>
+                        <option value="unavailable">不可用时段</option>
                       </select>
-                    </div>
-                  </>
-                )}
+                    )}
+                  </div>
 
-                {/* 重复相关字段，所有类型都显示 */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Repeat</label>
-                  <select
-                    value={repeat}
-                    onChange={e => {
-                      const value = e.target.value as 'none' | 'weekly';
-                      setRepeat(value);
-                      onRepeatChange?.(value);
-                    }}
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                  >
-                    <option value="none">不重复</option>
-                    <option value="weekly">周内重复</option>
-                  </select>
-                </div>
+                  {/* 课程相关字段，仅在类型为 lesson 时显示 */}
+                  {eventType === 'lesson' && (
+                    <>
+                      {scheduleData?.staff_class && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Class Subject</label>
+                          <select 
+                            value={selectedSubject}
+                            onChange={(e) => setSelectedSubject(e.target.value)}
+                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                          >
+                            {Object.entries(scheduleData.staff_class as Record<string, string>).map(([id, name]) => (
+                              <option key={id} value={id}>{name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {scheduleData?.campus_info && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Campus rooms</label>
+                          <select 
+                            value={selectedCampus}
+                            onChange={(e) => setSelectedCampus(e.target.value)}
+                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                          >
+                            {Object.entries(scheduleData.campus_info as Record<string, string>).map(([id, name]) => (
+                              <option key={id} value={id}>{name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {scheduleData?.room_info && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Pick room</label>
+                          <select 
+                            value={selectedRoom}
+                            onChange={(e) => setSelectedRoom(e.target.value)}
+                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                          >
+                            {Object.entries(scheduleData.room_info as Record<string, string>).map(([id, name]) => (
+                              <option key={id} value={id}>{name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {/* 新增字段：replace room when booked */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Replace room when booked</label>
+                        <select 
+                          value={replaceRoomWhenBooked ? 'yes' : 'no'}
+                          onChange={(e) => setReplaceRoomWhenBooked(e.target.value === 'yes')}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                        >
+                          <option value="yes">是</option>
+                          <option value="no">否</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+
+                  {/* 重复相关字段，所有类型都显示 */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Repeat</label>
+                    <select
+                      value={repeat}
+                      onChange={e => {
+                        const value = e.target.value as 'none' | 'weekly';
+                        setRepeat(value);
+                        onRepeatChange?.(value);
+                      }}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                    >
+                      <option value="none">不重复</option>
+                      <option value="weekly">周内重复</option>
+                    </select>
+                  </div>
 
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    选择日期
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedDate ? moment(selectedDate).format('YYYY-MM-DD') : ''}
-                    readOnly
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-gray-50"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      选择日期
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedDate ? moment(selectedDate).format('YYYY-MM-DD') : ''}
+                      readOnly
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-gray-50"
+                    />
+                  </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <TimePicker
-                    label="开始时间"
-                    value={startTime}
-                    onChange={(newStartTime) => {
-                      setStartTime(newStartTime);
-                      
-                      // 如果新的开始时间晚于当前结束时间，自动调整结束时间
-                      if (newStartTime >= endTime) {
-                        // 找到开始时间后的下一个15分钟间隔作为结束时间
-                        const [hours, minutes] = newStartTime.split(':').map(Number);
-                        const nextMinutes = minutes + 15;
-                        const nextHours = nextMinutes >= 60 ? hours + 1 : hours;
-                        const adjustedMinutes = nextMinutes >= 60 ? nextMinutes - 60 : nextMinutes;
-                        
-                        const newEndTime = `${nextHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
-                        
-                        // 确保新的结束时间不超过当天的最晚时间
-                        const finalEndTime = newEndTime <= DAY_END_TIME ? newEndTime : DAY_END_TIME;
-                        setEndTime(finalEndTime);
-                      }
-                    }}
-                    {...getStartTimeConstraints()}
-                  />
-                  <TimePicker
-                    label="结束时间"
-                    value={endTime}
-                    onChange={(newEndTime) => {
-                      setEndTime(newEndTime);
-                      
-                      // 如果新的结束时间早于当前开始时间，自动调整开始时间
-                      if (newEndTime <= startTime) {
-                        // 找到结束时间前的上一个15分钟间隔作为开始时间
-                        const [hours, minutes] = newEndTime.split(':').map(Number);
-                        const prevMinutes = minutes - 15;
-                        const prevHours = prevMinutes < 0 ? hours - 1 : hours;
-                        const adjustedMinutes = prevMinutes < 0 ? prevMinutes + 60 : prevMinutes;
-                        
-                        const newStartTime = `${prevHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
-                        
-                        // 确保新的开始时间不早于当天的最早时间
-                        const finalStartTime = newStartTime >= DAY_START_TIME ? newStartTime : DAY_START_TIME;
-                        setStartTime(finalStartTime);
-                      }
-                    }}
-                    {...getEndTimeConstraints()}
-                  />
-                </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <TimePicker
+                      label="开始时间"
+                      value={startTime}
+                      onChange={(newStartTime) => {
+                        setStartTime(newStartTime);
+                        onTimeChange(newStartTime, endTime);
+                        // 如果新的开始时间晚于当前结束时间，自动调整结束时间
+                        if (newStartTime >= endTime) {
+                          // 找到开始时间后的下一个15分钟间隔作为结束时间
+                          const [hours, minutes] = newStartTime.split(':').map(Number);
+                          const nextMinutes = minutes + 15;
+                          const nextHours = nextMinutes >= 60 ? hours + 1 : hours;
+                          const adjustedMinutes = nextMinutes >= 60 ? nextMinutes - 60 : nextMinutes;
+                          
+                          const newEndTime = `${nextHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
+                          
+                          // 确保新的结束时间不超过当天的最晚时间
+                          const finalEndTime = newEndTime <= DAY_END_TIME ? newEndTime : DAY_END_TIME;
+                          setEndTime(finalEndTime);
+                          onTimeChange(newStartTime, finalEndTime);
+                        }
+                      }}
+                      {...getStartTimeConstraints()}
+                    />
+                    <TimePicker
+                      label="结束时间"
+                      value={endTime}
+                      onChange={(newEndTime) => {
+                        setEndTime(newEndTime);
+                        onTimeChange(startTime, newEndTime);
+                        // 如果新的结束时间早于当前开始时间，自动调整开始时间
+                        if (newEndTime <= startTime) {
+                          // 找到结束时间前的上一个15分钟间隔作为开始时间
+                          const [hours, minutes] = newEndTime.split(':').map(Number);
+                          const prevMinutes = minutes - 15;
+                          const prevHours = prevMinutes < 0 ? hours - 1 : hours;
+                          const adjustedMinutes = prevMinutes < 0 ? prevMinutes + 60 : prevMinutes;
+                          
+                          const newStartTime = `${prevHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
+                          
+                          // 确保新的开始时间不早于当天的最早时间
+                          const finalStartTime = newStartTime >= DAY_START_TIME ? newStartTime : DAY_START_TIME;
+                          setStartTime(finalStartTime);
+                          onTimeChange(finalStartTime, newEndTime);
+                        }
+                      }}
+                      {...getEndTimeConstraints()}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    描述（可选）
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={2}
-                    placeholder="请输入课程描述"
-                  />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      描述（可选）
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      rows={2}
+                      placeholder="请输入课程描述"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
           
           {/* 固定底部按钮区域 */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-white rounded-b-lg">
             <div className="flex justify-end space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-              >
-                取消
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSubmit}
-                disabled={!selectedDate || !startTime || !endTime || isSaving}
-              >
-                {isSaving ? '保存中...' : '保存'}
-              </Button>
+              {conflictOnlyDelete ? (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => onDeleteUnavailable?.(currentConflicts)}
+                  disabled={isSaving}
+                >
+                  删除不可用时间段
+                </Button>
+              ) : (
+                <>
+                  {mode === 'edit' && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={onDelete}
+                      disabled={isSaving}
+                    >
+                      删除
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClose}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleSubmit}
+                    disabled={!selectedDate || !startTime || !endTime || isSaving}
+                  >
+                    {isSaving ? '保存中...' : '保存'}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

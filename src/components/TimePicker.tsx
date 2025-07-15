@@ -129,7 +129,7 @@ export default function TimePicker({
             sideOffset={5}
             style={{ zIndex: 1100 }}
           >
-            <div className="grid gap-1">
+            <div className="grid gap-1 staff-time-picker-content">
               {timeOptions.length > 0 ? (
                 timeOptions.map((time) => (
                   <button
