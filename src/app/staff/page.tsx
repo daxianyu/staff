@@ -361,7 +361,7 @@ export default function StaffPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4 sm:w-auto">
                       Campus
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-16 sm:w-20">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 sm:w-20">
                       Action
                     </th>
                   </tr>
@@ -379,9 +379,39 @@ export default function StaffPage() {
                         <div className="text-sm text-gray-900 truncate">{staff.campus}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium w-16 sm:w-20">
-                        <div className="relative inline-block">
-                          {/* Dropdown 按钮 - 只有有权限时才显示 */}
-                          {hasAnyActionPermission ? (
+                        <div className="flex items-center justify-end space-x-1">
+                          {/* 常见操作按钮 */}
+                          
+                          {/* Staff Schedule - 最常见的操作 */}
+                          {canViewStaffDetails && (
+                            <Link href={`/schedule?staffId=${staff.staff_id}`} legacyBehavior>
+                              <a
+                                className="flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-manipulation"
+                                title="Staff Schedule"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </a>
+                            </Link>
+                          )}
+
+                          {/* Staff Info - 第二常见的操作 */}
+                          {canViewStaffDetails && (
+                            <Link href={`/staff/user?userId=${staff.staff_id}`} legacyBehavior>
+                              <a
+                                className="flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 touch-manipulation"
+                                title="Staff Info"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </a>
+                            </Link>
+                          )}
+
+                          {/* 更多操作下拉菜单 - 只有有权限时才显示 */}
+                          {hasAnyActionPermission && (
                             <button
                               ref={(el) => {
                                 if (el) {
@@ -391,7 +421,7 @@ export default function StaffPage() {
                                 }
                               }}
                               onClick={() => toggleRowExpansion(staff.staff_id)}
-                              className="action-toggle flex items-center justify-center w-8 h-8 sm:w-8 sm:h-8 md:w-8 md:h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
+                              className="action-toggle flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
                               title="More Actions"
                             >
                               <svg
@@ -408,10 +438,12 @@ export default function StaffPage() {
                                 />
                               </svg>
                             </button>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
                           )}
 
+                          {/* 如果没有权限，显示占位符 */}
+                          {!hasAnyActionPermission && (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -439,21 +471,6 @@ export default function StaffPage() {
                         </Link>
                       )}
 
-                      {/* Staff info - 需要 view_staff 权限 */}
-                      {canViewStaffDetails && (
-                        <Link href={`/staff/user?userId=${staff.staff_id}`} legacyBehavior>
-                          <a
-                            className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 flex items-center gap-3 transition-colors touch-manipulation"
-                            onClick={() => setExpandedRows(new Set())}
-                          >
-                            <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Staff Info
-                          </a>
-                        </Link>
-                      )}
-
                       {/* Staff edit - 需要 edit_staff 权限 */}
                       {canEditStaff && (
                         <button
@@ -468,21 +485,6 @@ export default function StaffPage() {
                           </svg>
                           Staff Edit
                         </button>
-                      )}
-
-                      {/* Staff schedule - 需要 view_staff 权限 */}
-                      {canViewStaffDetails && (
-                        <Link href={`/schedule?staffId=${staff.staff_id}`} legacyBehavior>
-                          <a
-                            className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors touch-manipulation"
-                            onClick={() => setExpandedRows(new Set())}
-                          >
-                            <svg className="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            Staff Schedule
-                          </a>
-                        </Link>
                       )}
 
                       {/* Default availability - 需要 view_staff 权限 */}

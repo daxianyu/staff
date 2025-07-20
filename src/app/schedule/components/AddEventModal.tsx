@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import moment from 'moment';
 import TimePicker from '../../../components/TimePicker';
 import Button from '../../../components/Button';
+import NumberInput from '../../../components/NumberInput';
 
 interface ScheduleEvent {
   id: string;
@@ -10,7 +11,7 @@ interface ScheduleEvent {
   end: Date;
   teacherId: string;
   teacherName: string;
-  type: 'lesson' | 'unavailable';  // 移除 'available'，只保留课程和不可用事件
+  type: 'lesson' | 'unavailable' | 'invigilate';  // 添加监考类型
   description?: string;
   repeat?: 'none' | 'weekly';
 }
@@ -27,6 +28,9 @@ interface AddEventModalProps {
     replaceRoomWhenBooked?: boolean;
     id?: string; // 新增id字段
     mode?: 'add' | 'edit'; // 新增mode字段
+    topic_id?: string; // 监考科目ID
+    note?: string; // 监考备注
+    repeat_num?: number; // 重复次数
   }) => void;
   onRepeatChange?: (repeat: 'none' | 'weekly') => void;
   selectedDate?: Date;
@@ -39,9 +43,11 @@ interface AddEventModalProps {
   onRefreshData?: () => void; // 添加刷新数据的回调
   isSaving?: boolean;
   mode?: 'add' | 'edit';
+  readOnly?: boolean; // 新增：是否为只读模式
   initialEvent?: any; // ScheduleEvent
-  onDelete?: () => void;
+  onDelete?: (repeat_num?: number) => void; // 支持删除多周
   onDeleteUnavailable?: (conflicts: Array<{ start: Date; end: Date }>) => void;
+  onEditFromReadOnly?: () => void; // 从只读模式进入编辑的回调
 }
 
 export default function AddEventModal({ 
@@ -60,13 +66,15 @@ export default function AddEventModal({
   onRefreshData,
   isSaving = false,
   mode = 'add',
+  readOnly = false,
   initialEvent,
   onDelete,
-  onDeleteUnavailable
+  onDeleteUnavailable,
+  onEditFromReadOnly
 }: AddEventModalProps) {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('09:15');
-  const [eventType, setEventType] = useState<'lesson' | 'unavailable'>('lesson');
+  const [eventType, setEventType] = useState<'lesson' | 'unavailable' | 'invigilate'>('invigilate');
   const [description, setDescription] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
@@ -78,6 +86,15 @@ export default function AddEventModal({
   const [selectedCampus, setSelectedCampus] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [replaceRoomWhenBooked, setReplaceRoomWhenBooked] = useState(false);
+
+  // 监考相关表单字段
+  const [selectedTopic, setSelectedTopic] = useState('');
+  const [note, setNote] = useState('');
+  const [repeatNum, setRepeatNum] = useState(1);
+
+  // 删除相关状态
+  const [showDeleteMode, setShowDeleteMode] = useState(false);
+  const [deleteRepeatNum, setDeleteRepeatNum] = useState(1);
 
   // 拖拽相关状态
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -100,19 +117,23 @@ export default function AddEventModal({
     if (!isOpen) {
       setStartTime('09:00');
       setEndTime('09:15');
-      setEventType('lesson');
+      setEventType('invigilate');
       setDescription('');
-      setRepeat('none');
+      setRepeat('none'); // 默认不重复
       setSelectedSubject('');
       setSelectedCampus('');
       setSelectedRoom('');
       setReplaceRoomWhenBooked(false);
-      // setIsSaving(false); // 移除重复声明
+      setSelectedTopic('');
+      setNote('');
+      setRepeatNum(1);
+      setShowDeleteMode(false);
+      setDeleteRepeatNum(1);
     } else {
       // 初始化默认值
-      if (scheduleData?.staff_class) {
-        const firstSubject = Object.keys(scheduleData.staff_class)[0];
-        setSelectedSubject(firstSubject || '');
+      if (scheduleData?.class_topics) {
+        const firstTopic = Object.keys(scheduleData.class_topics)[0];
+        setSelectedTopic(firstTopic || '');
       }
       if (scheduleData?.campus_info) {
         const firstCampus = Object.keys(scheduleData.campus_info)[0];
@@ -135,10 +156,26 @@ export default function AddEventModal({
       setRepeat(initialEvent.repeat || 'none');
       setSelectedSubject(initialEvent.subject || '');
       setSelectedCampus(initialEvent.campus || '');
-      setSelectedRoom(initialEvent.pickRoom || '');
+      // 编辑模式下，优先使用 room_id，如果没有则使用 pickRoom
+      setSelectedRoom(initialEvent.room_id?.toString() || initialEvent.pickRoom || '');
       setReplaceRoomWhenBooked(!!initialEvent.replaceRoomWhenBooked);
+      setSelectedTopic(initialEvent.topic_id || '');
+      setNote(initialEvent.note || '');
+      setRepeatNum(initialEvent.repeat_num || 1);
     }
   }, [mode, initialEvent, isOpen]);
+
+  // 根据事件类型设置默认重复值
+  useEffect(() => {
+    if (isOpen && mode !== 'edit') {
+      if (eventType === 'unavailable') {
+        setRepeat('none'); // 不可用事件默认为"重复"
+      } else if (eventType === 'lesson') {
+        setRepeat('none'); // 课程默认为"不重复"
+      }
+      // 监考事件不设置重复值，因为不需要重复功能
+    }
+  }, [eventType, isOpen, mode]);
 
   // 添加ESC键关闭功能
   useEffect(() => {
@@ -309,12 +346,15 @@ export default function AddEventModal({
       teacherId: 'teacher1',
       teacherName: '张老师',
       repeat,
-      subject: eventType === 'lesson' && scheduleData?.staff_class ? scheduleData.staff_class[selectedSubject] : '',
+      subject: eventType === 'lesson' ? selectedSubject : '',
       campus: selectedCampus,
       pickRoom: selectedRoom,
       replaceRoomWhenBooked,
       id: initialEvent?.id,
-      mode
+      mode,
+      topic_id: eventType === 'invigilate' ? selectedTopic : '',
+      note: eventType === 'invigilate' ? note : '',
+      repeat_num: repeatNum
     });
   };
 
@@ -588,7 +628,10 @@ export default function AddEventModal({
           >
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-gray-900">
-                {conflictOnlyDelete ? '删除不可用时间段' : '添加课程安排'}
+                {conflictOnlyDelete ? '删除不可用时间段' : 
+                 showDeleteMode ? '删除确认' :
+                 readOnly ? '课程详情' :
+                 mode === 'edit' ? '编辑安排' : '添加安排'}
               </h3>
               <button
                 onClick={onClose}
@@ -621,6 +664,48 @@ export default function AddEventModal({
                   </span>
                 ))}</p>
               </div>
+            ) : showDeleteMode ? (
+              <div className="p-4">
+                <div className="text-center text-sm text-gray-700 mb-4">
+                  <p className="text-red-600 font-medium mb-2">确认删除以下安排？</p>
+                  <p className="text-gray-600">
+                    {initialEvent?.title || '未知安排'} - {moment(initialEvent?.start).format('MM月DD日 HH:mm')} 至 {moment(initialEvent?.end).format('HH:mm')}
+                  </p>
+                </div>
+                
+                {/* 删除周数设置 - 仅对课程显示 */}
+                {initialEvent?.type === 'lesson' && (
+                  <>
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                      <h4 className="text-sm font-medium text-red-800 mb-2">删除设置</h4>
+                      <NumberInput
+                        label="删除周数"
+                        value={deleteRepeatNum}
+                        onChange={setDeleteRepeatNum}
+                        min={1}
+                        max={52}
+                        size="sm"
+                        helpText="设置要删除的周数"
+                      />
+                    </div>
+                    
+                    <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                      <p className="text-yellow-700 text-xs">
+                        删除后将同时删除后续 {deleteRepeatNum} 周的相同安排
+                      </p>
+                    </div>
+                  </>
+                )}
+                
+                {/* 监考删除提示 */}
+                {initialEvent?.type === 'invigilate' && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <p className="text-red-700 text-sm">
+                      确认删除此监考安排？删除后无法恢复。
+                    </p>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="p-4">
                 <div className="space-y-3">
@@ -629,10 +714,10 @@ export default function AddEventModal({
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       类型
                     </label>
-                    {mode === 'edit' ? (
+                    {(mode === 'edit' || readOnly) ? (
                       <input
                         type="text"
-                        value="课程"
+                        value={eventType === 'lesson' ? '课程' : eventType === 'invigilate' ? '监考' : '不可用时段'}
                         readOnly
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-gray-50"
                       />
@@ -642,7 +727,7 @@ export default function AddEventModal({
                         onChange={(e) => setEventType(e.target.value as any)}
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="lesson">课程</option>
+                        <option value="invigilate">监考</option>
                         <option value="unavailable">不可用时段</option>
                       </select>
                     )}
@@ -651,156 +736,287 @@ export default function AddEventModal({
                   {/* 课程相关字段，仅在类型为 lesson 时显示 */}
                   {eventType === 'lesson' && (
                     <>
-                      {scheduleData?.staff_class && (
+                      {/* 只读模式下显示教师和学生信息 */}
+                      {readOnly && (
+                        <>
+                          {initialEvent?.teacherName && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">教师</label>
+                              <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                                {initialEvent.teacherName}
+                              </p>
+                            </div>
+                          )}
+                          {initialEvent?.students && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">学生</label>
+                              <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                                {initialEvent.students}
+                              </p>
+                            </div>
+                          )}
+                          {initialEvent?.student_name && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">学生姓名</label>
+                              <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                                {initialEvent.student_name}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {/* 编辑模式下显示可编辑字段 */}
+                      {!readOnly && (
+                        <>
+                          {scheduleData?.staff_class && mode !== 'edit' && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Class Subject</label>
+                              <select 
+                                value={selectedSubject}
+                                onChange={(e) => setSelectedSubject(e.target.value)}
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                              >
+                                {Object.entries(scheduleData.staff_class as Record<string, string>).map(([id, name]) => (
+                                  <option key={id} value={id}>{name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          {scheduleData?.campus_info && mode !== 'edit' && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Campus rooms</label>
+                              <select 
+                                value={selectedCampus}
+                                onChange={(e) => setSelectedCampus(e.target.value)}
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                              >
+                                {Object.entries(scheduleData.campus_info as Record<string, string>).map(([id, name]) => (
+                                  <option key={id} value={id}>{name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          {scheduleData?.room_info && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Pick room</label>
+                              <select 
+                                value={selectedRoom}
+                                onChange={(e) => setSelectedRoom(e.target.value)}
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                              >
+                                {Object.entries(scheduleData.room_info as Record<string, string>).map(([id, name]) => (
+                                  <option key={id} value={id}>{name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          {/* 新增字段：replace room when booked - 编辑模式下不显示 */}
+                          {mode !== 'edit' && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Replace room when booked</label>
+                              <select 
+                                value={replaceRoomWhenBooked ? 'yes' : 'no'}
+                                onChange={(e) => setReplaceRoomWhenBooked(e.target.value === 'yes')}
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                              >
+                                <option value="yes">是</option>
+                                <option value="no">否</option>
+                              </select>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {/* 监考相关字段，仅在类型为 invigilate 时显示 */}
+                  {eventType === 'invigilate' && (
+                    <>
+                      {scheduleData?.class_topics && (
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Class Subject</label>
-                          <select 
-                            value={selectedSubject}
-                            onChange={(e) => setSelectedSubject(e.target.value)}
-                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                          >
-                            {Object.entries(scheduleData.staff_class as Record<string, string>).map(([id, name]) => (
-                              <option key={id} value={id}>{name}</option>
-                            ))}
-                          </select>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">监考科目</label>
+                          {readOnly ? (
+                            <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                              {scheduleData.class_topics[selectedTopic] || selectedTopic}
+                            </p>
+                          ) : (
+                            <select 
+                              value={selectedTopic}
+                              onChange={(e) => setSelectedTopic(e.target.value)}
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                            >
+                              {Object.entries(scheduleData.class_topics as Record<string, string>).map(([id, name]) => (
+                                <option key={id} value={id}>{name}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       )}
-                      {scheduleData?.campus_info && (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Campus rooms</label>
-                          <select 
-                            value={selectedCampus}
-                            onChange={(e) => setSelectedCampus(e.target.value)}
-                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                          >
-                            {Object.entries(scheduleData.campus_info as Record<string, string>).map(([id, name]) => (
-                              <option key={id} value={id}>{name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                      {scheduleData?.room_info && (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Pick room</label>
-                          <select 
-                            value={selectedRoom}
-                            onChange={(e) => setSelectedRoom(e.target.value)}
-                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                          >
-                            {Object.entries(scheduleData.room_info as Record<string, string>).map(([id, name]) => (
-                              <option key={id} value={id}>{name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                      {/* 新增字段：replace room when booked */}
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Replace room when booked</label>
-                        <select 
-                          value={replaceRoomWhenBooked ? 'yes' : 'no'}
-                          onChange={(e) => setReplaceRoomWhenBooked(e.target.value === 'yes')}
-                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                        >
-                          <option value="yes">是</option>
-                          <option value="no">否</option>
-                        </select>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">备注</label>
+                        {readOnly ? (
+                          <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                            {note}
+                          </p>
+                        ) : (
+                          <textarea
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={2}
+                            placeholder="请输入监考备注"
+                          />
+                        )}
                       </div>
                     </>
                   )}
 
-                  {/* 重复相关字段，所有类型都显示 */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Repeat</label>
-                    <select
-                      value={repeat}
-                      onChange={e => {
-                        const value = e.target.value as 'none' | 'weekly';
-                        setRepeat(value);
-                        onRepeatChange?.(value);
-                      }}
-                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                    >
-                      <option value="none">不重复</option>
-                      <option value="weekly">周内重复</option>
-                    </select>
-                  </div>
+                  {/* 重复相关字段 - 仅对课程和不可用事件，只读模式下不显示 */}
+                  {(eventType === 'lesson' || eventType === 'unavailable') && !readOnly && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">{eventType === "unavailable" ? "重复设置" : "每周重复"}</label>
+                      <div className="space-y-2">
+                        {/* 重复类型选择 */}
+                        <select
+                          value={repeat}
+                          onChange={e => {
+                            const value = e.target.value as 'none' | 'weekly';
+                            setRepeat(value);
+                            // 只有在不可用时间段时，才触发重复设置
+                            if (eventType === 'unavailable') {
+                              onRepeatChange?.(value);
+                            }
+                          }}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                        >
+                          {eventType === 'unavailable' ? (
+                            <>
+                              <option value="none">不重复</option>
+                              <option value="weekly">周内重复</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="none">不重复</option>
+                              <option value="weekly">重复</option>
+                            </>
+                          )}
+                        </select>
+                        
+                        {/* 重复次数输入框 - 仅对课程，且选择重复时显示 */}
+                        {eventType === 'lesson' && repeat === 'weekly' && (
+                          <NumberInput
+                            label="重复次数"
+                            value={repeatNum}
+                            onChange={setRepeatNum}
+                            min={1}
+                            max={52}
+                            size="sm"
+                            helpText="设置重复的周数"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
 
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       选择日期
                     </label>
-                    <input
-                      type="text"
-                      value={selectedDate ? moment(selectedDate).format('YYYY-MM-DD') : ''}
-                      readOnly
-                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-gray-50"
-                    />
+                    <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                      {selectedDate ? moment(selectedDate).format('YYYY-MM-DD') : ''}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <TimePicker
-                      label="开始时间"
-                      value={startTime}
-                      onChange={(newStartTime) => {
-                        setStartTime(newStartTime);
-                        onTimeChange(newStartTime, endTime);
-                        // 如果新的开始时间晚于当前结束时间，自动调整结束时间
-                        if (newStartTime >= endTime) {
-                          // 找到开始时间后的下一个15分钟间隔作为结束时间
-                          const [hours, minutes] = newStartTime.split(':').map(Number);
-                          const nextMinutes = minutes + 15;
-                          const nextHours = nextMinutes >= 60 ? hours + 1 : hours;
-                          const adjustedMinutes = nextMinutes >= 60 ? nextMinutes - 60 : nextMinutes;
-                          
-                          const newEndTime = `${nextHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
-                          
-                          // 确保新的结束时间不超过当天的最晚时间
-                          const finalEndTime = newEndTime <= DAY_END_TIME ? newEndTime : DAY_END_TIME;
-                          setEndTime(finalEndTime);
-                          onTimeChange(newStartTime, finalEndTime);
-                        }
-                      }}
-                      {...getStartTimeConstraints()}
-                    />
-                    <TimePicker
-                      label="结束时间"
-                      value={endTime}
-                      onChange={(newEndTime) => {
-                        setEndTime(newEndTime);
-                        onTimeChange(startTime, newEndTime);
-                        // 如果新的结束时间早于当前开始时间，自动调整开始时间
-                        if (newEndTime <= startTime) {
-                          // 找到结束时间前的上一个15分钟间隔作为开始时间
-                          const [hours, minutes] = newEndTime.split(':').map(Number);
-                          const prevMinutes = minutes - 15;
-                          const prevHours = prevMinutes < 0 ? hours - 1 : hours;
-                          const adjustedMinutes = prevMinutes < 0 ? prevMinutes + 60 : prevMinutes;
-                          
-                          const newStartTime = `${prevHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
-                          
-                          // 确保新的开始时间不早于当天的最早时间
-                          const finalStartTime = newStartTime >= DAY_START_TIME ? newStartTime : DAY_START_TIME;
-                          setStartTime(finalStartTime);
-                          onTimeChange(finalStartTime, newEndTime);
-                        }
-                      }}
-                      {...getEndTimeConstraints()}
-                    />
+                    {readOnly ? (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">开始时间</label>
+                          <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                            {startTime}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">结束时间</label>
+                          <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                            {endTime}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <TimePicker
+                          label="开始时间"
+                          value={startTime}
+                          onChange={(newStartTime) => {
+                            setStartTime(newStartTime);
+                            onTimeChange(newStartTime, endTime);
+                            // 如果新的开始时间晚于当前结束时间，自动调整结束时间
+                            if (newStartTime >= endTime) {
+                              // 找到开始时间后的下一个15分钟间隔作为结束时间
+                              const [hours, minutes] = newStartTime.split(':').map(Number);
+                              const nextMinutes = minutes + 15;
+                              const nextHours = nextMinutes >= 60 ? hours + 1 : hours;
+                              const adjustedMinutes = nextMinutes >= 60 ? nextMinutes - 60 : nextMinutes;
+                              
+                              const newEndTime = `${nextHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
+                              
+                              // 确保新的结束时间不超过当天的最晚时间
+                              const finalEndTime = newEndTime <= DAY_END_TIME ? newEndTime : DAY_END_TIME;
+                              setEndTime(finalEndTime);
+                              onTimeChange(newStartTime, finalEndTime);
+                            }
+                          }}
+                          {...getStartTimeConstraints()}
+                        />
+                        <TimePicker
+                          label="结束时间"
+                          value={endTime}
+                          onChange={(newEndTime) => {
+                            setEndTime(newEndTime);
+                            onTimeChange(startTime, newEndTime);
+                            // 如果新的结束时间早于当前开始时间，自动调整开始时间
+                            if (newEndTime <= startTime) {
+                              // 找到结束时间前的上一个15分钟间隔作为开始时间
+                              const [hours, minutes] = newEndTime.split(':').map(Number);
+                              const prevMinutes = minutes - 15;
+                              const prevHours = prevMinutes < 0 ? hours - 1 : hours;
+                              const adjustedMinutes = prevMinutes < 0 ? prevMinutes + 60 : prevMinutes;
+                              
+                              const newStartTime = `${prevHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
+                              
+                              // 确保新的开始时间不早于当天的最早时间
+                              const finalStartTime = newStartTime >= DAY_START_TIME ? newStartTime : DAY_START_TIME;
+                              setStartTime(finalStartTime);
+                              onTimeChange(finalStartTime, newEndTime);
+                            }
+                          }}
+                          {...getEndTimeConstraints()}
+                        />
+                      </>
+                    )}
                   </div>
 
-                  <div>
+                  {/* <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       描述（可选）
                     </label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                      rows={2}
-                      placeholder="请输入课程描述"
-                    />
-                  </div>
+                    {readOnly ? (
+                      <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                        {description}
+                      </p>
+                    ) : (
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        rows={2}
+                        placeholder="请输入课程描述"
+                      />
+                    )}
+                  </div> */}
                 </div>
               </div>
             )}
@@ -818,13 +1034,56 @@ export default function AddEventModal({
                 >
                   删除不可用时间段
                 </Button>
+              ) : showDeleteMode ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDeleteMode(false)}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      if (initialEvent?.type === 'invigilate') {
+                        // 监考直接删除，不传递重复周数
+                        onDelete?.();
+                      } else {
+                        // 课程传递重复周数
+                        onDelete?.(deleteRepeatNum);
+                      }
+                    }}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? '删除中...' : '确认删除'}
+                  </Button>
+                </>
+              ) : readOnly ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClose}
+                  >
+                    关闭
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={onEditFromReadOnly}
+                  >
+                    编辑
+                  </Button>
+                </>
               ) : (
                 <>
                   {mode === 'edit' && (
                     <Button
                       variant="danger"
                       size="sm"
-                      onClick={onDelete}
+                      onClick={() => setShowDeleteMode(true)}
                       disabled={isSaving}
                     >
                       删除

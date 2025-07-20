@@ -161,9 +161,24 @@
 
 /* ===== 时间段背景色样式 ===== */
 
-/* 不可用时间槽样式 */
+/* 不可用时间槽样式 - 更显眼 */
 .unavailable-time-slot {
-  background-color: rgba(107, 114, 128, 0.15) !important;
+  background-color: rgba(220, 38, 38, 0.35) !important; /* 明显的红色半透明 */
+  border: 1px dashed #dc2626 !important; /* 红色虚线边框 */
+  position: relative;
+}
+.unavailable-time-slot::after {
+  color: #fff;
+  background: #dc2626;
+  font-size: 12px;
+  padding: 0 6px;
+  border-radius: 4px;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.95;
 }
 
 /* 不可用时间槽悬停效果 */
@@ -171,4 +186,48 @@
   background-color: rgba(107, 114, 128, 0.25) !important;
 }
 
+/* ===== 自定义事件组件样式 ===== */
+
+/* 自定义事件容器 */
+.custom-event {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 2px 4px;
+  overflow: hidden;
+}
+
+/* 事件行样式 */
+.event-line {
+  line-height: 1.2;
+  font-size: 12px;
+  /* white-space: nowrap; */
+  /* text-overflow: ellipsis; */
+  overflow: hidden;
+}
+
+/* 
+.event-line:first-child {
+  font-weight: 600;
+  color: #ffffff;
+} */
+
+/* 第二行（备注）样式 */
+/* .event-line:last-child:not(:first-child) {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10px;
+} */
+
+/* 确保事件内容不会溢出 */
+.rbc-event .custom-event {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.rbc-event-label {
+  font-size: 16px;
+}
 

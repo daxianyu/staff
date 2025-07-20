@@ -7,9 +7,12 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './schedule.css';
 import { PlusIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import AddEventModal from './components/AddEventModal';
-import { getStaffSchedule } from '@/services/auth';
+import { getStaffSchedule, getStaffInfo, type StaffInfo } from '@/services/auth';
 import { useSearchParams } from 'next/navigation';
-import { addStaffLesson, editStaffLesson, deleteStaffLesson, updateStaffUnavailable, type UnavailableEventAPI, type LessonEventAPI } from '@/services/auth';
+import { addStaffLesson, editStaffLesson, deleteStaffLesson, updateStaffUnavailable,
+  addStaffInvigilate, updateStaffInvigilate, deleteStaffInvigilate,
+  type UnavailableEventAPI, type AddLessonParams, type EditLessonParams, type DeleteLessonParams 
+} from '@/services/auth';
 
 // 设置中文
 moment.locale('zh-cn');
@@ -21,10 +24,21 @@ interface ScheduleEvent {
   title: string; // 添加title字段
   start: Date;
   end: Date;
-  teacherId: string;
-  teacherName: string;
-  type: 'lesson' | 'unavailable' | 'selected' | 'selectedRepeat';
+  // teacherId: string;
+  teacher: string;
+  type: 'lesson' | 'unavailable' | 'selected' | 'selectedRepeat' | 'invigilate';
   description?: string;
+  // 课程相关字段
+  subject_id?: number;
+  room_id?: number;
+  class_id?: number;
+  students?: string;
+  students_ids?: number[];
+  room_name?: string;
+  student_name?: string;
+  // 监考相关字段
+  topic_id?: string;
+  note?: string;
 }
 
 // 时间槽包装器的属性类型
@@ -32,30 +46,6 @@ interface TimeSlotWrapperProps {
   children: React.ReactNode;
   value: Date;
 }
-
-// 模拟课程数据
-const mockEvents: ScheduleEvent[] = [
-  {
-    id: '1',
-    title: '微积分基础',
-    start: new Date(2025, 6, 15, 9, 0),
-    end: new Date(2025, 6, 15, 10, 30),
-    teacherId: 'teacher1',
-    teacherName: '张老师',
-    type: 'lesson',
-    description: '微积分基础'
-  },
-  {
-    id: '2',
-    title: '力学原理',
-    start: new Date(2025, 6, 15, 14, 0),
-    end: new Date(2025, 6, 15, 15, 30),
-    teacherId: 'teacher1',
-    teacherName: '张老师',
-    type: 'lesson',
-    description: '力学原理'
-  },
-];
 
 // 事件样式配置
 const eventStyleGetter = (event: ScheduleEvent) => {
@@ -70,6 +60,10 @@ const eventStyleGetter = (event: ScheduleEvent) => {
     case 'unavailable':
       backgroundColor = 'rgba(107, 114, 128, 0.8)'; // 灰色 + 透明度
       borderColor = '#4b5563';
+      break;
+    case 'invigilate':
+      backgroundColor = 'rgba(34, 197, 94, 0.8)'; // 绿色 + 透明度
+      borderColor = '#16a34a';
       break;
     case 'selected':
       backgroundColor = 'rgba(216, 27, 96, 0.8)'; // 选中色 + 透明度
@@ -104,14 +98,34 @@ interface StaffScheduleData {
   campus_info: Record<string, string>;
   room_info: Record<string, string>;
   unavailable: any[];
+  invigilate: any[];
+  class_topics: Record<string, string>;
 }
 
 type SelectedRange = { start: Date; end: Date; repeat?: 'none' | 'weekly' };
 
 export default function SchedulePage() {
   const searchParams = useSearchParams();
-  const staffId = searchParams.get('staffId') || '';
-  const [events, setEvents] = useState<ScheduleEvent[]>(mockEvents);
+  const urlStaffId = searchParams.get('staffId');
+  
+  // 如果没有传递staffId，从localStorage获取当前用户ID
+  const getCurrentStaffId = () => {
+    if (urlStaffId) return urlStaffId;
+    
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.id?.toString() || '';
+      }
+    } catch (error) {
+      console.error('解析用户信息失败:', error);
+    }
+    return '';
+  };
+  
+  const staffId = getCurrentStaffId();
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [view, setView] = useState<View>(Views.WEEK);
   const [date, setDate] = useState(new Date()); // 默认显示当天
   const [showAddModal, setShowAddModal] = useState(false);
@@ -130,37 +144,141 @@ export default function SchedulePage() {
   // 新增：编辑事件状态
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isReadOnlyMode, setIsReadOnlyMode] = useState(false); // 新增：是否处于只读模式
+  
+
+
+  // 新增：用户信息状态
+  const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
+  const [staffInfoLoading, setStaffInfoLoading] = useState(false);
+
+  // 获取用户信息
+  const fetchStaffInfo = useCallback(async () => {
+    if (!staffId) return;
+    
+    try {
+      setStaffInfoLoading(true);
+      const response = await getStaffInfo(staffId);
+      if (response.code === 200 && response.data) {
+        setStaffInfo(response.data);
+      }
+    } catch (error) {
+      console.error('获取用户信息失败:', error);
+    } finally {
+      setStaffInfoLoading(false);
+    }
+  }, [staffId]);
+
+  // 合并重叠的时间段
+  const mergeOverlappingTimeRanges = useCallback((timeRanges: Array<{ start: Date; end: Date }>) => {
+    if (timeRanges.length <= 1) return timeRanges;
+    
+    // 按开始时间排序
+    const sorted = [...timeRanges].sort((a, b) => a.start.getTime() - b.start.getTime());
+    const merged: Array<{ start: Date; end: Date }> = [];
+    
+    let current = sorted[0];
+    
+    for (let i = 1; i < sorted.length; i++) {
+      const next = sorted[i];
+      
+      // 检查是否有重叠
+      if (current.end >= next.start) {
+        // 有重叠，合并时间段
+        current = {
+          start: current.start,
+          end: new Date(Math.max(current.end.getTime(), next.end.getTime()))
+        };
+      } else {
+        // 没有重叠，保存当前时间段，开始新的时间段
+        merged.push(current);
+        current = next;
+      }
+    }
+    
+    // 添加最后一个时间段
+    merged.push(current);
+    
+    return merged;
+  }, []);
 
   // 统一处理课表数据的函数
   const handleScheduleData = useCallback((resp: any) => {
     if (resp && resp.data) {
       setScheduleData(resp.data);
+      const allEvents: ScheduleEvent[] = [];
+      
+      // 处理课程数据
       if (Array.isArray(resp.data.lessons)) {
-        const newEvents = resp.data.lessons.map((lesson: any) => ({
-          id: lesson.id || String(Math.random()),
-          title: lesson.title || lesson.subject_name || '课程',
-          start: new Date(lesson.start),
-          end: new Date(lesson.end),
-          teacherId: lesson.teacherId || staffId,
-          teacherName: lesson.teacherName || '',
-          type: 'lesson',
-          description: lesson.description || ''
+        const lessonEvents = resp.data.lessons.map((lesson: any) => ({
+          id: String(lesson.lesson_id) || String(Math.random()),
+          title: lesson.subject_name || '课程',
+          start: new Date(lesson.start_time * 1000),
+          end: new Date(lesson.end_time * 1000),
+          // teacherId: lesson.teacherId || staffId,
+          teacher: lesson.teacher || '',
+          type: 'lesson' as const,
+          // 保存完整的课程信息用于编辑
+          subject_id: lesson.subject_id,
+          room_id: lesson.room_id,
+          class_id: lesson.class_id,
+          students: lesson.students,
+          students_ids: lesson.students_ids,
+          room_name: lesson.room_name || '',
+          student_name: lesson.student_name || ''
         }));
-        setEvents(mockEvents);
-      } else {
-        setEvents([]);
+        allEvents.push(...lessonEvents);
       }
+      
+      // 处理监考数据
+      if (Array.isArray(resp.data.invigilate)) {
+        const invigilateEvents = resp.data.invigilate.map((invigilate: any) => {
+          const subjectName = resp.data.class_topics?.[invigilate.topic_id] || '未知科目';
+          const teacher = staffInfo?.staff_name || '';
+          const note = invigilate.note || '';
+          
+          let title = '';
+          if (teacher && note) {
+            title = `<p>监考: ${subjectName}</p><p>教师: ${teacher}</p><p>备注: ${note}</p>`;
+          } else if (teacher) {
+            title = `<p>监考: ${subjectName}</p><p>教师: ${teacher}</p>`;
+          } else if (note) {
+            title = `<p>监考: ${subjectName}</p><p>备注: ${note}</p>`;
+          } else {
+            title = `<p>监考: ${subjectName}</p>`;
+          }
+          
+          return {
+            id: `invigilate_${invigilate.id || String(Math.random())}`,
+            title,
+            start: new Date(invigilate.start_time * 1000),
+            end: new Date(invigilate.end_time * 1000),
+            type: 'invigilate' as const,
+            topic_id: invigilate.topic_id || '', // 保存topic_id用于编辑
+            note: invigilate.note || '', // 保存note用于编辑
+            teacher: teacher // 保存teacher用于编辑
+          };
+        });
+        allEvents.push(...invigilateEvents);
+      }
+      
+      setEvents(allEvents);
+      
       if (Array.isArray(resp.data.unavailable)) {
-        setUnavailableTimeRanges(resp.data.unavailable.map((unavailable: any) => ({
+        // 转换时间段并合并重叠的时间段
+        const timeRanges = resp.data.unavailable.map((unavailable: any) => ({
           start: new Date(unavailable.start_time * 1000),
           end: new Date(unavailable.end_time * 1000)
-        })));
+        }));
+        
+        const mergedTimeRanges = mergeOverlappingTimeRanges(timeRanges);
+        setUnavailableTimeRanges(mergedTimeRanges);
       }
     } else {
       setScheduleData(null);
       setEvents([]);
     }
-  }, [staffId]);
+  }, [staffId, staffInfo, mergeOverlappingTimeRanges]);
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
     if (calendarRef.current && calendarRef.current.contains(e.target as Node)) {
@@ -238,7 +356,7 @@ export default function SchedulePage() {
     return conflictingSlots;
   }, [unavailableTimeRanges]);
 
-  // 处理时间段选择
+  // 处理时间段选择 - 只允许添加不可用时间段和监考
   const handleSelectSlot = useCallback(({ start, end, box }: { start: Date; end?: Date; box?: { x: number; y: number; clientX: number; clientY: number } }) => {
     clearSelectedState();
     if (showAddModal) {
@@ -252,6 +370,7 @@ export default function SchedulePage() {
     // 保存选中的时间范围，用于创建虚拟选中事件
     const actualEnd = end || new Date(start.getTime() + 30 * 60 * 1000); // 默认30分钟
     setSelectedTimeRange({ start, end: actualEnd });
+    
     // 计算模态框位置，优先使用box坐标，然后是鼠标位置，最后基于时间计算位置
     let modalX = 0;
     let modalY = 0;
@@ -270,47 +389,47 @@ export default function SchedulePage() {
         const element = lastMousePosition.target;
         const rect = element.getBoundingClientRect();
         
-                  // 查找最近的时间槽元素
-          const timeSlot = element.closest('.rbc-time-slot, .rbc-day-slot, .rbc-date-cell');
-          if (timeSlot) {
-            const slotRect = timeSlot.getBoundingClientRect();
-            
-            // 立即进行位置判断
-            const screenWidth = window.innerWidth;
-            const modalWidth = 384;
-            const leftSpace = slotRect.left;
-            const rightSpace = screenWidth - slotRect.right;
-            
-            let slideDirection: 'left' | 'right' | 'center';
-            if (rightSpace >= modalWidth + 30) {
-              modalX = slotRect.right + 20;
-              modalY = slotRect.top;
-              slideDirection = 'right';
-            } else if (leftSpace >= modalWidth + 30) {
-              modalX = slotRect.left - modalWidth - 20;
-              modalY = slotRect.top;
-              slideDirection = 'left';
-            } else {
-              modalX = Math.max(10, Math.min(slotRect.left + (slotRect.width - modalWidth) / 2, screenWidth - modalWidth - 10));
-              modalY = slotRect.bottom + 10;
-              slideDirection = 'center';
-            }
-            
-            // 直接设置带有滑动方向的位置
-            setModalPosition({ x: modalX, y: modalY, slideDirection });
-            setIsClosingModal(false);
-            setShowAddModal(true);
-            return; // 提前返回，不执行后续逻辑
-                   } else {
-              modalX = rect.right + 10;
-              modalY = rect.top;
+        // 查找最近的时间槽元素
+        const timeSlot = element.closest('.rbc-time-slot, .rbc-day-slot, .rbc-date-cell');
+        if (timeSlot) {
+          const slotRect = timeSlot.getBoundingClientRect();
+          
+          // 立即进行位置判断
+          const screenWidth = window.innerWidth;
+          const modalWidth = 384;
+          const leftSpace = slotRect.left;
+          const rightSpace = screenWidth - slotRect.right;
+          
+          let slideDirection: 'left' | 'right' | 'center';
+          if (rightSpace >= modalWidth + 30) {
+            modalX = slotRect.right + 20;
+            modalY = slotRect.top;
+            slideDirection = 'right';
+          } else if (leftSpace >= modalWidth + 30) {
+            modalX = slotRect.left - modalWidth - 20;
+            modalY = slotRect.top;
+            slideDirection = 'left';
+          } else {
+            modalX = Math.max(10, Math.min(slotRect.left + (slotRect.width - modalWidth) / 2, screenWidth - modalWidth - 10));
+            modalY = slotRect.bottom + 10;
+            slideDirection = 'center';
           }
+          
+          // 直接设置带有滑动方向的位置
+          setModalPosition({ x: modalX, y: modalY, slideDirection });
+          setIsClosingModal(false);
+          setShowAddModal(true);
+          return; // 提前返回，不执行后续逻辑
+        } else {
+          modalX = rect.right + 10;
+          modalY = rect.top;
+        }
       }
-         } else {
-               // 最后的fallback：使用屏幕中心
-        modalX = window.innerWidth / 2;
-        modalY = window.innerHeight / 2;
-     }
+    } else {
+      // 最后的fallback：使用屏幕中心
+      modalX = window.innerWidth / 2;
+      modalY = window.innerHeight / 2;
+    }
     
     setModalPosition({ x: modalX, y: modalY, slideDirection: 'right' });
     
@@ -323,8 +442,18 @@ export default function SchedulePage() {
     if (event.type === 'selected') return;
     setShowAddModal(false); // 互斥：关闭新增/删除弹框
     setSelectedTimeRange(null); // 清除虚拟选区
-    setEditingEvent(event);
-    setShowEditModal(true);
+    
+    if (event.type === 'lesson') {
+      // 课程显示详情（只读模式）
+      setEditingEvent(event);
+      setIsReadOnlyMode(true);
+      setShowEditModal(true);
+    } else {
+      // 其他类型直接进入编辑
+      setEditingEvent(event);
+      setIsReadOnlyMode(false);
+      setShowEditModal(true);
+    }
   }, []);
 
   // 刷新课表数据的函数（提前声明）
@@ -333,54 +462,51 @@ export default function SchedulePage() {
     const weekNum = getWeekNum(date);
     const resp = await getStaffSchedule(staffId, String(weekNum));
     handleScheduleData(resp);
-  }, [staffId, date, view, handleScheduleData]);
+  }, [staffId, date, view, handleScheduleData]); // 添加 handleScheduleData 依赖
 
-  // 添加新事件（异步，负责接口调用）
+  // 添加新事件（异步，负责接口调用）- 只允许添加不可用时间段和监考
   const handleAddEvent = useCallback(async (newEvent: Partial<ScheduleEvent> & {
     repeat?: 'none' | 'weekly';
     subject?: string;
     campus?: string;
     pickRoom?: string;
     replaceRoomWhenBooked?: boolean;
+    topic_id?: string;
+    note?: string;
+    repeat_num?: number;
   }) => {
     setIsSaving(true);
     try {
-      // 构造API数据结构
-      let apiEventData: UnavailableEventAPI | LessonEventAPI;
-      const { type, repeat, subject, campus, pickRoom, replaceRoomWhenBooked, start, end } = newEvent;
-      if (type === 'lesson') {
-        const lessonTimeData = {
-          subject: subject || '',
-          campus: campus || '',
-          pickRoom: pickRoom || '',
-          replaceRoomWhenBooked: !!replaceRoomWhenBooked,
-          date: start ? moment(start).format('YYYY-MM-DD') : '',
-          start_time: start ? moment(start).valueOf() : 0,
-          end_time: end ? moment(end).valueOf() : 0
+      const { type, repeat, start, end, topic_id, note, repeat_num } = newEvent;
+      
+      if (type === 'invigilate') {
+        // 添加监考
+        const invigilateParams = {
+          staff_id: staffId,
+          start_time: start ? Math.floor(start.getTime() / 1000) : 0,
+          end_time: end ? Math.floor(end.getTime() / 1000) : 0,
+          topic_id: topic_id || '',
+          note: note || ''
         };
-        let timeList = [lessonTimeData];
-        if (repeat === 'weekly' && start) {
-          timeList = [];
-          const startMoment = moment(start);
-          for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
-            if (d.day() === 0 || d.day() === 6) continue;
-            timeList.push({
-              ...lessonTimeData,
-              date: d.format('YYYY-MM-DD')
-            });
-          }
+        
+        const response = await addStaffInvigilate(invigilateParams);
+        
+        if (response.status === 0) {
+          await refreshScheduleData();
+          setShowAddModal(false);
+          setIsClosingModal(false);
+          setSelectedTimeRange(null);
+        } else {
+          alert(`保存失败: ${response.message}`);
         }
-        apiEventData = {
-          event_type: 2,
-          time_list: timeList
-        };
       } else {
-        // 不可用事件
+        // 不可用事件 - 前端计算差值，全量更新
         const startTime = start ? start.getTime() : 0;
         const endTime = end ? end.getTime() : 0;
-        let timeList = [{ start_time: startTime, end_time: endTime }];
+        let newTimeList: Array<{ start_time: number; end_time: number }> = [];
+        
         if (repeat === 'weekly' && start && end) {
-          timeList = [];
+          // 周内重复：生成从当前日期开始到本周周五的所有工作日时间段
           const startMoment = moment(start);
           const [startHour, startMin] = [start.getHours(), start.getMinutes()];
           const [endHour, endMin] = [end.getHours(), end.getMinutes()];
@@ -388,15 +514,32 @@ export default function SchedulePage() {
             if (d.day() === 0 || d.day() === 6) continue;
             const dayStart = d.clone().hour(startHour).minute(startMin).toDate();
             const dayEnd = d.clone().hour(endHour).minute(endMin).toDate();
-            timeList.push({
+            newTimeList.push({
               start_time: dayStart.getTime(),
               end_time: dayEnd.getTime()
             });
           }
+        } else {
+          // 不重复：只添加当前时间段
+          newTimeList.push({
+            start_time: startTime,
+            end_time: endTime
+          });
         }
-        apiEventData = {
-          event_type: 1,
-          time_list: timeList
+        
+        // 合并现有的不可用时间段
+        const existingTimeList = unavailableTimeRanges.map(slot => ({
+          start_time: slot.start.getTime(),
+          end_time: slot.end.getTime()
+        }));
+        
+        // 全量更新：现有时间段 + 新时间段
+        const allTimeList = [...existingTimeList, ...newTimeList];
+        
+        const apiEventData = {
+          week_num: getWeekNum(date),
+          event_type: 1 as const,
+          time_list: allTimeList
         };
         const response = await updateStaffUnavailable(staffId, apiEventData);
         if (response.status === 0) {
@@ -409,14 +552,12 @@ export default function SchedulePage() {
           alert(`保存失败: ${response.message}`);
         }
       }
-      // 调用API
-      
     } catch (error) {
       alert('保存失败，请重试');
     } finally {
       setIsSaving(false);
     }
-  }, [refreshScheduleData]);
+  }, [staffId, refreshScheduleData, unavailableTimeRanges]);
 
   // 处理模态框关闭
   const handleCloseModal = useCallback(() => {
@@ -424,68 +565,219 @@ export default function SchedulePage() {
     setShowAddModal(false);
   }, []);
 
-  // 处理编辑事件
+  // 处理编辑事件 - 只能修改room、repeat_num、time
   const handleEditEvent = useCallback(async (formData: any) => {
     setIsSaving(true);
     try {
-      // 组装参数
-      const params = {
-        lesson_id: formData.id,
-        subject_id: formData.subject || '',
-        start_time: formData.start ? moment(formData.start).format('YYYY-MM-DD HH:mm') : '',
-        end_time: formData.end ? moment(formData.end).format('YYYY-MM-DD HH:mm') : '',
-        room_id: formData.pickRoom || ''
-      };
-      const response = await editStaffLesson(staffId, params);
-      if (response.status === 0) {
-        await refreshScheduleData();
-        setShowEditModal(false);
-        setEditingEvent(null);
-      } else {
-        alert(`保存失败: ${response.message}`);
+      if (formData.type === 'lesson') {
+        // 编辑课程 - 只能修改room、repeat_num、time
+        const params = {
+          lesson_id: formData.id,
+          subject_id: formData.subject_id || editingEvent?.subject_id || '', // 使用编辑事件的subject_id
+          start_time: formData.start ? Math.floor(formData.start.getTime() / 1000) : 0,
+          end_time: formData.end ? Math.floor(formData.end.getTime() / 1000) : 0,
+          room_id: formData.pickRoom || '',
+          repeat_num: formData.repeat_num || 1
+        };
+        const response = await editStaffLesson(staffId, params);
+        if (response.status === 0) {
+          await refreshScheduleData();
+          setShowEditModal(false);
+          setEditingEvent(null);
+        } else {
+          alert(`保存失败: ${response.message}`);
+        }
+      } else if (formData.type === 'invigilate') {
+        // 编辑监考
+        const params = {
+          record_id: formData.id.replace('invigilate_', ''),
+          staff_id: staffId,
+          start_time: formData.start ? Math.floor(formData.start.getTime() / 1000) : 0,
+          end_time: formData.end ? Math.floor(formData.end.getTime() / 1000) : 0,
+          topic_id: formData.topic_id || '',
+          note: formData.note || ''
+        };
+        const response = await updateStaffInvigilate(params);
+        if (response.status === 0) {
+          await refreshScheduleData();
+          setShowEditModal(false);
+          setEditingEvent(null);
+        } else {
+          alert(`保存失败: ${response.message}`);
+        }
+      } else if (formData.type === 'unavailable') {
+        // 编辑不可用时间段 - 前端计算差值，全量更新
+        const newStartTime = formData.start ? moment(formData.start) : moment(editingEvent?.start);
+        const newEndTime = formData.end ? moment(formData.end) : moment(editingEvent?.end);
+        const originalStartTime = moment(editingEvent?.start);
+        const originalEndTime = moment(editingEvent?.end);
+        
+        // 构建新的不可用时间段列表
+        let newTimeList: Array<{ start_time: number; end_time: number }> = [];
+        
+        if (formData.repeat === 'weekly') {
+          // 周内重复：生成从当前日期开始到本周周五的所有工作日时间段
+          const startMoment = newStartTime.clone();
+          for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
+            // 只包含工作日 (Monday=1 .. Friday=5)
+            if (d.day() === 0 || d.day() === 6) continue; // 跳过周末
+            
+            const dayStart = d.clone().hour(newStartTime.hour()).minute(newStartTime.minute()).toDate();
+            const dayEnd = d.clone().hour(newEndTime.hour()).minute(newEndTime.minute()).toDate();
+            newTimeList.push({
+              start_time: dayStart.getTime(),
+              end_time: dayEnd.getTime()
+            });
+          }
+        } else {
+          // 不重复：只更新当前时间段
+          newTimeList.push({
+            start_time: newStartTime.toDate().getTime(),
+            end_time: newEndTime.toDate().getTime()
+          });
+        }
+        
+        // 构建全量更新的时间段列表：现有时间段 - 原时间段 + 新时间段
+        const timeList = unavailableTimeRanges
+          .filter(slot => {
+            const slotStart = moment(slot.start);
+            const slotEnd = moment(slot.end);
+            
+            // 过滤掉与原始时间段相关的时间段（相同的时间点）
+            const isRelated = slotStart.hour() === originalStartTime.hour() && 
+                             slotStart.minute() === originalStartTime.minute() &&
+                             slotEnd.hour() === originalEndTime.hour() && 
+                             slotEnd.minute() === originalEndTime.minute();
+            
+            return !isRelated;
+          })
+          .map(slot => ({
+            start_time: slot.start.getTime(),
+            end_time: slot.end.getTime()
+          }));
+        
+        // 全量更新：过滤后的现有时间段 + 新时间段
+        const allTimeList = [...timeList, ...newTimeList];
+        
+        const response = await updateStaffUnavailable(staffId, {
+          week_num: getWeekNum(date),
+          event_type: 1,
+          time_list: allTimeList
+        });
+        
+        if (response.status === 0) {
+          await refreshScheduleData();
+          setShowEditModal(false);
+          setEditingEvent(null);
+        } else {
+          alert(`保存失败: ${response.message}`);
+        }
       }
     } catch (error) {
       alert('保存失败，请重试');
     } finally {
       setIsSaving(false);
     }
-  }, [staffId, refreshScheduleData]);
+  }, [staffId, refreshScheduleData, editingEvent, unavailableTimeRanges]);
 
-  // 处理删除事件
-  const handleDeleteEvent = useCallback(async () => {
+  // 处理删除事件 - 支持删除多周
+  const handleDeleteEvent = useCallback(async (repeat_num?: number) => {
     if (!editingEvent) return;
     setIsSaving(true);
     try {
-      const response = await deleteStaffLesson(staffId, { lesson_ids: [editingEvent.id] });
-      if (response.status === 0) {
-        await refreshScheduleData();
-        setShowEditModal(false);
-        setEditingEvent(null);
-      } else {
-        alert(`删除失败: ${response.message}`);
+      if (editingEvent.type === 'lesson') {
+        // 删除课程 - 支持删除多周
+        const response = await deleteStaffLesson(staffId, { 
+          lesson_ids: [editingEvent.id],
+          repeat_num: repeat_num || 1
+        });
+        if (response.status === 0) {
+          await refreshScheduleData();
+          setShowEditModal(false);
+          setEditingEvent(null);
+        } else {
+          alert(`删除失败: ${response.message}`);
+        }
+      } else if (editingEvent.type === 'invigilate') {
+        // 删除监考 - 直接删除，不需要重复周数
+        const record_id = editingEvent.id.replace('invigilate_', '');
+        const response = await deleteStaffInvigilate({ 
+          record_id
+        });
+        if (response.status === 0) {
+          await refreshScheduleData();
+          setShowEditModal(false);
+          setEditingEvent(null);
+        } else {
+          alert(`删除失败: ${response.message}`);
+        }
+      } else if (editingEvent.type === 'unavailable') {
+        // 删除不可用时间段 - 前端计算差值，全量更新
+        const originalStartTime = moment(editingEvent.start);
+        const originalEndTime = moment(editingEvent.end);
+        
+        // 构建全量更新的时间段列表：现有时间段 - 要删除的时间段
+        const timeList = unavailableTimeRanges
+          .filter(slot => {
+            const slotStart = moment(slot.start);
+            const slotEnd = moment(slot.end);
+            
+            // 过滤掉与要删除时间段相关的时间段（相同的时间点）
+            const isRelated = slotStart.hour() === originalStartTime.hour() && 
+                             slotStart.minute() === originalStartTime.minute() &&
+                             slotEnd.hour() === originalEndTime.hour() && 
+                             slotEnd.minute() === originalEndTime.minute();
+            
+            return !isRelated;
+          })
+          .map(slot => ({
+            start_time: slot.start.getTime(),
+            end_time: slot.end.getTime()
+          }));
+        
+        const response = await updateStaffUnavailable(staffId, {
+          week_num: getWeekNum(date),
+          event_type: 1,
+          time_list: timeList
+        });
+        
+        if (response.status === 0) {
+          await refreshScheduleData();
+          setShowEditModal(false);
+          setEditingEvent(null);
+        } else {
+          alert(`删除失败: ${response.message}`);
+        }
       }
     } catch (error) {
       alert('删除失败，请重试');
     } finally {
       setIsSaving(false);
     }
-  }, [editingEvent, staffId, refreshScheduleData]);
+  }, [editingEvent, staffId, refreshScheduleData, unavailableTimeRanges]);
 
   // 新增：删除不可用时间段
   const handleDeleteUnavailable = useCallback(async (conflicts: Array<{ start: Date; end: Date }>) => {
     setIsSaving(true);
     try {
-      // 判断两个时间段是否有重叠
-      function isOverlap(a: { start: Date; end: Date }, b: { start: Date; end: Date }) {
-        return a.start < b.end && a.end > b.start;
-      }
+      // 前端计算差值，全量更新：现有时间段 - 冲突时间段
       const time_list = unavailableTimeRanges
-        .filter(slot => !conflicts.some(conf => isOverlap(slot, conf)))
+        .filter(slot => {
+          // 判断两个时间段是否有重叠
+          function isOverlap(a: { start: Date; end: Date }, b: { start: Date; end: Date }) {
+            return a.start < b.end && a.end > b.start;
+          }
+          
+          // 保留不与任何冲突时间段重叠的时间段
+          return !conflicts.some(conf => isOverlap(slot, conf));
+        })
         .map(slot => ({
           start_time: slot.start.getTime(),
           end_time: slot.end.getTime()
         }));
+      
       const response = await updateStaffUnavailable(staffId, {
+        week_num: getWeekNum(date),
         event_type: 1,
         time_list
       });
@@ -535,8 +827,7 @@ export default function SchedulePage() {
             title: '周内重复',
             start,
             end,
-            teacherId: 'system',
-            teacherName: '系统',
+            teacher: '系统',
             type: 'selectedRepeat',
             description: '周内重复选择'
           });
@@ -547,8 +838,7 @@ export default function SchedulePage() {
           title: '选中时间段',
           start: selectedTimeRange.start,
           end: selectedTimeRange.end,
-          teacherId: 'system',
-          teacherName: '系统',
+          teacher: '系统',
           type: 'selected',
           description: '当前选中的时间段'
         };
@@ -559,11 +849,22 @@ export default function SchedulePage() {
     return eventsWithSelection;
   }, [events, selectedTimeRange]);
 
-  // 获取当前周编号（1970年1月以来的周数）
+  // 获取当前周编号（从1970年1月1日开始的周数，以周一为每周第一天）
   function getWeekNum(date: Date) {
-    const start = new Date(1970, 0, 1);
+    const start = new Date(1970, 0, 1); // 1970年1月1日
     const diff = date.getTime() - start.getTime();
-    return Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+    
+    // 1970年1月1日是周四，我们需要调整到周一
+    // 后端逻辑：减去4天，前端保持一致
+    const adjustedDays = days - 4;
+    
+    // 如果调整后的天数小于0，说明在第一周内
+    if (adjustedDays < 0) {
+      return 0;
+    }
+    
+    return Math.floor(adjustedDays / 7);
   }
 
   // 导航函数
@@ -598,7 +899,7 @@ export default function SchedulePage() {
       const resp = await getStaffSchedule(staffId, String(weekNum));
       handleScheduleData(resp);
     }
-  }, [date, view, staffId, handleScheduleData]);
+  }, [date, view, staffId]); // 移除 handleScheduleData 依赖
 
   // 格式化日期标题
   const getDateTitle = useCallback(() => {
@@ -670,6 +971,45 @@ export default function SchedulePage() {
     return <>{children}</>;
   }, [unavailableTimeRanges]);
 
+  // 创建自定义事件组件 - 支持换行显示
+  const CustomEvent = useCallback(({ event }: { event: ScheduleEvent }) => {
+    return (
+      <div className="custom-event">
+        {/* 课程标题 */}
+        <div className="event-line">
+          {event.type === 'invigilate' ? (
+            <div dangerouslySetInnerHTML={{ __html: event.title }} />
+          ) : (
+            event.title
+          )}
+        </div>
+        
+        {/* 如果是课程类型，添加教室和学生信息 */}
+        {event.type === 'lesson' && (
+          <>
+            {event.room_name && (
+              <div className="event-line">
+                教室: {event.room_name}
+              </div>
+            )}
+            {event.teacher && (
+              <div className="event-line">
+                教师: {event.teacher}
+              </div>
+            )}
+            {event.students && (
+              <div className="event-line">
+                学生: {event.students && event.students.length > 8
+                  ? `${event.students.slice(0, 8)}..等（共${event.students_ids?.length || 0}人）`
+                  : event.students}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }, []);
+
   // 监听虚拟事件的渲染，自动调整模态框位置
   useEffect(() => {
     if (selectedTimeRange && showAddModal) {
@@ -718,13 +1058,17 @@ export default function SchedulePage() {
   }, [selectedTimeRange, showAddModal]);
 
   useEffect(() => {
-    if (!staffId) return;
+    if (!staffId || !staffInfo) return; // 确保 staffInfo 已加载
     if (view === Views.WEEK) {
       const weekNum = getWeekNum(date);
       getStaffSchedule(staffId, String(weekNum)).then(handleScheduleData);
     }
-    // eslint-disable-next-line
-  }, [staffId, date, view, handleScheduleData]);
+  }, [staffId, date, view, staffInfo]); // 添加 staffInfo 依赖
+
+  // 获取用户信息
+  useEffect(() => {
+    fetchStaffInfo();
+  }, [fetchStaffInfo]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 overflow-auto">
@@ -733,7 +1077,11 @@ export default function SchedulePage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
-            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Schedule</h1>
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">{staffInfo ? (
+                  staffInfo.staff_name + "'s "
+              ) + "Schedule":"Schedule"}</h1>
+            </div>
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
@@ -760,29 +1108,6 @@ export default function SchedulePage() {
                 周
               </button>
             </div>
-
-            {/* 添加课程按钮 */}
-            <button
-              onClick={(e) => {
-                // 首先清除上一次的选中状态和模态框
-                clearSelectedState();
-                if (showAddModal) {
-                  setShowAddModal(false);
-                  setIsClosingModal(false);
-                }
-                setShowEditModal(false); // 互斥：关闭编辑弹框
-                
-                setSelectedDate(new Date());
-                setModalPosition({ x: e.clientX, y: e.clientY, slideDirection: 'left' });
-                setIsClosingModal(false);
-                setShowAddModal(true);
-              }}
-              className="flex items-center space-x-1 sm:space-x-2 bg-blue-500 text-white px-2 sm:px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-xs sm:text-sm"
-            >
-              <PlusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">添加课程</span>
-              <span className="sm:hidden">添加</span>
-            </button>
           </div>
         </div>
 
@@ -793,9 +1118,13 @@ export default function SchedulePage() {
             <span className="text-gray-600 whitespace-nowrap">课程</span>
           </div>
           <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded"></div>
+            <span className="text-gray-600 whitespace-nowrap">监考</span>
+          </div>
+          {/* <div className="flex items-center space-x-1 sm:space-x-2">
             <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gray-500 rounded"></div>
             <span className="text-gray-600 whitespace-nowrap">不可用事件</span>
-          </div>
+          </div> */}
           <div className="flex items-center space-x-1 sm:space-x-2">
             <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gray-300 rounded"></div>
             <span className="text-gray-600 whitespace-nowrap">不可用时段</span>
@@ -870,6 +1199,7 @@ export default function SchedulePage() {
             popupOffset={0} // 弹出偏移量
             components={{
               timeSlotWrapper: CustomTimeSlotWrapper, // 使用自定义时间槽包装器
+              event: CustomEvent, // 使用自定义事件组件
             }}
             messages={{
               next: '下一页',
@@ -919,7 +1249,11 @@ export default function SchedulePage() {
       {showEditModal && editingEvent && (
         <AddEventModal
           isOpen={showEditModal}
-          onClose={() => { setShowEditModal(false); setEditingEvent(null); }}
+          onClose={() => { 
+            setShowEditModal(false); 
+            setEditingEvent(null); 
+            setIsReadOnlyMode(false); // 重置只读模式
+          }}
           onSave={handleEditEvent}
           onDelete={handleDeleteEvent}
           selectedDate={editingEvent.start}
@@ -934,9 +1268,16 @@ export default function SchedulePage() {
           onRepeatChange={() => {}}
           isSaving={isSaving}
           mode="edit"
+          readOnly={isReadOnlyMode} // 使用状态控制只读模式
           initialEvent={editingEvent}
+          onEditFromReadOnly={() => {
+            // 从只读模式进入编辑模式
+            setIsReadOnlyMode(false);
+          }}
         />
       )}
+      
+
     </div>
   );
 } 

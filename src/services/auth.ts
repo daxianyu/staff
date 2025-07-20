@@ -746,6 +746,7 @@ time_list = [{"start_time": 111, "end_time":222},{"start_time": 111, "end_time":
 */
 export interface UnavailableEventAPI {
   event_type: 1;
+  week_num: number;
   time_list: Array<{
     start_time: number;
     end_time: number;
@@ -757,19 +758,14 @@ export type ScheduleEventAPI = LessonEventAPI | UnavailableEventAPI;
 
 
 // /api/staff/update_staff_schedule/{staff_id} 更新老师课表
-export async function updateStaffSchedule(staffId: string, scheduleData: LessonEventAPI) {
+export async function updateStaffSchedule(staffId: string, scheduleData: any) {
   const url = `/api/staff/update_staff_schedule/${staffId}`;
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...getAuthHeader(),
   };
-  scheduleData.time_list = scheduleData.time_list.map(item => {
-    return {
-      ...item,
-      start_time: item.start_time / 1000,
-      end_time: item.end_time / 1000
-    }
-  });
+  
+  // 直接发送数据，不需要处理time_list
   const response = await fetch(url, {
     method: 'POST',
     headers,
@@ -802,23 +798,26 @@ export async function updateStaffUnavailable(staffId: string, unavailableData: U
 // 新增课程参数
 export interface AddLessonParams {
   subject_id: string;
-  start_time: string;
-  end_time: string;
+  start_time: number; // 时间戳
+  end_time: number;   // 时间戳
   room_id: string;
+  repeat_num?: number; // 重复次数，默认1
 }
 
 // 编辑课程参数
 export interface EditLessonParams {
   lesson_id: string;
   subject_id: string;
-  start_time: string;
-  end_time: string;
+  start_time: number; // 时间戳
+  end_time: number;   // 时间戳
   room_id: string;
+  repeat_num?: number; // 重复次数
 }
 
 // 删除课程参数
 export interface DeleteLessonParams {
   lesson_ids: string[];
+  repeat_num?: number; // 删除周数
 }
 
 // 新增课程
@@ -843,6 +842,89 @@ export async function editStaffLesson(staffId: string, params: EditLessonParams)
 export async function deleteStaffLesson(staffId: string, params: DeleteLessonParams) {
   return updateStaffSchedule(staffId, {
     event_type: 2,
-    delete_ids: params.lesson_ids.join(',')
+    delete_ids: params.lesson_ids.join(','),
+    repeat_num: params.repeat_num || 1
   } as any);
+}
+
+// 监考相关接口定义
+export interface AddInvigilateParams {
+  staff_id: string;
+  start_time: number; // 时间戳
+  end_time: number;   // 时间戳
+  topic_id: string;
+  note: string;
+}
+
+export interface EditInvigilateParams {
+  record_id: string;
+  staff_id: string;
+  start_time: number; // 时间戳
+  end_time: number;   // 时间戳
+  topic_id: string;
+  note: string;
+}
+
+export interface DeleteInvigilateParams {
+  record_id: string;
+}
+
+// 添加监考
+export async function addStaffInvigilate(params: AddInvigilateParams) {
+  try {
+    const response = await fetch('/api/staff/add_invigilate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('添加监考失败:', error);
+    return { status: -1, message: '添加监考失败' };
+  }
+}
+
+// 更新监考
+export async function updateStaffInvigilate(params: EditInvigilateParams) {
+  try {
+    const response = await fetch('/api/staff/update_invigilate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('更新监考失败:', error);
+    return { status: -1, message: '更新监考失败' };
+  }
+}
+
+// 删除监考
+export async function deleteStaffInvigilate(params: DeleteInvigilateParams) {
+  try {
+    const response = await fetch('/api/staff/delete_invigilate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('删除监考失败:', error);
+    return { status: -1, message: '删除监考失败' };
+  }
 }

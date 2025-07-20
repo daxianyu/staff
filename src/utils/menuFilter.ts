@@ -102,86 +102,55 @@ export function filterMenuItems(menuItems: MenuItem[], user: UserInfo | null): M
 export const defaultMenuConfig: MenuItem[] = [
   {
     key: 'dashboard',
-    label: '仪表盘',
+    label: 'Dashboard',
     path: '/dashboard',
     icon: 'dashboard',
-    // 仪表盘不需要特殊权限，所有用户都可以访问
+    // Dashboard doesn't require special permissions, all users can access
   },
-  {
-    key: 'schedule',
-    label: '课程安排',
-    path: '/schedule',
-    icon: 'calendar',
-    requiredPermissions: ['edit_staff'], // 保持你设置的权限
-  },
+ 
   {
     key: 'demo',
-    label: 'Demo页面',
+    label: 'Demo Page',
     path: '/demo',
     icon: 'table',
     requiredPermissions: ['view_demo'],
   },
   {
     key: 'staff',
-    label: '员工管理',
+    label: 'Staff Management',
     icon: 'users',
     requiredPermissions: ['view_staff'],
     children: [
       {
         key: 'staff-list',
-        label: '员工列表',
+        label: 'Staff List',
         path: '/staff',
         requiredPermissions: ['view_staff'],
       },
       {
-        key: 'staff-create',
-        label: '新增员工',
-        path: '/staff/create',
-        requiredPermissions: ['create_staff'],
-      },
-      {
-        key: 'staff-contact',
-        label: '员工联系方式',
-        path: '/staff/contact',
-        requiredPermissions: ['view_staff_contact'],
-      },
-    ],
-  },
-  {
-    key: 'classes',
-    label: '课程管理',
-    icon: 'book',
-    requiredPermissions: ['view_classes'],
-    children: [
-      {
-        key: 'classes-list',
-        label: '课程列表',
-        path: '/classes',
-        requiredPermissions: ['view_classes'],
-      },
-      {
-        key: 'classes-create',
-        label: '新增课程',
-        path: '/classes/create',
-        requiredPermissions: ['edit_classes'],
+        key: 'schedule',
+        label: 'Schedule',
+        path: '/schedule',
+        icon: 'calendar',
+        requiredPermissions: ['edit_staff'], // Keep your permission settings
       },
     ],
   },
   {
     key: 'classrooms',
-    label: '教室管理',
+    label: 'Classroom Manage',
     icon: 'building',
     requiredPermissions: ['view_classrooms'],
     children: [
       {
         key: 'classrooms-list',
-        label: '教室列表',
+        label: 'Classroom List',
         path: '/classrooms',
         requiredPermissions: ['view_classrooms'],
       },
       {
         key: 'classrooms-create',
-        label: '新增教室',
+        label: 'Add Classroom',
         path: '/classrooms/create',
         requiredPermissions: ['edit_classrooms'],
       },
@@ -189,39 +158,27 @@ export const defaultMenuConfig: MenuItem[] = [
   },
   {
     key: 'finance',
-    label: '财务管理',
+    label: 'Finance Management',
     icon: 'dollar-sign',
     requiredPermissions: ['finance', 'view_accounting'],
     children: [
       {
         key: 'accounting',
-        label: '账务管理',
+        label: 'Accounting',
         path: '/finance/accounting',
         requiredPermissions: ['view_accounting'],
-      },
-      {
-        key: 'non-credit-accounting',
-        label: '非学分账务',
-        path: '/finance/non-credit',
-        requiredPermissions: ['view_non_credit_based_accounting'],
       },
     ],
   },
   {
     key: 'system',
-    label: '系统管理',
+    label: 'System Management',
     icon: 'settings',
     requiredPermissions: ['core_admin'],
     children: [
       {
-        key: 'logs',
-        label: '操作日志',
-        path: '/system/logs',
-        requiredPermissions: ['view_log'],
-      },
-      {
         key: 'campuses',
-        label: '校区管理',
+        label: 'Campus Management',
         path: '/system/campuses',
         requiredPermissions: ['edit_campuses'],
       },

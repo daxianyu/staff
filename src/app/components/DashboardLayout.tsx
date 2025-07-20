@@ -187,7 +187,7 @@ export default function DashboardLayout({
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            <div className="py-2 px-1">
+            <div className="py-2">
               <div className="space-y-1">
                 {authorizedNavigation.map((item) => {
                   const isActive = isMenuActive(item);
@@ -196,11 +196,11 @@ export default function DashboardLayout({
                   const IconComponent = getIcon(item.icon);
 
                   return (
-                    <div key={item.key} className="space-y-1">
+                    <div key={item.key} className="">
                       <button
                         onClick={() => hasChildren ? toggleSubmenu(item.key) : item.path && router.push(item.path)}
                         className={`
-                          group flex w-full items-center justify-between px-3 py-2.5 text-md font-medium rounded-lg
+                          group flex w-full items-center justify-between px-2 py-2.5 text-md font-medium 
                           transition-all duration-200 ease-in-out
                           ${
                             isActive
@@ -239,7 +239,7 @@ export default function DashboardLayout({
                                 key={child.key}
                                 onClick={() => child.path && router.push(child.path)}
                                 className={`
-                                  group flex w-full items-center px-3 py-2 text-sm font-medium rounded-lg
+                                  group flex w-full items-center px-3 py-2 text-sm font-medium
                                   transition-all duration-200 ease-in-out
                                   ${
                                     child.path && isChildActive(child.path)
