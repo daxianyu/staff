@@ -709,6 +709,33 @@ export default function AddEventModal({
             ) : (
               <div className="p-4">
                 <div className="space-y-3">
+                  {eventType === 'lesson' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">课程名称</label>
+                      <p className="w-full px-3 py-1.5 text-base text-blue-700 bg-blue-50 rounded-md border border-blue-200 font-bold">
+                        {initialEvent?.title || initialEvent?.subject_name || '未命名课程'}
+                      </p>
+                      <div className="mt-2 flex space-x-2">
+                        <a
+                          href={`/lesson-overview/edit?id=${initialEvent.subject_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
+                        >
+                          编辑课程
+                        </a>
+                        <a
+                          href={`/lesson-overview?id=${initialEvent.subject_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+                        >
+                          课程详情
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
                   {/* 类型选择放在最顶部 */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -873,9 +900,10 @@ export default function AddEventModal({
                   )}
 
                   {/* 重复相关字段 - 仅对课程和不可用事件，只读模式下不显示 */}
-                  {(eventType === 'lesson' || eventType === 'unavailable') && !readOnly && (
+                  {/* || eventType === 'unavailable' */}
+                  {(eventType === 'lesson') && !readOnly && (
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">{eventType === "unavailable" ? "重复设置" : "每周重复"}</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">每周重复</label>
                       <div className="space-y-2">
                         {/* 重复类型选择 */}
                         <select
@@ -883,24 +911,9 @@ export default function AddEventModal({
                           onChange={e => {
                             const value = e.target.value as 'none' | 'weekly';
                             setRepeat(value);
-                            // 只有在不可用时间段时，才触发重复设置
-                            if (eventType === 'unavailable') {
-                              onRepeatChange?.(value);
-                            }
                           }}
                           className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
                         >
-                          {eventType === 'unavailable' ? (
-                            <>
-                              <option value="none">不重复</option>
-                              <option value="weekly">周内重复</option>
-                            </>
-                          ) : (
-                            <>
-                              <option value="none">不重复</option>
-                              <option value="weekly">重复</option>
-                            </>
-                          )}
                         </select>
                         
                         {/* 重复次数输入框 - 仅对课程，且选择重复时显示 */}
@@ -998,25 +1011,6 @@ export default function AddEventModal({
                       </>
                     )}
                   </div>
-
-                  {/* <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      描述（可选）
-                    </label>
-                    {readOnly ? (
-                      <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
-                        {description}
-                      </p>
-                    ) : (
-                      <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        rows={2}
-                        placeholder="请输入课程描述"
-                      />
-                    )}
-                  </div> */}
                 </div>
               </div>
             )}

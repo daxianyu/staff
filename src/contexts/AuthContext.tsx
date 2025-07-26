@@ -12,6 +12,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [permissionOverrides, setPermissionOverrides] = useState<{[key: string]: boolean}>({});
   const router = useRouter();
 
+  // user.mentor_leader 学科组长
   // 合并用户的所有权限
   const baseRights = user ? [...user.rights, ...user.operation_right] : [];
   

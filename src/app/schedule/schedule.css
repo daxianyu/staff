@@ -231,3 +231,6 @@
   font-size: 16px;
 }
 
+.rbc-time-view .rbc-time-gutter {
+  text-align: left;
+}

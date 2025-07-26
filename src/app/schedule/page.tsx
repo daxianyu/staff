@@ -356,6 +356,13 @@ export default function SchedulePage() {
     return conflictingSlots;
   }, [unavailableTimeRanges]);
 
+  const checkAllEventConflict = useCallback((start: Date, end: Date) => {
+    return events.filter(ev =>
+      ['lesson', 'invigilate'].includes(ev.type) &&
+      start < ev.end && end > ev.start
+    );
+  }, [events]);
+
   // 处理时间段选择 - 只允许添加不可用时间段和监考
   const handleSelectSlot = useCallback(({ start, end, box }: { start: Date; end?: Date; box?: { x: number; y: number; clientX: number; clientY: number } }) => {
     clearSelectedState();
@@ -369,6 +376,14 @@ export default function SchedulePage() {
     
     // 保存选中的时间范围，用于创建虚拟选中事件
     const actualEnd = end || new Date(start.getTime() + 30 * 60 * 1000); // 默认30分钟
+
+    // 新增：选区后立即检测重叠
+    const conflicts = checkAllEventConflict(start, actualEnd);
+    if (conflicts.length > 0) {
+      alert('所选时间段与已有课程、监考或不可用时间重叠！');
+      return;
+    }
+
     setSelectedTimeRange({ start, end: actualEnd });
     
     // 计算模态框位置，优先使用box坐标，然后是鼠标位置，最后基于时间计算位置
@@ -435,7 +450,7 @@ export default function SchedulePage() {
     
     setIsClosingModal(false);
     setShowAddModal(true);
-  }, [lastMousePosition, clearSelectedState, showAddModal]);
+  }, [lastMousePosition, clearSelectedState, showAddModal, checkAllEventConflict]);
 
   // 处理事件选择
   const handleSelectEvent = useCallback((event: ScheduleEvent) => {
