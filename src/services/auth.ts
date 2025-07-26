@@ -601,6 +601,17 @@ export interface LessonData {
 }
 
 // 导师信息相关接口定义
+export interface Subject {
+  id: number;
+  class_id: number;
+  subject: string;
+  description: string;
+  student_count: number;
+  teacher_name: string;
+  student_names: string[];
+  rating: number;
+}
+
 export interface StaffInfo {
   total_info: {
     total_lesson_count: number;
@@ -614,6 +625,7 @@ export interface StaffInfo {
   subject_teacher_feedback_comment: Record<string, any[]>;
   mentee_student_list: string[];
   staff_name: string;
+  subjects: Subject[];
 }
 
 export const getStaffInfo = async (staffId: string): Promise<ApiResponse<StaffInfo>> => {

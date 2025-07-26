@@ -137,6 +137,32 @@ export const defaultMenuConfig: MenuItem[] = [
     ],
   },
   {
+    key: 'class',
+    label: 'Class Management',
+    icon: 'graduation-cap',
+    requiredPermissions: ['view_classes'],
+    children: [
+      {
+        key: 'class-edit',
+        label: 'Edit Class',
+        path: '/class/edit',
+        requiredPermissions: ['edit_classes'],
+      },
+      {
+        key: 'class-view',
+        label: 'View Class',
+        path: '/class/view',
+        requiredPermissions: ['view_classes'],
+      },
+      {
+        key: 'class-schedule',
+        label: 'Class Schedule',
+        path: '/class/schedule',
+        requiredPermissions: ['edit_schedule_no_time_limit', 'edit_lessons_all'],
+      },
+    ],
+  },
+  {
     key: 'classrooms',
     label: 'Classroom Manage',
     icon: 'building',

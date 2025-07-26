@@ -137,6 +137,7 @@ export default function LessonOverviewPage() {
           date: timeInfo.date,
           time: `${timeInfo.time} - ${endTimeInfo.time}`,
           className: subject.class_name,
+          classId: subject.class_id,
           lessonDetails: `Duration: ${formatDuration(duration)}`,
           feedbackGiven: lesson.feedback_given === 1 ? 'Yes' : 'No'
         });
@@ -293,6 +294,7 @@ export default function LessonOverviewPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lesson Details</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback Given</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -312,11 +314,18 @@ export default function LessonOverviewPage() {
                             {row.feedbackGiven}
                           </span>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex space-x-2">
+                            <a href={`/class/edit?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">编辑</a>
+                            <a href={`/class/view?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">查看</a>
+                            <a href={`/class/schedule?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition">排课</a>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                     {lessonTableData.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                           暂无课程数据
                         </td>
                       </tr>
@@ -331,6 +340,7 @@ export default function LessonOverviewPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                         {formatDuration(totalLessonDuration)}
                       </td>
+                      <td className="px-6 py-4"></td>
                       <td className="px-6 py-4"></td>
                     </tr>
                   </tfoot>

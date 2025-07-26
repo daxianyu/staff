@@ -10,7 +10,7 @@ export default function StaffInfoPage() {
   const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'feedback'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'feedback' | 'subjects'>('overview');
 
   useEffect(() => {
     if (staffId) {
@@ -126,14 +126,18 @@ export default function StaffInfoPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-4">
         {/* 员工信息卡片 */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 sm:p-8 text-white mb-8">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold">
-              {staffInfo.staff_name.charAt(0)}
+        <div className="bg-gradient-to-r from-blue-100 via-blue-200 to-blue-300 rounded-2xl p-6 sm:p-8 text-blue-900 mb-8 shadow-md border border-blue-200">
+          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6">
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-full flex items-center justify-center text-3xl sm:text-4xl font-extrabold text-blue-700 shadow-lg border-4 border-white">
+                {staffInfo.staff_name.charAt(0)}
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">{staffInfo.staff_name}</h1>
-              <p className="text-blue-200 mt-1">教师信息总览</p>
+            <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight drop-shadow-sm text-blue-900 mb-1">
+                {staffInfo.staff_name}
+              </h1>
+              <p className="text-sm sm:text-base text-blue-500 font-medium tracking-wide mb-1">教师信息总览</p>
             </div>
           </div>
         </div>
@@ -141,10 +145,10 @@ export default function StaffInfoPage() {
         {/* 选项卡 */}
         <div className="bg-white rounded-lg shadow-sm mb-6">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex space-x-2 sm:space-x-8 px-4 sm:px-6 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === 'overview'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -154,13 +158,23 @@ export default function StaffInfoPage() {
               </button>
               <button
                 onClick={() => setActiveTab('feedback')}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === 'feedback'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 💬 反馈记录
+              </button>
+              <button
+                onClick={() => setActiveTab('subjects')}
+                className={`py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === 'subjects'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📚 课程列表
               </button>
             </nav>
           </div>
@@ -338,6 +352,80 @@ export default function StaffInfoPage() {
                 </svg>
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">暂无反馈记录</h3>
                 <p className="text-gray-500">该教师还没有收到任何课程反馈</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'subjects' && (
+          <div className="space-y-6">
+            {/* 课程统计 */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-800">📚 课程统计</h3>
+                <div className="text-sm text-gray-600">
+                  总课程: <span className="font-semibold text-blue-600">{staffInfo.subjects?.length || 0}</span> 门
+                </div>
+              </div>
+            </div>
+
+            {/* 课程列表 */}
+            {staffInfo.subjects && staffInfo.subjects.length > 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">课程名称</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">课程ID</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">班级ID</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生数量</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">授课教师</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评分</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {staffInfo.subjects.map((subject) => (
+                        <tr key={subject.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{subject.subject}</div>
+                              {subject.description && (
+                                <div className="text-xs text-gray-500 mt-1">{subject.description}</div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{subject.id}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{subject.class_id}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{subject.student_count}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{subject.teacher_name}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center space-x-1">
+                              <span className="text-yellow-500 text-sm">{getRatingStars(subject.rating)}</span>
+                              <span className="text-sm font-medium text-gray-900">{subject.rating}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex space-x-2">
+                              <a href={`/class/edit?id=${subject.id}`} className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">编辑</a>
+                              <a href={`/class/view?id=${subject.id}`} className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">查看</a>
+                              <a href={`/class/schedule?id=${subject.id}`} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition">排课</a>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">暂无课程记录</h3>
+                <p className="text-gray-500">该教师还没有任何课程信息</p>
               </div>
             )}
           </div>
