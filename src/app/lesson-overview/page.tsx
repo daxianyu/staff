@@ -176,14 +176,12 @@ export default function LessonOverviewPage() {
 
   if (!canViewLessonOverview) {
     return (
-      <DashboardLayout>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
             <p className="text-gray-600">您没有权限访问课程概览页面</p>
           </div>
         </div>
-      </DashboardLayout>
     );
   }
 

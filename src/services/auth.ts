@@ -940,3 +940,51 @@ export async function deleteStaffInvigilate(params: DeleteInvigilateParams) {
     return { status: -1, message: '删除监考失败' };
   }
 }
+
+// 监考汇总相关接口
+export interface InvigilateInfo {
+  record_id: number;
+  staff_id: number;
+  staff_name: string;
+  topic_id: number;
+  topic_name: string;
+  start_time: number;
+  end_time: number;
+  note: string;
+}
+
+export interface InvigilateSummaryData {
+  rows: InvigilateInfo[];
+  total: number;
+}
+
+export interface InvigilateSummaryResponse {
+  status: number;
+  message: string;
+  data: InvigilateSummaryData;
+}
+
+export const getInvigilateSummary = async (params?: {
+  month?: string | null;
+  year?: string;
+}): Promise<InvigilateSummaryResponse> => {
+  try {
+    const response = await fetch('/api/summary/get_all_invigilate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({
+        month: params?.month || null,
+        year: params?.year || new Date().getFullYear().toString()
+      })
+    });
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('获取监考汇总失败:', error);
+    return { status: -1, message: '获取监考汇总失败', data: { rows: [], total: 0 } };
+  }
+};

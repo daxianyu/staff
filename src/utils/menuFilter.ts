@@ -134,6 +134,12 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'calendar',
         requiredPermissions: ['edit_staff'], // Keep your permission settings
       },
+      {
+        key: 'invigilate-summary',
+        label: 'Invigilate Summary',
+        path: '/staff/invigilate-summary',
+        requiredPermissions: ['view_staff'],
+      },
     ],
   },
   {
