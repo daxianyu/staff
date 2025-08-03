@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { getFilteredMenuConfig } from '@/utils/menuFilter';
 import { useUserInfo } from '@/hooks/usePermission';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,23 +9,32 @@ export default function MenuDebugger() {
   const [activeTab, setActiveTab] = useState<'menu' | 'permissions'>('menu');
   const { user } = useUserInfo();
   const { setPermissionOverride, clearPermissionOverrides, getPermissionOverrides, getBaseRights } = useAuth();
-  const filteredMenu = getFilteredMenuConfig(user);
+  
+  // 使用 useMemo 避免在渲染过程中重复计算
+  const filteredMenu = useMemo(() => {
+    return getFilteredMenuConfig(user);
+  }, [user]);
   
   // 权限覆盖状态
-  const permissionOverrides = getPermissionOverrides?.() || {};
-  const baseRights = getBaseRights?.() || [];
+  const permissionOverrides = useMemo(() => {
+    return getPermissionOverrides?.() || {};
+  }, [getPermissionOverrides]);
+  
+  const baseRights = useMemo(() => {
+    return getBaseRights?.() || [];
+  }, [getBaseRights]);
   
   // 常用权限列表（用于调试）
-  const debugPermissions = [
+  const debugPermissions = useMemo(() => [
     ...Object.values(COMMON_PERMISSIONS),
     'view_demo',
     'edit_demo', 
     'delete_demo',
     'view_dashboard',
-  ];
+  ], []);
   
   // 获取权限的当前状态
-  const getPermissionStatus = (permission: string): 'original' | 'enabled' | 'disabled' => {
+  const getPermissionStatus = useCallback((permission: string): 'original' | 'enabled' | 'disabled' => {
     const hasOriginal = baseRights.includes(permission);
     const hasOverride = permissionOverrides.hasOwnProperty(permission);
     
@@ -34,10 +43,10 @@ export default function MenuDebugger() {
     }
     
     return permissionOverrides[permission] ? 'enabled' : 'disabled';
-  };
+  }, [baseRights, permissionOverrides]);
   
   // 切换权限状态
-  const togglePermission = (permission: string) => {
+  const togglePermission = useCallback((permission: string) => {
     const status = getPermissionStatus(permission);
     const hasOriginal = baseRights.includes(permission);
     
@@ -62,7 +71,7 @@ export default function MenuDebugger() {
         setPermissionOverride?.(permission, false);
       }
     }
-  };
+  }, [getPermissionStatus, baseRights, setPermissionOverride, clearPermissionOverrides, permissionOverrides]);
 
   return (
     <>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserInfo, AuthContextType } from '@/types/permission';
 import { authService } from '@/services/authService';
@@ -14,25 +14,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // user.mentor_leader 学科组长
   // 合并用户的所有权限
-  const baseRights = user ? [
-    ...(user.rights || []), 
-    ...(user.operation_right || [])
-  ] : [];
+  const baseRights = useMemo(() => {
+    return user ? [
+      ...(Array.isArray(user.rights) ? user.rights : []), 
+      ...(Array.isArray(user.operation_right) ? user.operation_right : [])
+    ] : [];
+  }, [user]);
   
   // 应用权限覆盖（仅在开发/调试模式下）
-  const rights = baseRights.filter(right => {
-    // 如果有覆盖设置，使用覆盖设置
-    if (permissionOverrides.hasOwnProperty(right)) {
-      return permissionOverrides[right];
-    }
-    // 否则使用原始权限
-    return true;
-  }).concat(
-    // 添加通过覆盖启用的新权限
-    Object.keys(permissionOverrides).filter(right => 
-      permissionOverrides[right] && !baseRights.includes(right)
-    )
-  );
+  const rights = useMemo(() => {
+    return baseRights.filter(right => {
+      // 如果有覆盖设置，使用覆盖设置
+      if (permissionOverrides.hasOwnProperty(right)) {
+        return permissionOverrides[right];
+      }
+      // 否则使用原始权限
+      return true;
+    }).concat(
+      // 添加通过覆盖启用的新权限
+      Object.keys(permissionOverrides).filter(right => 
+        permissionOverrides[right] && !baseRights.includes(right)
+      )
+    );
+  }, [baseRights, permissionOverrides]);
 
   useEffect(() => {
     // 检查用户登录状态
@@ -70,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkUserAuth();
   }, [router]);
 
-  const login = async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string) => {
     try {
       const response = await authService.login({ username, password });
       
@@ -96,9 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('登录失败:', error);
       throw error;
     }
-  };
+  }, [router]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       const response = await authService.logout();
       if (response.code !== 200) {
@@ -116,42 +120,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/login');
       }, 0);
     }
-  };
+  }, [router]);
 
   // 检查单个权限
-  const hasPermission = (permission: string): boolean => {
+  const hasPermission = useCallback((permission: string): boolean => {
     if (!user) return false;
     return rights.includes(permission);
-  };
+  }, [user, rights]);
 
   // 检查多个权限（任意一个满足）
-  const hasAnyPermission = (permissions: string[]): boolean => {
+  const hasAnyPermission = useCallback((permissions: string[]): boolean => {
     if (!user || !permissions.length) return false;
     return permissions.some(permission => rights.includes(permission));
-  };
+  }, [user, rights]);
 
   // 检查多个权限（全部满足）
-  const hasAllPermissions = (permissions: string[]): boolean => {
+  const hasAllPermissions = useCallback((permissions: string[]): boolean => {
     if (!user || !permissions.length) return false;
     return permissions.every(permission => rights.includes(permission));
-  };
+  }, [user, rights]);
 
   // 权限覆盖相关函数（仅用于调试）
-  const setPermissionOverride = (permission: string, enabled: boolean) => {
+  const setPermissionOverride = useCallback((permission: string, enabled: boolean) => {
     setPermissionOverrides(prev => ({
       ...prev,
       [permission]: enabled
     }));
-  };
+  }, []);
 
-  const clearPermissionOverrides = () => {
+  const clearPermissionOverrides = useCallback(() => {
     setPermissionOverrides({});
-  };
+  }, []);
 
-  const getPermissionOverrides = () => permissionOverrides;
-  const getBaseRights = () => baseRights;
+  const getPermissionOverrides = useCallback(() => permissionOverrides, [permissionOverrides]);
+  const getBaseRights = useCallback(() => baseRights, [baseRights]);
 
-  const contextValue: AuthContextType = {
+  const contextValue: AuthContextType = useMemo(() => ({
     user,
     rights,
     hasPermission,
@@ -164,7 +168,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearPermissionOverrides,
     getPermissionOverrides,
     getBaseRights,
-  };
+  }), [
+    user,
+    rights,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    login,
+    logout,
+    setPermissionOverride,
+    clearPermissionOverrides,
+    getPermissionOverrides,
+    getBaseRights,
+  ]);
 
   return (
     <AuthContext.Provider value={contextValue}>

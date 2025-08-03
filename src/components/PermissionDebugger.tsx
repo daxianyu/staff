@@ -79,15 +79,15 @@ export default function PermissionDebugger() {
                 <h3 className="text-md font-semibold mb-2">原始权限数组</h3>
                 <div className="space-y-2">
                   <div>
-                    <h4 className="text-sm font-medium">rights ({user.rights.length} 个):</h4>
+                    <h4 className="text-sm font-medium">rights ({(Array.isArray(user.rights) ? user.rights : []).length} 个):</h4>
                     <div className="bg-gray-50 p-2 rounded text-xs max-h-20 overflow-y-auto">
-                      {user.rights.join(', ')}
+                      {Array.isArray(user.rights) ? user.rights.join(', ') : '非数组格式'}
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium">operation_right ({user.operation_right.length} 个):</h4>
+                    <h4 className="text-sm font-medium">operation_right ({(Array.isArray(user.operation_right) ? user.operation_right : []).length} 个):</h4>
                     <div className="bg-gray-50 p-2 rounded text-xs max-h-20 overflow-y-auto">
-                      {user.operation_right.join(', ')}
+                      {Array.isArray(user.operation_right) ? user.operation_right.join(', ') : '非数组格式'}
                     </div>
                   </div>
                 </div>

@@ -78,7 +78,7 @@ export function useUserInfo() {
     
     // 登录状态
     isLoggedIn: !!user,
-  }), [user, rights, hasPermission, hasAnyPermission, hasAllPermissions]);
+  }), [user, rights, hasPermission, hasAnyPermission, hasAllPermissions, user?.id, user?.name, user?.type, user?.campus_id]);
 }
 
 /**
@@ -139,7 +139,8 @@ export function useHasCampusAccess(campusIds: number[]): boolean {
   return useMemo(() => {
     if (!user) return false;
     // 如果用户有跨校区权限，则可以访问所有校区
-    if (user.rights.includes('cross_campus_rights')) return true;
+    const userRights = Array.isArray(user.rights) ? user.rights : [];
+    if (userRights.includes('cross_campus_rights')) return true;
     return campusIds.includes(user.campus_id);
   }, [user, campusIds]);
 }

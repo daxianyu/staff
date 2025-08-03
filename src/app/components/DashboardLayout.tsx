@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFilteredMenuConfig } from '@/utils/menuFilter';
@@ -66,7 +66,9 @@ export default function DashboardLayout({
   const initialRenderRef = useRef(true);
 
   // 获取过滤后的菜单配置
-  const authorizedNavigation = getFilteredMenuConfig(user);
+  const authorizedNavigation = useMemo(() => {
+    return getFilteredMenuConfig(user);
+  }, [user]);
 
   // 检查是否是移动设备
   useEffect(() => {

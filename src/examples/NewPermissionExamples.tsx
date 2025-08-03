@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PermissionGate, { 
   AdvancedPermissionGate, 
   AdminOnly, 
@@ -200,7 +200,9 @@ function HookExamples() {
   );
   
   // 菜单过滤
-  const filteredMenu = getFilteredMenuConfig(user);
+  const filteredMenu = useMemo(() => {
+    return getFilteredMenuConfig(user);
+  }, [user]);
   
   return (
     <div className="space-y-6">

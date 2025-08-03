@@ -81,7 +81,10 @@ export class MenuFilter {
  * @returns 菜单过滤器实例
  */
 export function createMenuFilter(user: UserInfo | null): MenuFilter {
-  const userRights = user ? [...user.rights, ...user.operation_right] : [];
+  // 确保 rights 和 operation_right 是数组
+  const rights = Array.isArray(user?.rights) ? user.rights : [];
+  const operationRight = Array.isArray(user?.operation_right) ? user.operation_right : [];
+  const userRights = [...rights, ...operationRight];
   return new MenuFilter(userRights);
 }
 
