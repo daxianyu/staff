@@ -1092,6 +1092,7 @@ export interface StaffEditInfo {
     wework_id: string;
     genders: number;
   };
+  mentor_info: Array<[number, string]>; // [mentor_id, mentor_name]
   staff_group_names: string;
   staff_group: {
     [key: string]: Array<{
@@ -1102,9 +1103,7 @@ export interface StaffEditInfo {
   groups: {
     [key: string]: string;
   };
-  campus_info: {
-    [key: string]: string;
-  };
+  campus_info: Array<[number, string]>; // [campus_id, campus_name]
 }
 
 export interface StaffEditFormData {
