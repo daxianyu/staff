@@ -1240,7 +1240,7 @@ export interface ResetPasswordResponse {
   status: number;
   message: string;
   data: {
-    password: string;
+    new_pass: string;
   };
 }
 
@@ -1268,14 +1268,14 @@ export const resetStaffPassword = async (staffId: number): Promise<ResetPassword
     return {
       status: data.status === 0 ? 200 : 400,
       message: data.message || '',
-      data: data.data || { password: '' },
+      data: data.data || { new_pass: '' },
     };
   } catch (error) {
     console.error('重置密码失败:', error);
     return {
       status: 500,
       message: error instanceof Error ? error.message : '重置密码失败',
-      data: { password: '' },
+      data: { new_pass: '' },
     };
   }
 };

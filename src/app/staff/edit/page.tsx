@@ -231,7 +231,7 @@ export default function StaffEditPage() {
       const response = await resetStaffPassword(parseInt(staffId));
       
       if (response.status === 200) {
-        setNewPassword(response.data.password);
+        setNewPassword(response.data.new_pass);
       } else {
         setResetPasswordError(response.message || '重置密码失败');
       }
@@ -667,19 +667,19 @@ export default function StaffEditPage() {
                    <p className="text-sm text-gray-600 mb-4">
                      密码重置成功！新密码如下：
                    </p>
-                   <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                     <div className="flex items-center justify-between">
-                       <span className="font-mono text-sm">{newPassword}</span>
-                       <button
-                         type="button"
-                         onClick={() => copyToClipboard(newPassword)}
-                         className="ml-2 p-1 text-gray-500 hover:text-gray-700"
-                         title="复制密码"
-                       >
-                         <ClipboardDocumentIcon className="h-4 w-4" />
-                       </button>
-                     </div>
-                   </div>
+                                       <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-sm">{newPassword}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(newPassword)}
+                          className="ml-2 p-1 text-gray-500 hover:text-gray-700"
+                          title="复制密码"
+                        >
+                          <ClipboardDocumentIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                    <div className="flex justify-center">
                      <Button
                        type="button"
