@@ -14,7 +14,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // user.mentor_leader 学科组长
   // 合并用户的所有权限
-  const baseRights = user ? [...user.rights, ...user.operation_right] : [];
+  const baseRights = user ? [
+    ...(user.rights || []), 
+    ...(user.operation_right || [])
+  ] : [];
   
   // 应用权限覆盖（仅在开发/调试模式下）
   const rights = baseRights.filter(right => {

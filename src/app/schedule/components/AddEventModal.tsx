@@ -717,7 +717,7 @@ export default function AddEventModal({
                       </p>
                       <div className="mt-2 flex space-x-2">
                         <a
-                          href={`/lesson-overview/edit?id=${initialEvent.subject_id}`}
+                          href={`/class/edit?id=${initialEvent.class_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
@@ -725,7 +725,7 @@ export default function AddEventModal({
                           编辑课程
                         </a>
                         <a
-                          href={`/lesson-overview?id=${initialEvent.subject_id}`}
+                          href={`/class/view?id=${initialEvent.class_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"

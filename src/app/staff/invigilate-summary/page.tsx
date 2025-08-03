@@ -5,16 +5,42 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { getInvigilateSummary, InvigilateInfo } from '@/services/auth';
 
+// 汇总视图的数据结构
+interface TeacherSummary {
+  staff_id: number;
+  staff_name: string;
+  total_sessions: number;
+  total_duration: number;
+  topics: string;
+  first_session: number | null;
+  last_session: number | null;
+  total_duration_hours: number;
+}
+
+// 联合类型，用于处理不同视图的数据
+type TableData = InvigilateInfo | TeacherSummary;
+
+// 类型守卫函数
+function isInvigilateInfo(item: TableData): item is InvigilateInfo {
+  return 'record_id' in item && 'topic_name' in item;
+}
+
+function isTeacherSummary(item: TableData): item is TeacherSummary {
+  return 'total_sessions' in item && 'topics' in item;
+}
+
 export default function InvigilateSummaryPage() {
   const { hasPermission } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [invigilateData, setInvigilateData] = useState<InvigilateInfo[]>([]);
-  const [filteredData, setFilteredData] = useState<InvigilateInfo[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'teacher'>('all');
-  const [selectedTeacher, setSelectedTeacher] = useState<{ staff_id: number; staff_name: string } | null>(null);
+  const [filteredData, setFilteredData] = useState<TableData[]>([]);
+  const [activeTab, setActiveTab] = useState<'all' | 'summary'>('all');
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [showTeacherDetail, setShowTeacherDetail] = useState(false);
+  const [selectedTeacherDetail, setSelectedTeacherDetail] = useState<InvigilateInfo[]>([]);
+  const [selectedTeacherName, setSelectedTeacherName] = useState('');
 
   const canViewInvigilate = hasPermission(PERMISSIONS.VIEW_STAFF);
 
@@ -54,13 +80,47 @@ export default function InvigilateSummaryPage() {
   useEffect(() => {
     let filtered = invigilateData;
 
-    // 如果选择了特定教师，过滤该教师的数据
-    if (activeTab === 'teacher' && selectedTeacher) {
-      filtered = filtered.filter(item => item.staff_id === selectedTeacher.staff_id);
+    // 如果是汇总视图，按老师分组并汇总
+    if (activeTab === 'summary') {
+      const teacherSummary = new Map();
+      
+      invigilateData.forEach(item => {
+        const key = `${item.staff_id}-${item.staff_name}`;
+        if (!teacherSummary.has(key)) {
+          teacherSummary.set(key, {
+            staff_id: item.staff_id,
+            staff_name: item.staff_name,
+            total_sessions: 0,
+            total_duration: 0,
+            topics: new Set(),
+            first_session: null,
+            last_session: null
+          });
+        }
+        
+        const summary = teacherSummary.get(key);
+        summary.total_sessions += 1;
+        summary.total_duration += (item.end_time - item.start_time);
+        summary.topics.add(item.topic_name);
+        
+        if (!summary.first_session || item.start_time < summary.first_session) {
+          summary.first_session = item.start_time;
+        }
+        if (!summary.last_session || item.end_time > summary.last_session) {
+          summary.last_session = item.end_time;
+        }
+      });
+      
+      // 转换为数组格式
+      filtered = Array.from(teacherSummary.values()).map(summary => ({
+        ...summary,
+        topics: Array.from(summary.topics).join(', '),
+        total_duration_hours: Math.round((summary.total_duration / 3600) * 100) / 100
+      }));
     }
 
     setFilteredData(filtered);
-  }, [invigilateData, activeTab, selectedTeacher]);
+  }, [invigilateData, activeTab]);
 
   // 格式化时间
   const formatTime = (timestamp: number): string => {
@@ -119,6 +179,21 @@ export default function InvigilateSummaryPage() {
     const now = new Date();
     setSelectedMonth((now.getMonth() + 1).toString().padStart(2, '0'));
     setSelectedYear(now.getFullYear().toString());
+  };
+
+  // 显示老师详细监考信息
+  const showTeacherDetailModal = (staffId: number, staffName: string) => {
+    const teacherRecords = invigilateData.filter(item => item.staff_id === staffId);
+    setSelectedTeacherDetail(teacherRecords);
+    setSelectedTeacherName(staffName);
+    setShowTeacherDetail(true);
+  };
+
+  // 关闭老师详细监考信息
+  const closeTeacherDetailModal = () => {
+    setShowTeacherDetail(false);
+    setSelectedTeacherDetail([]);
+    setSelectedTeacherName('');
   };
 
   if (loading) {
@@ -234,10 +309,7 @@ export default function InvigilateSummaryPage() {
             <div className="flex items-center justify-between px-6">
               <nav className="flex space-x-8">
                 <button
-                  onClick={() => {
-                    setActiveTab('all');
-                    setSelectedTeacher(null);
-                  }}
+                  onClick={() => setActiveTab('all')}
                   className={`py-4 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === 'all'
                       ? 'border-blue-500 text-blue-600'
@@ -246,18 +318,16 @@ export default function InvigilateSummaryPage() {
                 >
                   总列表
                 </button>
-                {selectedTeacher && (
-                  <button
-                    onClick={() => setActiveTab('teacher')}
-                    className={`py-4 text-sm font-medium border-b-2 transition-colors ${
-                      activeTab === 'teacher'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {selectedTeacher.staff_name}的监考
-                  </button>
-                )}
+                <button
+                  onClick={() => setActiveTab('summary')}
+                  className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'summary'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  按老师汇总
+                </button>
               </nav>
               
               {/* 月份导航按钮 */}
@@ -301,19 +371,8 @@ export default function InvigilateSummaryPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-800">
-                {activeTab === 'all' ? '监考详情' : `${selectedTeacher?.staff_name || ''}的监考详情`}
+                {activeTab === 'all' ? '监考详情' : '按老师汇总'}
               </h3>
-              {activeTab === 'teacher' && selectedTeacher && (
-                <button
-                  onClick={() => {
-                    setActiveTab('all');
-                    setSelectedTeacher(null);
-                  }}
-                  className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  返回总列表
-                </button>
-              )}
             </div>
           </div>
           
@@ -325,32 +384,59 @@ export default function InvigilateSummaryPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       监考教师
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      考试科目
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      考试日期
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      考试时间
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      监考时长
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      校区
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      备注
-                    </th>
+                    {activeTab === 'all' ? (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          考试科目
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          考试日期
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          考试时间
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          监考时长
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          校区
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          备注
+                        </th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          监考次数
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          总时长
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          首次监考
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          最后监考
+                        </th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredData.map((item) => (
-                    <tr key={item.record_id} className="hover:bg-gray-50">
+                  {filteredData.map((item, index) => (
+                    <tr key={activeTab === 'all' && isInvigilateInfo(item) ? item.record_id : `${item.staff_id}-${index}`} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                          <div 
+                            className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+                              activeTab === 'summary' 
+                                ? 'bg-blue-100 cursor-pointer hover:bg-blue-200 transition-colors' 
+                                : 'bg-blue-100'
+                            }`}
+                            onClick={activeTab === 'summary' ? () => showTeacherDetailModal(item.staff_id, item.staff_name) : undefined}
+                            title={activeTab === 'summary' ? "点击查看详细监考信息" : undefined}
+                          >
                             <span className="text-blue-600 font-semibold text-sm">
                               {item.staff_name.charAt(0)}
                             </span>
@@ -358,18 +444,15 @@ export default function InvigilateSummaryPage() {
                           <div>
                             <div 
                               className={`text-sm font-medium ${
-                                activeTab === 'all' 
+                                activeTab === 'summary' 
                                   ? 'text-blue-600 cursor-pointer hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors inline-flex items-center gap-1'
                                   : 'text-gray-900'
                               }`}
-                              onClick={activeTab === 'all' ? () => {
-                                setSelectedTeacher({ staff_id: item.staff_id, staff_name: item.staff_name });
-                                setActiveTab('teacher');
-                              } : undefined}
-                              title={activeTab === 'all' ? "点击查看该教师的监考详情" : undefined}
+                              onClick={activeTab === 'summary' ? () => showTeacherDetailModal(item.staff_id, item.staff_name) : undefined}
+                              title={activeTab === 'summary' ? "点击查看详细监考信息" : undefined}
                             >
                               {item.staff_name}
-                              {activeTab === 'all' && (
+                              {activeTab === 'summary' && (
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                 </svg>
@@ -379,29 +462,50 @@ export default function InvigilateSummaryPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{item.topic_name}</div>
-                          <div className="text-sm text-gray-500">{item.topic_id}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(item.start_time)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatTime(item.start_time)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {calculateDuration(item.start_time, item.end_time)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        -
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="max-w-xs truncate" title={item.note}>
-                          {item.note || '-'}
-                        </div>
-                      </td>
+                      {activeTab === 'all' && isInvigilateInfo(item) ? (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{item.topic_name}</div>
+                              <div className="text-sm text-gray-500">{item.topic_id}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatDate(item.start_time)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatTime(item.start_time)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {calculateDuration(item.start_time, item.end_time)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            -
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <div className="max-w-xs truncate" title={item.note}>
+                              {item.note || '-'}
+                            </div>
+                          </td>
+                        </>
+                      ) : activeTab === 'summary' && isTeacherSummary(item) ? (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {item.total_sessions} 次
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className="font-medium">{item.total_duration_hours} 小时</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.first_session ? formatDate(item.first_session) : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.last_session ? formatDate(item.last_session) : '-'}
+                          </td>
+                        </>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -418,6 +522,91 @@ export default function InvigilateSummaryPage() {
           )}
         </div>
       </div>
+
+      {/* 老师详细监考信息模态框 */}
+      {showTeacherDetail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {selectedTeacherName} 的详细监考信息
+              </h3>
+              <button
+                onClick={closeTeacherDetailModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+              <table className="w-full">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      考试科目
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      考试日期
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      考试时间
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      监考时长
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      备注
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {selectedTeacherDetail.map((item) => (
+                    <tr key={item.record_id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{item.topic_name}</div>
+                          <div className="text-sm text-gray-500">{item.topic_id}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(item.start_time)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatTime(item.start_time)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {calculateDuration(item.start_time, item.end_time)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div className="max-w-xs truncate" title={item.note}>
+                          {item.note || '-'}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  共 {selectedTeacherDetail.length} 条监考记录
+                </div>
+                <button
+                  onClick={closeTeacherDetailModal}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  关闭
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

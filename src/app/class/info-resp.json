@@ -1,0 +1,80 @@
+{
+    "status": 0,
+    "message": "",
+    "data": {
+      "student_list": {
+        "1": "华小曜",
+        "2": "易鸣之",
+        "3": "迟珵钰",
+        "4": "朱芊芊",
+        "5": "朱秋颐",
+        "6": "尚奕廷",
+        "7": "李文睿",
+        "8": "徐正伦"
+      },
+      "staff_list": {
+        "24": "汪强",
+        "33": "xxx",
+        "41": "校长办公室",
+        "78": "吴恩慈",
+        "180": "姚鑫",
+        "227": "郎筱煜",
+        "280": "张梁默",
+        "373": "付国兴"
+      },
+      "topics": {
+        "317": "AQA IG English Literature",
+        "318": "Public Speaking",
+        "319": "English",
+        "320": "CIE EFL-Reading",
+        "321": "CIE EFL-Writing",
+        "322": "ESL-Vocabulary",
+        "323": "ESL-English",
+        "324": "ESL-Grammar"
+      },
+      "class_topics": [
+        {
+          "id": 59975,
+          "teacher_id": 637,
+          "description": "",
+          "topic_id": 357,
+          "exam_id": 0,
+          "student_signup": "0"
+        }
+      ],
+      "exam_list": [
+        {
+          "id": 2612,
+          "name": "NONE",
+          "time": 1577808000
+        }
+      ],
+      "class_student": [
+        {
+          "student_id": 29,
+          "start_time": 1483200000,
+          "end_time": 1737734400
+        },
+        {
+          "student_id": 80,
+          "start_time": 1451577600,
+          "end_time": -1
+        },
+        {
+          "student_id": 45,
+          "start_time": 1451577600,
+          "end_time": -1
+        },
+        {
+          "student_id": 115,
+          "start_time": -1,
+          "end_time": 1752636327
+        },
+        {
+          "student_id": 92,
+          "start_time": -1,
+          "end_time": -1
+        }
+      ]
+    }
+  }

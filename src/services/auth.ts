@@ -988,3 +988,84 @@ export const getInvigilateSummary = async (params?: {
     return { status: -1, message: '获取监考汇总失败', data: { rows: [], total: 0 } };
   }
 };
+
+// 班级信息相关接口定义
+export interface ClassStudent {
+  student_id: number;
+  start_time: number;
+  end_time: number;
+}
+
+export interface ClassTopic {
+  id: number;
+  teacher_id: number;
+  description: string;
+  topic_id: number;
+  exam_id: number;
+  student_signup: string;
+}
+
+export interface ExamInfo {
+  id: number;
+  name: string;
+  time: number;
+}
+
+export interface ClassInfoData {
+  student_list: Record<string, string>;
+  staff_list: Record<string, string>;
+  topics: Record<string, string>;
+  class_topics: ClassTopic[];
+  exam_list: ExamInfo[];
+  class_student: ClassStudent[];
+}
+
+export interface ClassInfoResponse {
+  status: number;
+  message: string;
+  data: ClassInfoData;
+}
+
+export const getClassInfo = async (classId: string): Promise<ClassInfoResponse> => {
+  try {
+    const response = await fetch(`/api/class/class-info/${classId}`, {
+      method: 'GET',
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      return data;
+    } else {
+      return { 
+        status: -1, 
+        message: '获取班级信息失败', 
+        data: {
+          student_list: {},
+          staff_list: {},
+          topics: {},
+          class_topics: [],
+          exam_list: [],
+          class_student: []
+        }
+      };
+    }
+  } catch (error) {
+    console.error('获取班级信息失败:', error);
+    return { 
+      status: -1, 
+      message: '获取班级信息失败', 
+      data: {
+        student_list: {},
+        staff_list: {},
+        topics: {},
+        class_topics: [],
+        exam_list: [],
+        class_student: []
+      }
+    };
+  }
+};

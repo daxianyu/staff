@@ -21,6 +21,10 @@ import {
   BuildingOffice2Icon,
   CurrencyDollarIcon,
   AcademicCapIcon,
+  ClipboardDocumentListIcon,
+  PlusCircleIcon,
+  CalculatorIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
 
 // 图标映射表
@@ -28,14 +32,20 @@ const iconMap: Record<string, React.ElementType> = {
   'dashboard': HomeIcon,
   'calendar': CalendarIcon,
   'users': UserGroupIcon,
+  'user-group': UserGroupIcon,
   'graduation-cap': AcademicCapIcon,
   'book': BookOpenIcon,
   'building': BuildingOffice2Icon,
+  'building-office': BuildingOffice2Icon,
   'dollar-sign': CurrencyDollarIcon,
   'settings': Cog6ToothIcon,
   'table': TableCellsIcon,
   'user': UserIcon,
   'chart': ChartBarIcon,
+  'clipboard-document-list': ClipboardDocumentListIcon,
+  'plus-circle': PlusCircleIcon,
+  'calculator': CalculatorIcon,
+  'map-pin': MapPinIcon,
 };
 
 // 获取图标组件
