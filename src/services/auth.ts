@@ -338,6 +338,53 @@ export const getStaffList = async (searchParams?: {
   }
 };
 
+// 获取启用的员工列表（默认）
+export const getActiveStaffList = async (searchParams?: { 
+  name?: string; 
+  page?: number; 
+  limit?: number; 
+}): Promise<ApiResponse> => {
+  return getStaffList({ ...searchParams, status: 1 });
+};
+
+// 获取禁用的员工列表
+export const getDisabledStaffList = async (searchParams?: { 
+  name?: string; 
+  page?: number; 
+  limit?: number; 
+}): Promise<ApiResponse> => {
+  return getStaffList({ ...searchParams, status: 0 });
+};
+
+// 获取所有员工列表（包括启用和禁用的）
+export const getAllStaffList = async (searchParams?: { 
+  name?: string; 
+  page?: number; 
+  limit?: number; 
+}): Promise<ApiResponse> => {
+  // 注意：后端接口目前不支持获取所有状态的员工，需要分别获取后合并
+  const [activeResponse, disabledResponse] = await Promise.all([
+    getActiveStaffList(searchParams),
+    getDisabledStaffList(searchParams)
+  ]);
+  
+  if (activeResponse.code === 200 && disabledResponse.code === 200) {
+    const activeData = Array.isArray(activeResponse.data) ? activeResponse.data : [];
+    const disabledData = Array.isArray(disabledResponse.data) ? disabledResponse.data : [];
+    
+    return {
+      code: 200,
+      message: '获取成功',
+      data: [...activeData, ...disabledData]
+    };
+  }
+  
+  return {
+    code: 500,
+    message: '获取员工列表失败',
+  };
+};
+
 // 添加员工
 export const addStaff = async (staffData: StaffFormData): Promise<ApiResponse> => {
   try {
@@ -410,9 +457,11 @@ export const editStaff = async (staffId: number, staffData: StaffFormData): Prom
 };
 
 // 删除员工
-export const deleteStaff = async (staffId: number): Promise<ApiResponse> => {
+export const deleteStaff = async (staffIds: number | number[]): Promise<ApiResponse> => {
   try {
-    const requestData = { id: staffId };
+    // 支持单个ID或ID数组，转换为逗号分隔的字符串
+    const ids = Array.isArray(staffIds) ? staffIds.join(',') : staffIds.toString();
+    const requestData = { ids };
     console.log('删除员工请求参数:', requestData);
     console.log('删除员工请求URL:', '/api/staff/delete');
     
@@ -445,27 +494,30 @@ export const deleteStaff = async (staffId: number): Promise<ApiResponse> => {
   }
 };
 
-// 禁用员工账户
-export const disableStaffAccount = async (staffId: number): Promise<ApiResponse> => {
+// 更新员工账户状态（启用/禁用）
+export const updateStaffActiveStatus = async (recordId: number, status: 0 | 1): Promise<ApiResponse> => {
   try {
-    const requestData = { id: staffId };
-    console.log('禁用员工账户请求参数:', requestData);
-    console.log('禁用员工账户请求URL:', '/api/staff/disable_account');
+    const requestData = { 
+      record_id: recordId,
+      status 
+    };
+    console.log('更新员工账户状态请求参数:', requestData);
+    console.log('更新员工账户状态请求URL:', '/api/staff/update_active');
     
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
     };
 
-    const response = await fetch('/api/staff/disable_account', {
+    const response = await fetch('/api/staff/update_active', {
       method: 'POST',
       headers,
       body: JSON.stringify(requestData),
     });
     
     const data = await response.json();
-    console.log('禁用员工账户响应状态:', response.status);
-    console.log('禁用员工账户响应结果:', data);
+    console.log('更新员工账户状态响应状态:', response.status);
+    console.log('更新员工账户状态响应结果:', data);
     
     return {
       code: data.status === 0 ? 200 : 400,
@@ -473,12 +525,22 @@ export const disableStaffAccount = async (staffId: number): Promise<ApiResponse>
       data: data.data,
     };
   } catch (error) {
-    console.error('禁用员工账户异常:', error);
+    console.error('更新员工账户状态异常:', error);
     return {
       code: 500,
-      message: error instanceof Error ? error.message : '禁用员工账户失败',
+      message: error instanceof Error ? error.message : '更新员工账户状态失败',
     };
   }
+};
+
+// 禁用员工账户（兼容旧接口）
+export const disableStaffAccount = async (staffId: number): Promise<ApiResponse> => {
+  return updateStaffActiveStatus(staffId, 0);
+};
+
+// 启用员工账户
+export const enableStaffAccount = async (staffId: number): Promise<ApiResponse> => {
+  return updateStaffActiveStatus(staffId, 1);
 };
 
 // 获取老师默认可用时间

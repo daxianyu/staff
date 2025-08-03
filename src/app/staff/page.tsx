@@ -5,10 +5,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
   getStaffList, 
+  getActiveStaffList,
+  getDisabledStaffList,
+  getAllStaffList,
   addStaff, 
   editStaff, 
   deleteStaff, 
   disableStaffAccount,
+  enableStaffAccount,
   type Staff,
   type StaffFormData 
 } from '@/services/auth';
@@ -36,9 +40,12 @@ export default function StaffPage() {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [staffStatusFilter, setStaffStatusFilter] = useState<'active' | 'disabled' | 'all'>('active');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [showEnableModal, setShowEnableModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [formData, setFormData] = useState<StaffFormData>({
     first_name: '',
@@ -129,16 +136,43 @@ export default function StaffPage() {
     if (canView) {
       loadStaffList();
     }
-  }, [canView]);
+  }, [canView, staffStatusFilter]);
 
 
 
   const loadStaffList = async () => {
     try {
       setLoading(true);
-      const response = await getStaffList();
+      let response;
+      
+      switch (staffStatusFilter) {
+        case 'active':
+          response = await getActiveStaffList();
+          break;
+        case 'disabled':
+          response = await getDisabledStaffList();
+          break;
+        case 'all':
+          response = await getAllStaffList();
+          break;
+        default:
+          response = await getActiveStaffList();
+      }
+      
       if (response.code === 200 && response.data) {
-        setStaffList(response.data as Staff[]);
+        let staffData = response.data as Staff[];
+        
+        // 在开发环境中，将"金鹏"放到列表最前面
+        if (process.env.NODE_ENV === 'development') {
+          staffData = staffData.sort((a, b) => {
+            // 如果名字包含"金鹏"，则排在前面
+            if (a.name.includes('金鹏')) return -1;
+            if (b.name.includes('金鹏')) return 1;
+            return 0;
+          });
+        }
+        
+        setStaffList(staffData);
       } else {
         console.error('获取员工列表失败:', response.message);
       }
@@ -192,6 +226,40 @@ export default function StaffPage() {
       }
     } catch (error) {
       console.error('禁用账户失败:', error);
+    }
+  };
+
+  const confirmDisable = async () => {
+    if (selectedStaff) {
+      try {
+        const response = await disableStaffAccount(selectedStaff.staff_id);
+        if (response.code === 200) {
+          console.log('禁用账户成功');
+          setShowDisableModal(false);
+          loadStaffList();
+        } else {
+          console.error('禁用账户失败:', response.message);
+        }
+      } catch (error) {
+        console.error('禁用账户失败:', error);
+      }
+    }
+  };
+
+  const confirmEnable = async () => {
+    if (selectedStaff) {
+      try {
+        const response = await enableStaffAccount(selectedStaff.staff_id);
+        if (response.code === 200) {
+          console.log('启用账户成功');
+          setShowEnableModal(false);
+          loadStaffList();
+        } else {
+          console.error('启用账户失败:', response.message);
+        }
+      } catch (error) {
+        console.error('启用账户失败:', error);
+      }
     }
   };
 
@@ -318,16 +386,68 @@ export default function StaffPage() {
         {/* 搜索和操作栏 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="relative flex-1 max-w-md">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by name, groups, or campus..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, groups, or campus..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              {/* 状态过滤器 */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">员工状态:</span>
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => {
+                      setStaffStatusFilter('active');
+                      setCurrentPage(1);
+                    }}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      staffStatusFilter === 'active'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    在职员工
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStaffStatusFilter('disabled');
+                      setCurrentPage(1);
+                    }}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      staffStatusFilter === 'disabled'
+                        ? 'bg-white text-red-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    离职员工
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStaffStatusFilter('all');
+                      setCurrentPage(1);
+                    }}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      staffStatusFilter === 'all'
+                        ? 'bg-white text-gray-800 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    全部员工
+                  </button>
+                </div>
+              </div>
             </div>
+            
             {canEditStaff && (
               <button
                 onClick={handleAddStaff}
@@ -368,9 +488,23 @@ export default function StaffPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentStaff.map((staff) => (
-                    <tr key={staff.staff_id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={staff.staff_id} className={`hover:bg-gray-50 transition-colors ${
+                      staff.status === 0 ? 'bg-red-50' : staff.status === 1 ? 'bg-green-50' : ''
+                    }`}>
                       <td className="px-6 py-4 whitespace-nowrap w-1/4 sm:w-auto">
-                        <div className="text-sm font-medium text-gray-900 truncate">{staff.name}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-gray-900 truncate">{staff.name}</div>
+                          {staff.status === 0 && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                              已离职
+                            </span>
+                          )}
+                          {staff.status === 1 && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+                              在职
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap w-1/4 sm:w-auto">
                         <div className="text-sm text-gray-900 truncate">{staff.group_name}</div>
@@ -484,39 +618,74 @@ export default function StaffPage() {
                         </Link>
                       )}
 
-                      {/* Default availability - 需要 view_staff 权限 */}
-                      {canViewStaffDetails && (
-                        <button
-                          onClick={() => {
-                            setExpandedRows(new Set());
-                            // TODO: 实现默认可用性功能
-                          }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 flex items-center gap-3 transition-colors touch-manipulation"
-                        >
-                          <svg className="h-4 w-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Default Availability
-                        </button>
-                      )}
-
                       {/* 分隔线 - 只有当有管理权限时才显示 */}
                       {(canViewStaffDetails && (canEditStaff || canDeleteStaff)) && (
                         <div className="border-t border-gray-200 my-2"></div>
                       )}
 
-                      {/* Disable account - 需要 edit_staff 权限 */}
+                      {/* Disable/Enable account - 需要 edit_staff 权限 */}
                       {canEditStaff && (
-                        <button
-                          onClick={() => {
-                            handleDisableAccount(staff.staff_id);
-                            setExpandedRows(new Set());
-                          }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 flex items-center gap-3 transition-colors touch-manipulation"
-                        >
-                          <LockClosedIcon className="h-4 w-4 text-yellow-500" />
-                          Disable Account
-                        </button>
+                        <>
+                          {staffStatusFilter === 'active' && (
+                            <button
+                              onClick={() => {
+                                setSelectedStaff(staff);
+                                setShowDisableModal(true);
+                                setExpandedRows(new Set());
+                              }}
+                              className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 flex items-center gap-3 transition-colors touch-manipulation"
+                            >
+                              <LockClosedIcon className="h-4 w-4 text-yellow-500" />
+                              Disable Account
+                            </button>
+                          )}
+                          {staffStatusFilter === 'disabled' && (
+                            <button
+                              onClick={() => {
+                                setSelectedStaff(staff);
+                                setShowEnableModal(true);
+                                setExpandedRows(new Set());
+                              }}
+                              className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 flex items-center gap-3 transition-colors touch-manipulation"
+                            >
+                              <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                              </svg>
+                              Enable Account
+                            </button>
+                          )}
+                          {staffStatusFilter === 'all' && (
+                            <>
+                              {staff.status === 1 ? (
+                                <button
+                                  onClick={() => {
+                                    setSelectedStaff(staff);
+                                    setShowDisableModal(true);
+                                    setExpandedRows(new Set());
+                                  }}
+                                  className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 flex items-center gap-3 transition-colors touch-manipulation"
+                                >
+                                  <LockClosedIcon className="h-4 w-4 text-yellow-500" />
+                                  Disable Account
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedStaff(staff);
+                                    setShowEnableModal(true);
+                                    setExpandedRows(new Set());
+                                  }}
+                                  className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 flex items-center gap-3 transition-colors touch-manipulation"
+                                >
+                                  <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                                  </svg>
+                                  Enable Account
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </>
                       )}
 
                       {/* Delete account - 需要 delete_staff 权限 */}
@@ -776,6 +945,90 @@ export default function StaffPage() {
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(false)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 禁用账户确认模态框 */}
+      {showDisableModal && selectedStaff && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowDisableModal(false)}></div>
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div className="sm:flex sm:items-start">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <LockClosedIcon className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Confirm Disable Account
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Are you sure you want to disable the account for staff member <span className="font-medium">{selectedStaff.name}</span>?
+                      This will prevent them from accessing the system.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  onClick={confirmDisable}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Disable
+                </button>
+                <button
+                  onClick={() => setShowDisableModal(false)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 启用账户确认模态框 */}
+      {showEnableModal && selectedStaff && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowEnableModal(false)}></div>
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div className="sm:flex sm:items-start">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Confirm Enable Account
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Are you sure you want to enable the account for staff member <span className="font-medium">{selectedStaff.name}</span>?
+                      This will allow them to access the system again.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  onClick={confirmEnable}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Enable
+                </button>
+                <button
+                  onClick={() => setShowEnableModal(false)}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm"
                 >
                   Cancel

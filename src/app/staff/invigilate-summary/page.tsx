@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { getInvigilateSummary, InvigilateInfo } from '@/services/auth';
+import { ExcelExporter, convertObjectsToSheetData } from '@/components/ExcelExporter';
 
 // 汇总视图的数据结构
 interface TeacherSummary {
@@ -196,6 +197,79 @@ export default function InvigilateSummaryPage() {
     setSelectedTeacherName('');
   };
 
+  // 准备Excel导出数据
+  const prepareExcelData = () => {
+    const sheets = [];
+    
+    // 第一个sheet：监考详情
+    if (invigilateData.length > 0) {
+      const detailHeaders = ['监考教师', '教师ID', '考试科目', '科目ID', '考试日期', '考试时间', '监考时长', '校区', '备注'];
+      const detailData = invigilateData.map(item => ({
+        '监考教师': item.staff_name,
+        '教师ID': item.staff_id,
+        '考试科目': item.topic_name,
+        '科目ID': item.topic_id,
+        '考试日期': formatDate(item.start_time),
+        '考试时间': formatTime(item.start_time),
+        '监考时长': calculateDuration(item.start_time, item.end_time),
+        '校区': '-',
+        '备注': item.note || '-'
+      }));
+      
+      sheets.push(convertObjectsToSheetData(detailData, detailHeaders, '监考详情'));
+    }
+    
+    // 第二个sheet：按老师汇总
+    // 无论当前是什么视图，都生成汇总数据
+    const teacherSummary = new Map();
+    
+    invigilateData.forEach(item => {
+      const key = `${item.staff_id}-${item.staff_name}`;
+      if (!teacherSummary.has(key)) {
+        teacherSummary.set(key, {
+          staff_id: item.staff_id,
+          staff_name: item.staff_name,
+          total_sessions: 0,
+          total_duration: 0,
+          topics: new Set(),
+          first_session: null,
+          last_session: null
+        });
+      }
+      
+      const summary = teacherSummary.get(key);
+      summary.total_sessions += 1;
+      summary.total_duration += (item.end_time - item.start_time);
+      summary.topics.add(item.topic_name);
+      
+      if (!summary.first_session || item.start_time < summary.first_session) {
+        summary.first_session = item.start_time;
+      }
+      if (!summary.last_session || item.end_time > summary.last_session) {
+        summary.last_session = item.end_time;
+      }
+    });
+    
+    if (teacherSummary.size > 0) {
+      const summaryHeaders = ['监考教师', '教师ID', '监考次数', '总时长(小时)', '首次监考', '最后监考'];
+      const summaryData = Array.from(teacherSummary.values()).map(summary => ({
+        '监考教师': summary.staff_name,
+        '教师ID': summary.staff_id,
+        '监考次数': summary.total_sessions,
+        '总时长(小时)': Math.round((summary.total_duration / 3600) * 100) / 100,
+        '首次监考': summary.first_session ? formatDate(summary.first_session) : '-',
+        '最后监考': summary.last_session ? formatDate(summary.last_session) : '-',
+      }));
+      
+      sheets.push(convertObjectsToSheetData(summaryData, summaryHeaders, '按老师汇总'));
+    }
+    
+    return {
+      filename: `监考汇总_${selectedYear}年${selectedMonth}月`,
+      sheets
+    };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -373,6 +447,20 @@ export default function InvigilateSummaryPage() {
               <h3 className="text-lg font-semibold text-gray-800">
                 {activeTab === 'all' ? '监考详情' : '按老师汇总'}
               </h3>
+              
+              {/* 导出按钮 */}
+              {filteredData.length > 0 && (
+                <ExcelExporter 
+                  config={prepareExcelData()}
+                  disabled={loading}
+                  className="text-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  导出Excel
+                </ExcelExporter>
+              )}
             </div>
           </div>
           
