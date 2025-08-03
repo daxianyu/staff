@@ -1069,3 +1069,214 @@ export const getClassInfo = async (classId: string): Promise<ClassInfoResponse> 
     };
   }
 };
+
+// 员工编辑相关接口定义
+export interface StaffEditInfo {
+  staff_info: {
+    id: number;
+    campus_id: number;
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    name_search_cache: string;
+    phone_0: string;
+    phone_1: string;
+    email: string;
+    email_verified: number;
+    active: number;
+    inactive_since: number;
+    pay_model_id: number;
+    zoom_id: string;
+    mentor_leader_id: number;
+    company_email: string;
+    wework_id: string;
+    genders: number;
+  };
+  staff_group_names: string;
+  staff_group: {
+    [key: string]: Array<{
+      group_name: string;
+      group_id: number;
+    }>;
+  };
+  groups: {
+    [key: string]: string;
+  };
+  campus_info: {
+    [key: string]: string;
+  };
+}
+
+export interface StaffEditFormData {
+  campus_id: number;
+  company_email: string;
+  email: string;
+  first_name: string;
+  group_ids: string;
+  last_name: string;
+  mentor_leader_id: number;
+  phone_0: string;
+  phone_1: string;
+  record_id: number;
+  zoom_id: string;
+}
+
+// 获取员工编辑信息
+export const getStaffEditInfo = async (staffId: number): Promise<ApiResponse<StaffEditInfo>> => {
+  try {
+    console.log('获取员工编辑信息请求URL:', `/api/staff/info/${staffId}`);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch(`/api/staff/info/${staffId}`, {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取员工编辑信息响应状态:', response.status);
+    console.log('获取员工编辑信息响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取员工编辑信息失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取员工编辑信息失败',
+    };
+  }
+};
+
+// 更新员工信息
+export const updateStaffInfo = async (staffData: StaffEditFormData): Promise<ApiResponse> => {
+  try {
+    console.log('更新员工信息请求参数:', staffData);
+    console.log('更新员工信息请求URL:', '/api/staff/edit');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/staff/edit', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(staffData),
+    });
+    
+    const data = await response.json();
+    console.log('更新员工信息响应状态:', response.status);
+    console.log('更新员工信息响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新员工信息失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新员工信息失败',
+    };
+  }
+};
+
+// Campus相关接口定义
+export interface Campus {
+  id: number;
+  name: string;
+  code?: string;
+}
+
+export interface CampusListResponse {
+  status: number;
+  message: string;
+  data: Campus[];
+}
+
+// 获取campus列表
+export const getCampusList = async (): Promise<CampusListResponse> => {
+  try {
+    console.log('获取campus列表请求URL:', '/api/campus/list');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/campus/list', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取campus列表响应状态:', response.status);
+    console.log('获取campus列表响应结果:', data);
+    
+    return {
+      status: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data || [],
+    };
+  } catch (error) {
+    console.error('获取campus列表失败:', error);
+    return {
+      status: 500,
+      message: error instanceof Error ? error.message : '获取campus列表失败',
+      data: [],
+    };
+  }
+};
+
+// 重置密码相关接口定义
+export interface ResetPasswordResponse {
+  status: number;
+  message: string;
+  data: {
+    password: string;
+  };
+}
+
+// 重置员工密码
+export const resetStaffPassword = async (staffId: number): Promise<ResetPasswordResponse> => {
+  try {
+    console.log('重置密码请求参数:', { staff_id: staffId });
+    console.log('重置密码请求URL:', '/api/staff/reset_password');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/staff/reset_password', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ staff_id: staffId }),
+    });
+    
+    const data = await response.json();
+    console.log('重置密码响应状态:', response.status);
+    console.log('重置密码响应结果:', data);
+    
+    return {
+      status: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data || { password: '' },
+    };
+  } catch (error) {
+    console.error('重置密码失败:', error);
+    return {
+      status: 500,
+      message: error instanceof Error ? error.message : '重置密码失败',
+      data: { password: '' },
+    };
+  }
+};
