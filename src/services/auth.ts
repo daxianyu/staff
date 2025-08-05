@@ -1297,6 +1297,40 @@ export const getCampusList = async (): Promise<CampusListResponse> => {
   }
 };
 
+// 获取所有校区列表 (新增接口)
+export const getAllCampus = async (): Promise<CampusListResponse> => {
+  try {
+    console.log('获取所有校区列表请求URL:', '/api/campus/get_all_campus');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/campus/get_all_campus', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取所有校区列表响应状态:', response.status);
+    console.log('获取所有校区列表响应结果:', data);
+    
+    return {
+      status: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data || [],
+    };
+  } catch (error) {
+    console.error('获取所有校区列表失败:', error);
+    return {
+      status: 500,
+      message: error instanceof Error ? error.message : '获取所有校区列表失败',
+      data: [],
+    };
+  }
+};
+
 // 重置密码相关接口定义
 export interface ResetPasswordResponse {
   status: number;

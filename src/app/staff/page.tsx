@@ -13,8 +13,10 @@ import {
   deleteStaff, 
   disableStaffAccount,
   enableStaffAccount,
+  getAllCampus,
   type Staff,
-  type StaffFormData 
+  type StaffFormData,
+  type Campus
 } from '@/services/auth';
 import { 
   PlusIcon, 
@@ -24,7 +26,8 @@ import {
   MagnifyingGlassIcon,
   UserCircleIcon,
   XMarkIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ClipboardDocumentIcon
 } from '@heroicons/react/24/outline';
 import DropdownPortal from '@/components/DropdownPortal';
 import Button from '@/components/Button';
@@ -56,11 +59,19 @@ export default function StaffPage() {
     campus_id: 0
   });
   
+  // 密码提示模态框状态
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  
   const [validationErrors, setValidationErrors] = useState<{
     phone_0?: string;
     phone_1?: string;
     email?: string;
   }>({});
+
+  // 校区列表状态
+  const [campusList, setCampusList] = useState<Campus[]>([]);
+  const [campusLoading, setCampusLoading] = useState(false);
 
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -183,6 +194,42 @@ export default function StaffPage() {
     }
   };
 
+  // 加载校区列表
+  const loadCampusList = async () => {
+    try {
+      setCampusLoading(true);
+      const response = await getAllCampus();
+      
+      if (response.status === 200 && response.data) {
+        setCampusList(response.data);
+      } else {
+        console.error('获取校区列表失败:', response.message);
+      }
+    } catch (error) {
+      console.error('加载校区列表失败:', error);
+    } finally {
+      setCampusLoading(false);
+    }
+  };
+
+  // 复制密码到剪贴板
+  const copyPasswordToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(newPassword);
+      alert('密码已复制到剪贴板');
+    } catch (error) {
+      console.error('复制失败:', error);
+      // 降级方案：手动选择文本
+      const textArea = document.createElement('textarea');
+      textArea.value = newPassword;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('密码已复制到剪贴板');
+    }
+  };
+
   const handleAddStaff = () => {
     setFormData({
       first_name: '',
@@ -194,6 +241,8 @@ export default function StaffPage() {
     });
     setValidationErrors({});
     setShowAddModal(true);
+    // 加载校区列表
+    loadCampusList();
   };
 
   const handleEditStaff = (staff: Staff) => {
@@ -312,6 +361,13 @@ export default function StaffPage() {
         if (response.code === 200) {
           console.log('Add staff successful');
           setShowAddModal(false);
+          
+          // 检查是否返回了密码
+          if (response.data && typeof response.data === 'string') {
+            setNewPassword(response.data);
+            setShowPasswordModal(true);
+          }
+          
           // 重置表单数据
           setFormData({
             first_name: '',
@@ -883,13 +939,14 @@ export default function StaffPage() {
                        value={formData.campus_id}
                        onChange={(e) => handleInputChange('campus_id', Number(e.target.value))}
                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       disabled={campusLoading}
                      >
-                       <option value="">Select a campus</option>
-                       <option value={1}>浦东华曜-P</option>
-                       <option value={2}>Campus 2</option>
-                       <option value={3}>Campus 3</option>
-                       <option value={4}>Campus 4</option>
-                       <option value={5}>Campus 5</option>
+                       <option value="">{campusLoading ? 'Loading campuses...' : 'Select a campus'}</option>
+                       {campusList.map((campus) => (
+                         <option key={campus.id} value={campus.id}>
+                           {campus.name}{campus.code ? `-${campus.code}` : ''}
+                         </option>
+                       ))}
                      </select>
                    </div>
                   <div className="flex gap-3 pt-4">
@@ -1032,6 +1089,57 @@ export default function StaffPage() {
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm"
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 密码提示模态框 */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowPasswordModal(false)}></div>
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div className="sm:flex sm:items-start">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    员工创建成功
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500 mb-3">
+                      新员工账户已成功创建。以下是系统生成的初始密码，请妥善保存并告知员工：
+                    </p>
+                    <div className="bg-gray-50 border border-gray-200 rounded-md p-3 relative">
+                      <p className="text-sm font-mono text-gray-900 break-all pr-12">
+                        {newPassword}
+                      </p>
+                      <button
+                        onClick={copyPasswordToClipboard}
+                        className="absolute top-2 right-2 p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                        title="复制密码"
+                      >
+                        <ClipboardDocumentIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-red-600 mt-2">
+                      ⚠️ 请提醒员工首次登录后及时修改密码
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  确认
                 </button>
               </div>
             </div>
