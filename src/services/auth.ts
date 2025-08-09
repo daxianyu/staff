@@ -1051,6 +1051,48 @@ export const getInvigilateSummary = async (params?: {
   }
 };
 
+// ================= 学生课表（供教师端查看） =================
+export interface StudentLessonInfo {
+  lesson_id: number;
+  start_time: number; // 秒级时间戳
+  end_time: number;   // 秒级时间戳
+  teacher: string;
+  subject_name: string;
+  room_name: string;
+  topic_name: string;
+  students: string;   // 逗号分隔
+  class_id: number;
+  class_name: string;
+}
+
+export interface StudentScheduleData {
+  student_exam: any[];
+  special_day: any[];
+  lessons: StudentLessonInfo[];
+}
+
+export interface StudentScheduleResponse {
+  status: number;
+  message: string;
+  data: StudentScheduleData;
+}
+
+export const getStudentSchedule = async (studentId: number | string, weekNum: number): Promise<StudentScheduleResponse> => {
+  try {
+    const url = `/api/students/schedule/${studentId}/${weekNum}`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, { method: 'GET', headers });
+    const data = await response.json();
+    return data as StudentScheduleResponse;
+  } catch (error) {
+    console.error('获取学生课表失败:', error);
+    return { status: -1, message: '获取学生课表失败', data: { student_exam: [], special_day: [], lessons: [] } } as StudentScheduleResponse;
+  }
+};
+
 // 班级信息相关接口定义
 export interface ClassStudent {
   student_id: number;
@@ -1251,6 +1293,92 @@ export const updateStaffInfo = async (staffData: StaffEditFormData): Promise<Api
 };
 
 // Campus相关接口定义
+// 学生管理相关接口定义
+export interface Student {
+  student_id: number;
+  name: string;
+  grade: string;
+  campus: string;
+  email?: string;
+  phone?: string;
+  parent_phone?: string;
+  status?: number; // 0-退学, 1-在读
+  mentor_name?: string;
+  mentor_id?: number;
+  class_info?: Record<string, string>;
+  disabled?: number; // 1-停用，0-启用
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentFormData {
+  first_name: string;
+  last_name: string;
+  gender: number; // -1: Not set, 0: Female, 1: Male
+  personal_id: string;
+  birthday: string;
+  graduation_date: string;
+  email: string;
+  mentor_id: string;
+  campus_id: number;
+}
+
+export interface StudentEditInfo {
+  student_info: {
+    id: number;
+    campus_id: number;
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    name_search_cache: string;
+    phone_0: string;
+    phone_1: string;
+    email: string;
+    email_verified: number;
+    active: number;
+    inactive_since: number;
+    grade: string;
+  };
+  campus_info: Array<[number, string]>; // [campus_id, campus_name]
+}
+
+export interface StudentEditFormData {
+  campus_id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  parent_phone: string;
+  record_id: number;
+  grade: string;
+}
+
+export interface StudentInfo {
+  total_info: {
+    total_lesson_count: number;
+    total_lesson_hours: number;
+    lesson_this_week: number;
+    lesson_this_month: number;
+    average_rating: number;
+    average_test_result: string;
+    result_count: number;
+  };
+  student_info: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone_0: string;
+    phone_1: string;
+    grade: string;
+    campus_name: string;
+    active: number;
+  };
+  student_name: string;
+  subjects: Subject[];
+  mentor_info: string[];
+}
+
 export interface Campus {
   id: number;
   name: string;
@@ -1373,5 +1501,298 @@ export const resetStaffPassword = async (staffId: number): Promise<ResetPassword
       message: error instanceof Error ? error.message : '重置密码失败',
       data: { new_pass: '' },
     };
+  }
+};
+
+// 员工简要信息类型定义（来自学生列表API）
+export type StaffInfoTuple = [number, string]; // [staff_id, staff_name]
+
+// 学生信息类型定义
+export interface StudentInfo {
+  student_id: number;
+  student_name: string;
+  mentor_id: number;
+  mentor_name: string;
+  class_info: Record<string, string>; // 课程ID -> 课程名称映射
+  campus_name: string;
+  disabled: number;
+}
+
+// 学生列表响应类型定义
+export interface StudentListResponse {
+  status: number;
+  message: string;
+  data: {
+    staff_info: StaffInfoTuple[]; // 员工信息数组
+    list_info: StudentInfo[]; // 学生信息数组
+  };
+}
+
+export const getStudentList = async (searchParams?: { 
+  name?: string; 
+  page?: number; 
+  limit?: number; 
+  disabled?: 0 | 1; // 0 仅在读; 1 包含停用
+}): Promise<ApiResponse> => {
+  try {
+    const params = new URLSearchParams();
+    if (searchParams) {
+      if (searchParams.name) params.append('name', searchParams.name);
+      if (searchParams.page) params.append('page', searchParams.page.toString());
+      if (searchParams.limit) params.append('limit', searchParams.limit.toString());
+      if (searchParams.disabled !== undefined) params.append('disabled', searchParams.disabled.toString());
+    }
+    
+    const url = `/api/students/student_list${params.toString() ? `?${params.toString()}` : ''}`;
+    console.log('获取学生列表请求URL:', url);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取学生列表响应状态:', response.status);
+    console.log('获取学生列表响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取学生列表异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取学生列表失败',
+    };
+  }
+};
+
+export const getActiveStudentList = async (searchParams?: { 
+  name?: string; 
+  page?: number; 
+  limit?: number; 
+}): Promise<ApiResponse> => {
+  return getStudentList({ ...searchParams, disabled: 0 });
+};
+
+export const getDisabledStudentList = async (searchParams?: { 
+  name?: string; 
+  page?: number; 
+  limit?: number; 
+}): Promise<ApiResponse> => {
+  return getStudentList({ ...searchParams, disabled: 1 });
+};
+
+export const getAllStudentList = async (searchParams?: { 
+  name?: string; 
+  page?: number; 
+  limit?: number; 
+}): Promise<ApiResponse> => {
+  // 后端 disabled=1 表示包含停用账户
+  return getStudentList({ ...searchParams, disabled: 1 });
+};
+
+export const addStudent = async (studentData: StudentFormData): Promise<ApiResponse> => {
+  try {
+    console.log('添加学生请求参数:', studentData);
+    console.log('添加学生请求URL:', '/api/students/add');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/students/add', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(studentData),
+    });
+    
+    const data = await response.json();
+    console.log('添加学生响应状态:', response.status);
+    console.log('添加学生响应结果:', data);
+    
+    if (response.ok) {
+      return {
+        code: 200,
+        message: data.message || '学生添加成功',
+        data: data.data, // 这里应该包含生成的密码
+      };
+    } else {
+      return {
+        code: response.status,
+        message: data.message || '添加学生失败',
+        data: data.data,
+      };
+    }
+  } catch (error) {
+    console.error('添加学生异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '添加学生失败',
+    };
+  }
+};
+
+export const editStudent = async (studentId: number, studentData: StudentFormData): Promise<ApiResponse> => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/students/${studentId}`, {
+      method: 'PUT',
+      headers: {
+        ...getAuthHeader(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(studentData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('编辑学生失败:', error);
+    throw error;
+  }
+};
+
+export const deleteStudent = async (recordId: number): Promise<ApiResponse> => {
+  try {
+    console.log('删除学生请求参数:', { record_id: recordId });
+    console.log('删除学生请求URL:', '/api/students/delete');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/students/delete', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ record_id: recordId }),
+    });
+    
+    const data = await response.json();
+    console.log('删除学生响应状态:', response.status);
+    console.log('删除学生响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除学生异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除学生失败',
+    };
+  }
+};
+
+export const updateStudentActiveStatus = async (recordId: number, status: 0 | 1): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/students/update_student_status', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ record_id: recordId, status }),
+    });
+
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新学生状态失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新学生状态失败',
+    };
+  }
+};
+
+export const disableStudentAccount = async (studentId: number): Promise<ApiResponse> => {
+  return updateStudentActiveStatus(studentId, 0);
+};
+
+export const enableStudentAccount = async (studentId: number): Promise<ApiResponse> => {
+  return updateStudentActiveStatus(studentId, 1);
+};
+
+// 学生编辑相关API函数
+export const getStudentEditInfo = async (studentId: number): Promise<ApiResponse<StudentEditInfo>> => {
+  try {
+    const response = await fetch(`/api/students/get_edit_info/${studentId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取学生编辑信息失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '获取学生编辑信息失败' };
+  }
+};
+
+export const updateStudentInfo = async (studentData: StudentEditFormData): Promise<ApiResponse> => {
+  try {
+    const response = await fetch('/api/students/update_student_info/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(studentData as any),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新学生信息失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '更新学生信息失败' };
+  }
+};
+
+// 获取学生详细信息
+export const getStudentInfo = async (studentId: string): Promise<ApiResponse<StudentInfo>> => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/students/${studentId}/info`, {
+      method: 'GET',
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('获取学生信息失败:', error);
+    throw error;
   }
 };

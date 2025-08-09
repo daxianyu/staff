@@ -148,6 +148,21 @@ export const defaultMenuConfig: MenuItem[] = [
     ],
   },
   {
+    key: 'students',
+    label: 'Student Management',
+    icon: 'graduation-cap',
+    requiredPermissions: ['view_students'],
+    children: [
+      {
+        key: 'students-list',
+        label: 'Student List',
+        path: '/students',
+        icon: 'user-group',
+        requiredPermissions: ['view_students'],
+      },
+    ],
+  },
+  {
     key: 'classrooms',
     label: 'Classroom Manage',
     icon: 'building',
