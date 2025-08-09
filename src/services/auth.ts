@@ -1858,3 +1858,66 @@ export const getStudentInfo = async (studentId: string): Promise<ApiResponse<Stu
     throw error;
   }
 };
+
+// ============== 学生视图（all_lessons） ==============
+export interface StudentViewLessonItem {
+  start_time: number;
+  end_time: number;
+}
+
+export interface StudentViewSubject {
+  teacher_id: number;
+  topic_id: number;
+  topic_name: string;
+  lessons: StudentViewLessonItem[];
+}
+
+export interface StudentViewClassEntry {
+  class_name: string;
+  student_num: number;
+  subjects: Record<string, StudentViewSubject>;
+}
+
+export interface StudentViewResponseData {
+  lesson_data: Record<string, StudentViewClassEntry>;
+  student_data: {
+    first_name: string;
+    last_name: string;
+    enrolment_date: string | number | null;
+    graduation_date: string | number | null;
+    year_fee: number | null;
+    gender: number | null;
+    email: string | null;
+    active: number;
+  } | null;
+  student_class: Record<string, { start_time: number; end_time: number }>;
+  class_topics: Record<string, string>;
+  feedback: any[];
+  dormitory_data: any[];
+  absence_info: any;
+}
+
+export interface StudentViewResponse {
+  status: number;
+  message: string;
+  data: StudentViewResponseData;
+}
+
+export const getStudentAllLessonsView = async (studentId: number | string): Promise<StudentViewResponse> => {
+  try {
+    const url = `/api/students/student-view/all_lessons/${studentId}`;
+    console.log('获取学生视图请求URL:', url);
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, { method: 'GET', headers });
+    const data = await response.json();
+    console.log('获取学生视图响应状态:', response.status);
+    console.log('获取学生视图响应结果:', data);
+    return data as StudentViewResponse;
+  } catch (error) {
+    console.error('获取学生视图失败:', error);
+    return { status: -1, message: '获取学生视图失败', data: { lesson_data: {}, student_data: null, student_class: {}, class_topics: {}, feedback: [], dormitory_data: [], absence_info: null } } as StudentViewResponse;
+  }
+};
