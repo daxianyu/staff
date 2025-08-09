@@ -160,6 +160,13 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'user-group',
         requiredPermissions: ['view_students'],
       },
+        {
+          key: 'lesson-table',
+          label: 'Lesson Table',
+          path: '/lesson-table',
+          icon: 'table',
+          requiredPermissions: ['view_lesson_table'],
+        },
     ],
   },
   {

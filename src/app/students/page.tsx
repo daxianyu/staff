@@ -29,7 +29,8 @@ import {
   UserCircleIcon,
   XMarkIcon,
   ExclamationTriangleIcon,
-  ClipboardDocumentIcon
+  ClipboardDocumentIcon,
+  TableCellsIcon
 } from '@heroicons/react/24/outline';
 import DropdownPortal from '@/components/DropdownPortal';
 import Button from '@/components/Button';
@@ -579,6 +580,18 @@ export default function StudentsPage() {
                             </Link>
                           )}
 
+                          {/* Lesson Table 入口 */}
+                          {canViewStudentDetails && (
+                            <Link href={`/lesson-table?record_id=${student.student_id}`} legacyBehavior>
+                              <a
+                                className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
+                                title="Lesson Table"
+                              >
+                                <TableCellsIcon className="h-4 w-4" />
+                              </a>
+                            </Link>
+                          )}
+
                           {/* 更多操作下拉菜单 - 只有有权限时才显示 */}
                           {hasAnyActionPermission && (
                             <button
@@ -652,6 +665,18 @@ export default function StudentsPage() {
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
+                            </a>
+                          </Link>
+                        )}
+
+                        {/* Lesson Table 快捷入口（移动） */}
+                        {canViewStudentDetails && (
+                          <Link href={`/lesson-table?record_id=${student.student_id}`} legacyBehavior>
+                            <a
+                              className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
+                              title="Lesson Table"
+                            >
+                              <TableCellsIcon className="h-4 w-4" />
                             </a>
                           </Link>
                         )}

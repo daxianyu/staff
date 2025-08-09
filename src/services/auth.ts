@@ -1093,6 +1093,68 @@ export const getStudentSchedule = async (studentId: number | string, weekNum: nu
   }
 };
 
+// 学生课程时间表（按时间戳键）
+export interface StudentLessonTableItem {
+  room_name: string;
+  room_id: number;
+  lesson_id: number;
+  subject_id: number;
+  subject_name: string;
+  start_time: number; // 秒级时间戳
+  topic_id: number;
+  end_time: number;   // 秒级时间戳
+  teacher: string;
+  week_num: number;
+}
+
+export interface StudentLessonTableResponse {
+  status: number;
+  message: string;
+  data: Record<string, StudentLessonTableItem>;
+}
+
+// 获取学生课程时间表
+export const getStudentLessonTable = async (recordId: number | string): Promise<StudentLessonTableResponse> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('record_id', String(recordId));
+    const url = `/api/students/get_lesson_table?${params.toString()}`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, { method: 'GET', headers });
+    const data = await response.json();
+    return data as StudentLessonTableResponse;
+  } catch (error) {
+    console.error('获取学生课程时间表失败:', error);
+    return { status: -1, message: '获取学生课程时间表失败', data: {} } as StudentLessonTableResponse;
+  }
+};
+
+// 学生姓名查询
+export interface StudentNameResponse {
+  status: number;
+  message: string;
+  data: string; // 学生姓名
+}
+
+export const getStudentName = async (studentId: number | string): Promise<StudentNameResponse> => {
+  try {
+    const url = `/api/students/student-name/${studentId}`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, { method: 'GET', headers });
+    const data = await response.json();
+    return data as StudentNameResponse;
+  } catch (error) {
+    console.error('获取学生姓名失败:', error);
+    return { status: -1, message: '获取学生姓名失败', data: '' } as StudentNameResponse;
+  }
+};
+
 // 班级信息相关接口定义
 export interface ClassStudent {
   student_id: number;

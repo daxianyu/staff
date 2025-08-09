@@ -17,6 +17,7 @@ export const PERMISSIONS = {
   // 课程相关
   VIEW_SCHEDULE: 'view_schedule',
   VIEW_LESSON_OVERVIEW: 'view_lesson_overview',
+  VIEW_LESSON_TABLE: 'view_lesson_table',
   VIEW_DAY_OVERVIEW: 'view_day_overview',
   VIEW_TEACHING_HOURS_OVERVIEW: 'view_teaching_hours_overview',
   
