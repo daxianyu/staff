@@ -170,6 +170,21 @@ export const defaultMenuConfig: MenuItem[] = [
     ],
   },
   {
+    key: 'classes',
+    label: 'Class Management',
+    icon: 'book',
+    requiredPermissions: ['view_classes'],
+    children: [
+      {
+        key: 'classes-list',
+        label: 'Class List',
+        path: '/classes',
+        icon: 'book',
+        requiredPermissions: ['view_classes'],
+      },
+    ],
+  },
+  {
     key: 'classrooms',
     label: 'Classroom Manage',
     icon: 'building',

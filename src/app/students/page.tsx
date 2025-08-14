@@ -466,7 +466,7 @@ export default function StudentsPage() {
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
-                    过期学生
+                    历史学生
                   </button>
                 </div>
               </div>
@@ -534,7 +534,7 @@ export default function StudentsPage() {
                             {student.class_info && Object.keys(student.class_info).length > 0 ? (
                               <button
                                 onClick={() => handleViewCourses(student)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
+                                className="flex items-center gap-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
                                 title="查看课程详情"
                               >
                                 查看课程
@@ -552,19 +552,6 @@ export default function StudentsPage() {
                       </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-1">
-                          {/* 学生信息 - 最常见的操作 */}
-                          {canViewStudentDetails && (
-                            <Link href={`/students/user?userId=${student.student_id}`} legacyBehavior>
-                              <a
-                                className="flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 touch-manipulation"
-                                title="Student Info"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </a>
-                            </Link>
-                          )}
 
                           {/* Student View 快捷入口 */}
                           {canViewStudentDetails && (
@@ -576,6 +563,20 @@ export default function StudentsPage() {
                                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </a>
+                            </Link>
+                          )}
+
+                          {/* Student Schedule 快捷入口（桌面） */}
+                          {canViewStudentDetails && (
+                            <Link href={`/students/schedule?studentId=${student.student_id}`} legacyBehavior>
+                              <a
+                                className="flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-manipulation"
+                                title="Student Schedule"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                               </a>
                             </Link>
@@ -642,19 +643,6 @@ export default function StudentsPage() {
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-medium text-gray-900">{student.name}</h3>
                       <div className="flex items-center space-x-2">
-                        {/* 学生信息按钮 */}
-                        {canViewStudentDetails && (
-                          <Link href={`/students/user?userId=${student.student_id}`} legacyBehavior>
-                            <a
-                              className="flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 touch-manipulation"
-                              title="Student Info"
-                            >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </a>
-                          </Link>
-                        )}
 
                         {/* Student Schedule 快捷入口（移动） */}
                         {canViewStudentDetails && (
@@ -811,18 +799,7 @@ export default function StudentsPage() {
                         </>
                       )}
 
-                      {/* Student edit - 需要 edit_students 权限 */}
-                      {canViewStudentDetails && (
-                        <Link
-                          href={`/students/schedule?studentId=${student.student_id}`}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition-colors touch-manipulation"
-                        >
-                          <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          View Schedule
-                        </Link>
-                      )}
+                      {/* 移除 View Schedule 下拉项，已移至操作栏外部 */}
                       {/* Student edit - 需要 edit_students 权限 */}
                       {canEditStudents && (
                         <Link

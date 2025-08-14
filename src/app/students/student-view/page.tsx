@@ -312,6 +312,23 @@ export default function StudentViewPage() {
     return list.sort((a, b) => a.start_time - b.start_time);
   }, [data?.absence_info, selectedMonth, monthRange.startSec, monthRange.endSec]);
 
+  // ===== Teacher Comments grouped by subject_id/topic_id =====
+  const commentsBySubject = useMemo(() => {
+    const fb: any[] = (data as any)?.feedback || [];
+    const topics: Record<string, string> = (data as any)?.class_topics || {};
+    const map: Record<string, { name: string; items: any[] }> = {};
+    fb.forEach((f: any) => {
+      const id = String(f?.subject_id ?? f?.topic_id ?? f?.topic ?? f?.topic_name ?? 'unknown');
+      const name = f?.subject_name ?? f?.topic_name ?? topics[String(f?.topic_id)] ?? `Subject ${id}`;
+      if (!map[id]) map[id] = { name, items: [] };
+      map[id].items.push(f);
+    });
+    return Object.entries(map)
+      .map(([id, g]) => ({ id, name: g.name, items: g.items }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+  const [expandedCommentSubjects, setExpandedCommentSubjects] = useState<Set<string>>(new Set());
+
 
 
   return (
@@ -671,31 +688,56 @@ export default function StudentViewPage() {
             </div>
           )}
 
-          {/* Tab: Teacher Comments */}
+          {/* Tab: Teacher Comments (grouped by subject) */}
           {activeTab === 'comments' && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Teacher Comments</h2>
               </div>
               <div className="p-6">
-                {(!data.feedback || data.feedback.length === 0) ? (
+                {(commentsBySubject.length === 0) ? (
                   <div className="text-gray-500">No comments</div>
                 ) : (
                   <div className="space-y-4">
-                    {data.feedback.map((f: any, idx: number) => (
-                      <div key={idx} className="p-4 border rounded-lg">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="text-sm font-medium text-gray-900">{f.teacher || 'Unknown Teacher'}</div>
-                          <div className="text-xs text-gray-500">{(f.time_range_start && f.time_range_end) ? `${f.time_range_start} ~ ${f.time_range_end}` : ''}</div>
+                    {commentsBySubject.map(group => {
+                      const isOpen = expandedCommentSubjects.has(group.id);
+                      const toggle = () => setExpandedCommentSubjects(prev => {
+                        const n = new Set(prev);
+                        if (n.has(group.id)) n.delete(group.id); else n.add(group.id);
+                        return n;
+                      });
+                      return (
+                        <div key={group.id} className="border rounded-lg overflow-hidden">
+                          <button onClick={toggle} className="w-full text-left px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <svg className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                              </svg>
+                              <span className="text-sm font-medium text-gray-900">{group.name}</span>
+                            </div>
+                            <span className="text-xs text-gray-500">{group.items.length} comments</span>
+                          </button>
+                          {isOpen && (
+                            <div className="p-4 space-y-4">
+                              {group.items.map((f: any, idx: number) => (
+                                <div key={idx} className="p-4 border rounded">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="text-sm font-medium text-gray-900">{f.teacher || 'Unknown Teacher'}</div>
+                                    <div className="text-xs text-gray-500">{(f.time_range_start && f.time_range_end) ? `${f.time_range_start} ~ ${f.time_range_end}` : ''}</div>
+                                  </div>
+                                  <div className="text-xs text-gray-600 mt-1">{f.topic_name || '-'}</div>
+                                  {f.note ? (
+                                    <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap">{f.note}</div>
+                                  ) : (
+                                    <div className="mt-2 text-sm text-gray-500">No content</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">{f.topic_name || '-'}</div>
-                        {f.note? (
-                          <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap">{f.note}</div>
-                        ) : (
-                          <div className="mt-2 text-sm text-gray-500">No content</div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

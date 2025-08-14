@@ -309,41 +309,52 @@ export default function StaffInfoPage() {
             {/* 反馈列表 */}
             {Object.keys(staffInfo.subject_teacher_feedback_comment).length > 0 ? (
               <div className="space-y-6">
-                {Object.entries(staffInfo.subject_teacher_feedback_comment).map(([subjectId, comments]) => (
-                  <div key={subjectId} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                      <h4 className="text-lg font-semibold text-gray-800">课程 ID: {subjectId}</h4>
-                      <p className="text-sm text-gray-600 mt-1">共 {comments.length} 条记录</p>
-                    </div>
-                    <div className="p-6">
-                      {comments.some(comment => comment.comment && comment.comment.trim()) ? (
-                        <div className="space-y-4">
-                          {comments
-                            .filter(comment => comment.comment && comment.comment.trim())
-                            .map((comment, index) => (
-                              <div key={index} className="border-l-4 border-blue-300 bg-blue-50 p-4 rounded-r-lg">
-                                <p className="text-gray-800 mb-2">{comment.comment}</p>
-                                <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                  <span>📅 {formatTime(comment.time)}</span>
-                                  {comment.understandable === 1 && <span className="text-green-600">✅ 易理解</span>}
-                                  {comment.prepared === 1 && <span className="text-blue-600">📚 准备充分</span>}
-                                  {comment.late === 1 && <span className="text-red-600">⏰ 迟到</span>}
-                                  {comment.used_mobile === 1 && <span className="text-orange-600">📱 使用手机</span>}
+                {Object.entries(staffInfo.subject_teacher_feedback_comment)
+                  .sort((a, b) => {
+                    const hasA = a[1].some((c: any) => c.comment && c.comment.trim());
+                    const hasB = b[1].some((c: any) => c.comment && c.comment.trim());
+                    if (hasA === hasB) return 0;
+                    return hasA ? -1 : 1; // 有有效评论的排前面
+                  })
+                  .map(([subjectId, comments]) => {
+                  const matchedSubject = staffInfo.subjects?.find(subject => String(subject.id) === String(subjectId));
+                  const subjectName = matchedSubject?.subject || '未知课程';
+                  return (
+                    <div key={subjectId} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                      <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                        <h4 className="text-lg font-semibold text-gray-800">课程：{subjectName}</h4>
+                        <p className="text-sm text-gray-600 mt-1">共 {comments.length} 条记录</p>
+                      </div>
+                      <div className="p-6">
+                        {comments.some(comment => comment.comment && comment.comment.trim()) ? (
+                          <div className="space-y-4">
+                            {comments
+                              .filter(comment => comment.comment && comment.comment.trim())
+                              .map((comment, index) => (
+                                <div key={index} className="border-l-4 border-blue-300 bg-blue-50 p-4 rounded-r-lg">
+                                  <p className="text-gray-800 mb-2">{comment.comment}</p>
+                                  <div className="flex items-center text-xs text-gray-500 space-x-4">
+                                    <span>📅 {formatTime(comment.time)}</span>
+                                    {comment.understandable === 1 && <span className="text-green-600">✅ 易理解</span>}
+                                    {comment.prepared === 1 && <span className="text-blue-600">📚 准备充分</span>}
+                                    {comment.late === 1 && <span className="text-red-600">⏰ 迟到</span>}
+                                    {comment.used_mobile === 1 && <span className="text-orange-600">📱 使用手机</span>}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                          </svg>
-                          <p>该课程暂无有效反馈</p>
-                        </div>
-                      )}
+                              ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <p>该课程暂无有效反馈</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">

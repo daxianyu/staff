@@ -153,7 +153,7 @@ export default function StudentUserPage() {
                     <AcademicCapIcon className="h-5 w-5 text-gray-400 mr-3" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Grade</p>
-                      <p className="text-sm text-gray-600">{studentInfo.student_info?.grade || 'Not specified'}</p>
+                      <p className="text-sm text-gray-600">{studentInfo.student_data?.grade || 'Not specified'}</p>
                     </div>
                   </div>
 
@@ -161,7 +161,7 @@ export default function StudentUserPage() {
                     <PhoneIcon className="h-5 w-5 text-gray-400 mr-3" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Phone</p>
-                      <p className="text-sm text-gray-600">{studentInfo.student_info?.phone_0 || 'Not specified'}</p>
+                      <p className="text-sm text-gray-600">{studentInfo.student_data?.phone_0 || 'Not specified'}</p>
                     </div>
                   </div>
 
@@ -169,7 +169,7 @@ export default function StudentUserPage() {
                     <EnvelopeIcon className="h-5 w-5 text-gray-400 mr-3" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Email</p>
-                      <p className="text-sm text-gray-600">{studentInfo.student_info?.email || 'Not specified'}</p>
+                      <p className="text-sm text-gray-600">{studentInfo.student_data?.email || 'Not specified'}</p>
                     </div>
                   </div>
 
@@ -177,7 +177,7 @@ export default function StudentUserPage() {
                     <MapPinIcon className="h-5 w-5 text-gray-400 mr-3" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Campus</p>
-                      <p className="text-sm text-gray-600">{studentInfo.student_info?.campus_name || 'Not specified'}</p>
+                      <p className="text-sm text-gray-600">{studentInfo.student_data?.campus_name || 'Not specified'}</p>
                     </div>
                   </div>
 
@@ -186,7 +186,7 @@ export default function StudentUserPage() {
                     <div>
                       <p className="text-sm font-medium text-gray-900">Status</p>
                       <p className="text-sm text-gray-600">
-                        {studentInfo.student_info?.active === 1 ? 'Active' : 'Inactive'}
+                        {studentInfo.student_data?.active === 1 ? 'Active' : 'Inactive'}
                       </p>
                     </div>
                   </div>

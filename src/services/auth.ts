@@ -1386,7 +1386,7 @@ export interface StudentFormData {
 }
 
 export interface StudentEditInfo {
-  student_info: {
+  student_data: {
     id: number;
     campus_id: number;
     first_name: string;
@@ -1425,7 +1425,7 @@ export interface StudentInfo {
     average_test_result: string;
     result_count: number;
   };
-  student_info: {
+  student_data: {
     id: number;
     first_name: string;
     last_name: string;
@@ -1839,6 +1839,157 @@ export const updateStudentInfo = async (studentData: StudentEditFormData): Promi
   }
 };
 
+// 学生信息更新（根据最新Swagger定义）
+export interface StudentUpdatePayload {
+  active: string;
+  address: string;
+  assigned_staff: number;
+  birthday: number;
+  campus_id: number;
+  cie_flag: number;
+  current_grade: string;
+  current_school: string;
+  day_student: number;
+  email: string;
+  english_name: string;
+  enrolment_date: number;
+  exam_0_number: string;
+  exam_1_number: string;
+  exam_2_number: string;
+  fathers_email: string;
+  fathers_employer: string;
+  fathers_name: string;
+  fathers_occupation: string;
+  fathers_phone_number: string;
+  first_name: string;
+  gender: number;
+  grade: number;
+  graduation_date: number;
+  hometown: string;
+  last_name: string;
+  mentor_id: number;
+  mothers_email: string;
+  mothers_employer: string;
+  mothers_name: string;
+  mothers_occupation: string;
+  mothers_phone_number: string;
+  nationality: string;
+  personal_id: string;
+  personal_statement: string;
+  phone_number: string;
+  pinyin_first_name: string;
+  pinyin_last_name: string;
+  record_id: number;
+  sales_pay_date: number;
+  special_note: string;
+  year_fee: string;
+  year_fee_repayment_time_1: number;
+  year_fee_repayment_time_2: number;
+  year_fee_repayment_time_3: number;
+}
+
+export const updateStudentInfoV2 = async (
+  payload: StudentUpdatePayload
+): Promise<ApiResponse> => {
+  try {
+    const response = await fetch('/api/students/update_student_info', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新学生信息失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '更新学生信息失败' };
+  }
+};
+
+// 重置学生密码
+export const resetStudentPassword = async (recordId: number): Promise<ApiResponse<{ new_pass?: string }>> => {
+  try {
+    const response = await fetch('/api/students/reset_password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ record_id: recordId }),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('重置学生密码失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '重置学生密码失败' } as ApiResponse<{
+      new_pass?: string;
+    }>;
+  }
+};
+
+// 重置学生学号（长学号）
+export const resetStudentId = async (recordId: number): Promise<ApiResponse> => {
+  try {
+    const response = await fetch('/api/students/reset_student_id', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ record_id: recordId }),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('重置学生学号失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '重置学生学号失败' };
+  }
+};
+
+// 更新学生考试成绩
+export interface UpdateExamResultParams {
+  record_id: number;
+  result: number;
+  student_id: number;
+}
+
+export const updateStudentExamResult = async (
+  params: UpdateExamResultParams
+): Promise<ApiResponse> => {
+  try {
+    const response = await fetch('/api/students/update_exam_result', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新学生成绩失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '更新学生成绩失败' };
+  }
+};
 // 获取学生详细信息
 export const getStudentInfo = async (studentId: string): Promise<ApiResponse<StudentInfo>> => {
   try {
@@ -1919,5 +2070,101 @@ export const getStudentAllLessonsView = async (studentId: number | string): Prom
   } catch (error) {
     console.error('获取学生视图失败:', error);
     return { status: -1, message: '获取学生视图失败', data: { lesson_data: {}, student_data: null, student_class: {}, class_topics: {}, feedback: [], dormitory_data: [], absence_info: null } } as StudentViewResponse;
+  }
+};
+
+// Classes 相关接口
+export interface ClassItem {
+  id: number;
+  name: string;
+  active: number;
+  credit_based: number;
+  attendance_handling: number;
+  student_num: number;
+  subject_num: number;
+  student_self_signup: number;
+  non_attendance_free: number;
+  campus_id: number;
+  lesson: string; // 格式: "已完成/总计" 如 "5/10"
+  settings: string; // 逗号分隔的设置列表
+}
+
+export interface ClassListParams {
+  page: number;
+  page_size: number;
+  search?: string;
+  show_disable?: number;
+}
+
+export interface ClassListResponse {
+  status: number;
+  message: string;
+  data: {
+    list: ClassItem[];
+  };
+}
+
+export interface AddClassParams {
+  name: string;
+  description?: string;
+  teacher_id?: number;
+  campus_id?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+// 获取班级列表
+export const getClassList = async (params: ClassListParams): Promise<ClassListResponse> => {
+  try {
+    const searchParams = new URLSearchParams();
+    searchParams.append('page', params.page.toString()); // 后端期望从1开始
+    searchParams.append('page_size', params.page_size.toString());
+    if (params.search) {
+      searchParams.append('search', params.search);
+    }
+    if (params.show_disable !== undefined) {
+      searchParams.append('show_disable', params.show_disable.toString());
+    }
+
+    const response = await fetch(`/api/class/list?${searchParams.toString()}`, {
+      method: 'GET',
+      headers: getAuthHeader(),
+    });
+    const data = await response.json();
+    return {
+      status: data.status === 0 ? 200 : data.status,
+      message: data.message || '',
+      data: data.data || { list: [] },
+    };
+  } catch (error) {
+    console.error('获取班级列表失败:', error);
+    return { 
+      status: 500, 
+      message: '获取班级列表失败', 
+      data: { list: [] }
+    };
+  }
+};
+
+// 添加新班级
+export const addClass = async (params: AddClassParams): Promise<ApiResponse> => {
+  try {
+    const response = await fetch('/api/class/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('添加班级失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '添加班级失败' };
   }
 };
