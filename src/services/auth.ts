@@ -271,21 +271,218 @@ export const handleUserRedirect = async (userData: any, router: any, useWindowLo
         }
       }
     } else {
-      // 其他用户类型导向notification
+      // 其他用户类型导向dashboard
       if (useWindowLocation) {
-        window.location.href = '/notification';
+        window.location.href = '/dashboard';
       } else {
-        router.push('/notification');
+        router.push('/dashboard');
       }
     }
   } catch (error) {
     console.error('处理用户重定向异常:', error);
-    // 出错时默认导向通知页面
+    // 出错时默认导向dashboard页面
     if (useWindowLocation) {
-      window.location.href = '/notification';
+      window.location.href = '/dashboard';
     } else {
-      router.push('/notification');
+      router.push('/dashboard');
     }
+  }
+};
+
+// =============Dashboard相关API函数=============
+
+// Dashboard数据接口定义
+export interface AttendanceListItem {
+  start_time: number;
+  topic: number;
+  topic_name: string;
+  subject_id: number;
+  students: Array<{
+    student_name: string;
+    comment: string;
+    student_id: number;
+    lesson_id: number;
+  }>;
+}
+
+export interface FeedbackListItem {
+  student_id: number;
+  subject_id: number;
+  student_name: string;
+  topic_name: string;
+  time_unit: number;
+  time_unit_start: number;
+  time_unit_end: number;
+}
+
+export interface DashboardData {
+  attendance_list: AttendanceListItem[];
+  feed_back_list: FeedbackListItem[];
+}
+
+export interface DashboardResponse {
+  status: number;
+  message: string;
+  data: DashboardData;
+}
+
+// 获取员工dashboard数据
+export const getStaffDashboard = async (): Promise<ApiResponse<DashboardData>> => {
+  try {
+    console.log('获取员工dashboard请求URL:', '/api/staff/dashboard');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/staff/dashboard', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取员工dashboard响应状态:', response.status);
+    console.log('获取员工dashboard响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取员工dashboard异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取员工dashboard失败',
+    };
+  }
+};
+
+// 更新考勤接口参数 (批量)
+export interface UpdateAttendanceParams {
+  lesson_id: number;
+  attendance_info: Array<{
+    student_id: number;
+    present: number; // 0: 请假, 1: 旷课, 2: 上网课请假, 3: 上网课旷课, -1: 正常出席
+  }>;
+}
+
+// 更新反馈接口参数
+export interface UpdateFeedbackParams {
+  student_id: number;
+  subject_id: number;
+  time_unit: number;
+  feedback_note: string;
+}
+
+// 取消课程接口参数
+export interface CancelLessonParams {
+  record_id: number;
+}
+
+// 更新考勤状态
+export const updateAttendance = async (params: UpdateAttendanceParams): Promise<ApiResponse> => {
+  try {
+    console.log('更新考勤请求参数:', params);
+    console.log('更新考勤请求URL:', '/api/staff/update_attendance');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/staff/update_attendance', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('更新考勤响应状态:', response.status);
+    console.log('更新考勤响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新考勤异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新考勤失败',
+    };
+  }
+};
+
+// 更新反馈
+export const updateFeedback = async (params: UpdateFeedbackParams): Promise<ApiResponse> => {
+  try {
+    console.log('更新反馈请求参数:', params);
+    console.log('更新反馈请求URL:', '/api/staff/update_feedback');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/staff/update_feedback', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('更新反馈响应状态:', response.status);
+    console.log('更新反馈响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新反馈异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新反馈失败',
+    };
+  }
+};
+
+// 取消课程
+export const cancelLesson = async (params: CancelLessonParams): Promise<ApiResponse> => {
+  try {
+    console.log('取消课程请求参数:', params);
+    console.log('取消课程请求URL:', '/api/staff/cancel_lesson');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/staff/cancel_lesson', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('取消课程响应状态:', response.status);
+    console.log('取消课程响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('取消课程异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '取消课程失败',
+    };
   }
 };
 

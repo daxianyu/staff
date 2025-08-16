@@ -55,12 +55,12 @@ export default function ClassesPage() {
 
   const canManageClasses = hasPermission(PERMISSIONS.EDIT_CLASSES); // 使用正确的classes权限
 
-  const loadClasses = async (page?: number, search?: string, showDisable?: number) => {
+  const loadClasses = async (page?: number, search?: string, showDisable?: number, newPageSize?: number) => {
     try {
       setLoading(true);
       const params: ClassListParams = {
         page: page !== undefined ? page : currentPage, // 后端页码从1开始
-        page_size: pageSize,
+        page_size: newPageSize !== undefined ? newPageSize : pageSize,
         search: search !== undefined ? search : searchQuery,
         show_disable: showDisable !== undefined ? showDisable : showDisabled,
       };
@@ -273,9 +273,10 @@ export default function ClassesPage() {
             <select
               value={pageSize}
               onChange={(e) => {
-                setPageSize(Number(e.target.value));
+                const newPageSize = Number(e.target.value);
+                setPageSize(newPageSize);
                 setCurrentPage(1);
-                loadClasses(1, searchQuery, showDisabled);
+                loadClasses(1, searchQuery, showDisabled, newPageSize);
               }}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
