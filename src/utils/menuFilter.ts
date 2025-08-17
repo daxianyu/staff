@@ -178,7 +178,7 @@ export const defaultMenuConfig: MenuItem[] = [
       {
         key: 'classes-list',
         label: 'Class List',
-        path: '/classes',
+        path: '/class',
         icon: 'book',
         requiredPermissions: ['view_classes'],
       },

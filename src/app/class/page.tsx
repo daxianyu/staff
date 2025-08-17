@@ -89,6 +89,12 @@ export default function ClassesPage() {
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  
+  // 学生搜索状态
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  
+  // 已选学生展开状态
+  const [showSelectedStudents, setShowSelectedStudents] = useState(false);
 
   const canManageClasses = hasPermission(PERMISSIONS.EDIT_CLASSES); // 使用正确的classes权限
   const canDeleteClasses = hasPermission(PERMISSIONS.DELETE_CLASSES); // 删除权限
@@ -337,6 +343,8 @@ export default function ClassesPage() {
           selectedStudents: [],
         });
         setValidationErrors({});
+        setStudentSearchQuery(''); // 重置搜索
+        setShowSelectedStudents(false); // 重置展开状态
         await loadClasses(); // Reload the list
         
         // Hide success message after 3 seconds
@@ -916,14 +924,182 @@ export default function ClassesPage() {
 
               {/* 学生选择 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  选择学生 <span className="text-red-500">*</span>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    选择学生 <span className="text-red-500">*</span>
+                  </label>
                   {newClassData.selectedStudents.length > 0 && (
-                    <span className="ml-2 text-sm text-blue-600">
-                      已选择 {newClassData.selectedStudents.length} 名学生
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSelectedStudents(!showSelectedStudents)}
+                      className="flex items-center space-x-2 px-3 py-2 text-sm text-blue-600 font-medium bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <span>已选择 {newClassData.selectedStudents.length} 名学生</span>
+                      <div className="flex -space-x-1">
+                        {newClassData.selectedStudents.slice(0, 3).map((studentId, index) => {
+                          const student = studentsList.find(s => s.id === studentId);
+                          return (
+                            <div
+                              key={studentId}
+                              className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium border-2 border-white"
+                              title={student?.name}
+                            >
+                              {student?.name?.charAt(0) || '?'}
+                            </div>
+                          );
+                        })}
+                        {newClassData.selectedStudents.length > 3 && (
+                          <div className="w-6 h-6 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-medium border-2 border-white">
+                            +{newClassData.selectedStudents.length - 3}
+                          </div>
+                        )}
+                      </div>
+                      <svg 
+                        className={`w-4 h-4 transition-transform ${showSelectedStudents ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                   )}
-                </label>
+                </div>
+                
+                {/* 已选择学生展开列表 */}
+                {newClassData.selectedStudents.length > 0 && showSelectedStudents && (
+                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-blue-900">
+                        已选择的学生详情
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewClassData({...newClassData, selectedStudents: []});
+                          setShowSelectedStudents(false);
+                        }}
+                        className="text-xs text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                      >
+                        清空全部
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+                      {newClassData.selectedStudents.map((studentId, index) => {
+                        const student = studentsList.find(s => s.id === studentId);
+                        if (!student) return null;
+                        
+                        return (
+                          <div key={studentId} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center shadow-sm">
+                                <span className="text-xs font-bold">
+                                  {index + 1}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {student.name}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  学号: {student.id}
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleStudentSelection(studentId, false)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1.5 transition-colors"
+                              title="移除学生"
+                            >
+                              <XMarkIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* 选择统计 */}
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <div className="flex items-center justify-between text-xs text-blue-700">
+                        <span>已选择学生将加入此班级</span>
+                        <span className="font-medium">{newClassData.selectedStudents.length} 名学生</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 搜索框和操作按钮 */}
+                <div className="mb-3 space-y-3">
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="搜索学生姓名或ID..."
+                      value={studentSearchQuery}
+                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  {/* 快捷操作按钮 */}
+                  {(() => {
+                    const filteredStudents = studentsList.filter(student =>
+                      student.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                      student.id.toString().includes(studentSearchQuery)
+                    );
+                    
+                    const allFilteredSelected = filteredStudents.length > 0 && 
+                      filteredStudents.every(student => newClassData.selectedStudents.includes(student.id));
+                    
+                    return (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentlySelected = [...newClassData.selectedStudents];
+                            filteredStudents.forEach(student => {
+                              if (!currentlySelected.includes(student.id)) {
+                                currentlySelected.push(student.id);
+                              }
+                            });
+                            setNewClassData({...newClassData, selectedStudents: currentlySelected});
+                            if (validationErrors.students) {
+                              setValidationErrors(prev => ({ ...prev, students: '' }));
+                            }
+                          }}
+                          disabled={allFilteredSelected}
+                          className="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          全选{studentSearchQuery ? '当前' : ''}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const filteredIds = filteredStudents.map(s => s.id);
+                            const remainingSelected = newClassData.selectedStudents.filter(id => !filteredIds.includes(id));
+                            setNewClassData({...newClassData, selectedStudents: remainingSelected});
+                          }}
+                          disabled={!filteredStudents.some(student => newClassData.selectedStudents.includes(student.id))}
+                          className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          取消选择{studentSearchQuery ? '当前' : ''}
+                        </button>
+                        {newClassData.selectedStudents.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewClassData({...newClassData, selectedStudents: []});
+                            }}
+                            className="px-3 py-1 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50"
+                          >
+                            清空所有
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
                 
                 <div className={`border rounded-md max-h-60 overflow-y-auto ${
                   validationErrors.students ? 'border-red-300' : 'border-gray-300'
@@ -934,24 +1110,40 @@ export default function ClassesPage() {
                     </div>
                   ) : (
                     <div className="p-2">
-                      {studentsList.map((student) => (
-                        <label key={student.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={newClassData.selectedStudents.includes(student.id)}
-                            onChange={(e) => handleStudentSelection(student.id, e.target.checked)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">
-                              {student.name}
+                      {(() => {
+                        // 过滤学生列表
+                        const filteredStudents = studentsList.filter(student =>
+                          student.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                          student.id.toString().includes(studentSearchQuery)
+                        );
+                        
+                        if (filteredStudents.length === 0 && studentSearchQuery) {
+                          return (
+                            <div className="p-4 text-center text-gray-500">
+                              没有找到匹配的学生
                             </div>
-                            <div className="text-xs text-gray-500">
-                              ID: {student.id}
+                          );
+                        }
+                        
+                        return filteredStudents.map((student) => (
+                          <label key={student.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={newClassData.selectedStudents.includes(student.id)}
+                              onChange={(e) => handleStudentSelection(student.id, e.target.checked)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-gray-900">
+                                {student.name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                ID: {student.id}
+                              </div>
                             </div>
-                          </div>
-                        </label>
-                      ))}
+                          </label>
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>
@@ -971,6 +1163,8 @@ export default function ClassesPage() {
                       selectedStudents: [],
                     });
                     setValidationErrors({});
+                    setStudentSearchQuery(''); // 重置搜索
+                    setShowSelectedStudents(false); // 重置展开状态
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                 >
