@@ -2282,6 +2282,7 @@ export interface ClassItem {
   student_self_signup: number;
   non_attendance_free: number;
   campus_id: number;
+  campus_name: string;
   lesson: string; // 格式: "已完成/总计" 如 "5/10"
   settings: string; // 逗号分隔的设置列表
 }
@@ -2298,6 +2299,7 @@ export interface ClassListResponse {
   message: string;
   data: {
     list: ClassItem[];
+    total: number;
   };
 }
 
@@ -2308,6 +2310,26 @@ export interface AddClassParams {
   campus_id?: number;
   start_date?: string;
   end_date?: string;
+}
+
+// 根据后端接口调整的新增班级参数
+export interface NewClassParams {
+  class_name: string;
+  campus_id: number;
+  students: string; // 逗号分隔的学生ID字符串
+}
+
+// 添加班级时的学生信息接口
+export interface AddClassStudentInfo {
+  id: number;
+  name: string;
+  student_id: number;
+}
+
+// 获取添加班级选择数据的响应
+export interface AddClassSelectData {
+  student_info: AddClassStudentInfo[];
+  campus_info: Campus[];
 }
 
 // 获取班级列表
@@ -2331,19 +2353,128 @@ export const getClassList = async (params: ClassListParams): Promise<ClassListRe
     return {
       status: data.status === 0 ? 200 : data.status,
       message: data.message || '',
-      data: data.data || { list: [] },
+      data: data.data || { list: [], total: 0 },
     };
   } catch (error) {
     console.error('获取班级列表失败:', error);
     return { 
       status: 500, 
       message: '获取班级列表失败', 
-      data: { list: [] }
+      data: { list: [], total: 0 }
     };
   }
 };
 
-// 添加新班级
+// 获取添加班级所需的选择数据
+export const getAddClassSelectData = async (): Promise<{
+  code: number;
+  message: string;
+  data?: AddClassSelectData;
+}> => {
+  try {
+    console.log('获取添加班级选择数据');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/class/get_add_select', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取添加班级选择数据原始响应:', data);
+    
+    // 适配器：将对象格式转换为数组格式
+    let adaptedData: AddClassSelectData | undefined;
+    
+    if (data.data) {
+      // 转换学生信息：从对象 {id: name} 转为数组 [{id, name, student_id}]
+      // 适配新版 student_info: [[id, name], ...] 的格式
+      const studentInfo: AddClassStudentInfo[] = [];
+      if (Array.isArray(data.data.student_info)) {
+        data.data.student_info.forEach((item: [number | string, string]) => {
+          const [id, name] = item;
+          studentInfo.push({
+            id: Number(id),
+            name: name,
+            student_id: Number(id),
+          });
+        });
+      }
+
+      // 校区信息依然适配对象格式
+      const campusInfo: Campus[] = [];
+      if (data.data.campus_info && typeof data.data.campus_info === 'object') {
+        data.data.campus_info.forEach((item: [number | string, string]) => {
+          const [id, name] = item;
+          campusInfo.push({
+            id: Number(id),
+            name: name as string,
+            code: '', // 如果没有code字段，设为空字符串
+          });
+        });
+      }
+      console.log(campusInfo, studentInfo)
+      
+      adaptedData = {
+        student_info: studentInfo,
+        campus_info: campusInfo,
+      };
+      
+      console.log('转换后的数据:', adaptedData);
+    }
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: adaptedData,
+    };
+  } catch (error) {
+    console.error('获取添加班级选择数据异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取数据失败',
+    };
+  }
+};
+
+// 添加新班级（使用新的接口格式）
+export const addNewClass = async (params: NewClassParams): Promise<ApiResponse> => {
+  try {
+    console.log('添加新班级请求参数:', params);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/class/add', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('添加新班级响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('添加新班级异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '添加班级失败',
+    };
+  }
+};
+
+// 添加新班级（旧版本，保持兼容性）
 export const addClass = async (params: AddClassParams): Promise<ApiResponse> => {
   try {
     const response = await fetch('/api/class/add', {
@@ -2363,5 +2494,342 @@ export const addClass = async (params: AddClassParams): Promise<ApiResponse> => 
   } catch (error) {
     console.error('添加班级失败:', error);
     return { code: 500, message: error instanceof Error ? error.message : '添加班级失败' };
+  }
+};
+
+// Class view 相关接口和类型定义
+export interface ClassSubject {
+  id: number;
+  topic_id: number;
+  topic_name: string;
+  class_name: string;
+  teacher_name: string;
+  exam_name: string | null;
+  description: string;
+  student_exam: string[];
+}
+
+export interface StudentClass {
+  id: number;
+  student_id: number;
+  name: string;
+  start_time: number;
+  end_time: number;
+  credit: number;
+}
+
+export interface SubjectLesson {
+  id: number;
+  subject_id: number;
+  start_time: number;
+  end_time: number;
+  room_id: number;
+  room_name: string;
+}
+
+export interface ClassViewData {
+  subjects: ClassSubject[];
+  students_classes: Record<string, StudentClass>;
+  subject_lesson: Record<string, SubjectLesson[]>;
+}
+
+// 获取class详情
+export const getClassView = async (classId: number): Promise<{
+  code: number;
+  message: string;
+  data?: ClassViewData;
+}> => {
+  try {
+    console.log('获取class详情，ID:', classId);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch(`/api/class/class-view/${classId}`, {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取class详情响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取class详情异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取class详情失败',
+    };
+  }
+};
+
+// Edit class 相关接口和类型定义
+export interface ClassInfo {
+  name: string;
+  active: number;
+  credit_based: number;
+  campus_id: number;
+  attendance_handling: number;
+  student_self_signup: number;
+  non_attendance_free: number;
+  double_time: number;
+}
+
+export interface ClassSubjectEdit {
+  id: number;
+  topic_id: number;
+  teacher_id: number;
+  student_signup: number;
+  non_counted: number;
+  description: string;
+  active: number;
+  exam_id: number;
+}
+
+export interface ClassStudentEdit {
+  student_id: number;
+  start_time: number;
+  end_time: number;
+}
+
+export interface ExamInfo {
+  id: number;
+  name: string;
+  time: number;
+}
+
+export interface Topic {
+  id: number;
+  name: string;
+}
+
+export interface ClassStaffInfo {
+  id: number;
+  name: string;
+}
+
+export interface ClassStudentInfo {
+  id: number;
+  name: string;
+}
+
+export interface ClassEditData {
+  class_info: ClassInfo;
+  class_subject: ClassSubjectEdit[];
+  campus_info: Campus[];
+  staff_info: ClassStaffInfo[];
+  student_info: ClassStudentInfo[];
+  topics: Topic[];
+  class_student: ClassStudentEdit[];
+  exam_info: ExamInfo[];
+}
+
+// 获取class编辑信息
+export const getClassEditInfo = async (classId: number): Promise<{
+  code: number;
+  message: string;
+  data?: ClassEditData;
+}> => {
+  try {
+    console.log('获取class编辑信息，ID:', classId);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch(`/api/class/get_edit_info/${classId}`, {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取class编辑信息响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取class编辑信息异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取class编辑信息失败',
+    };
+  }
+};
+
+// 编辑class参数
+export interface EditClassParams {
+  record_id: number;
+  campus_id: number;
+  class_name: string;
+  double_time: number;
+  students: Array<{
+    student_id: number;
+    start_time: number;
+    end_time: number;
+  }>;
+  subjects: Array<{
+    topic_id: number;
+    teacher_id: number;
+    description: string;
+    student_signup: number;
+    exam_id: number;
+  }>;
+}
+
+// 编辑class
+export const editClass = async (params: EditClassParams): Promise<ApiResponse> => {
+  try {
+    console.log('编辑class请求参数:', params);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/class/edit', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('编辑class响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('编辑class异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '编辑class失败',
+    };
+  }
+};
+
+// Add to group参数
+export interface AddToGroupParams {
+  record_id: number;
+  week_lessons: number;
+  assign_name: string;
+}
+
+// Add to group
+export const addToGroup = async (params: AddToGroupParams): Promise<ApiResponse> => {
+  try {
+    console.log('Add to group请求参数:', params);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/class/add_to_group', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('Add to group响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('Add to group异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : 'Add to group失败',
+    };
+  }
+};
+
+// 更新班级状态 (启用/禁用)
+export interface UpdateClassStatusParams {
+  record_id: number;
+  status: number; // 1: 启用, 0: 禁用
+}
+
+export const updateClassStatus = async (params: UpdateClassStatusParams): Promise<ApiResponse> => {
+  try {
+    console.log('更新班级状态请求参数:', params);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/class/update_status', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('更新班级状态响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新班级状态异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新班级状态失败',
+    };
+  }
+};
+
+// 删除班级
+export interface DeleteClassParams {
+  record_id: number;
+}
+
+export const deleteClass = async (params: DeleteClassParams): Promise<ApiResponse> => {
+  try {
+    console.log('删除班级请求参数:', params);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/class/delete', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('删除班级响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除班级异常:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除班级失败',
+    };
   }
 };

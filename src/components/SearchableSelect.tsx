@@ -1,0 +1,111 @@
+'use client';
+
+import { useState } from 'react';
+import * as Popover from '@radix-ui/react-popover';
+import { Command } from 'cmdk';
+import { ChevronDownIcon, CheckIcon } from '@radix-ui/react-icons';
+
+interface Option {
+  id: number;
+  name: string;
+}
+
+interface SearchableSelectProps {
+  options: Option[];
+  value: number;
+  onValueChange: (value: number) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  className?: string;
+  disabled?: boolean;
+}
+
+export default function SearchableSelect({
+  options,
+  value,
+  onValueChange,
+  placeholder = "请选择...",
+  searchPlaceholder = "搜索...",
+  className = "",
+  disabled = false
+}: SearchableSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // 当前选中项
+  const selectedOption = options.find(option => option.id === value);
+
+  // 处理选择
+  const handleSelect = (selectedValue: string) => {
+    onValueChange(Number(selectedValue));
+    setIsOpen(false);
+  };
+
+  return (
+    <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
+      <Popover.Trigger asChild>
+        <button
+          disabled={disabled}
+          className={`
+            inline-flex items-center justify-between px-3 py-2 text-sm
+            bg-white border border-gray-300 rounded-md
+            hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            disabled:opacity-50 disabled:cursor-not-allowed
+            min-w-[200px] ${className}
+          `}
+          aria-label={placeholder}
+        >
+          <span className="text-left truncate">
+            {selectedOption?.name || placeholder}
+          </span>
+          <ChevronDownIcon className="h-4 w-4 ml-2 flex-shrink-0" />
+        </button>
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content
+          className="
+            w-[var(--radix-popover-trigger-width)] max-h-96
+            bg-white rounded-md shadow-lg border border-gray-200
+            data-[state=open]:animate-in data-[state=closed]:animate-out 
+            data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+            data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+            data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2
+            z-50 overflow-hidden
+          "
+          sideOffset={4}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <Command className="w-full">
+            <Command.Input
+              placeholder={searchPlaceholder}
+              className="w-full px-3 py-2 text-sm border-b border-gray-200 focus:outline-none bg-transparent"
+              autoFocus
+            />
+            <Command.List className="max-h-64 overflow-auto p-1">
+              <Command.Empty className="px-3 py-2 text-sm text-gray-500 text-center">
+                没有找到匹配项
+              </Command.Empty>
+              {options.map((option) => (
+                <Command.Item
+                  key={option.id}
+                  value={option.id.toString()}
+                  onSelect={() => handleSelect(option.id.toString())}
+                  className="
+                    relative flex items-center px-3 py-2 text-sm select-none cursor-pointer rounded
+                    data-[selected]:bg-blue-50 data-[selected]:text-blue-900
+                    hover:bg-gray-50
+                  "
+                >
+                  <span>{option.name}</span>
+                  {option.id === value && (
+                    <CheckIcon className="h-4 w-4 ml-auto" />
+                  )}
+                </Command.Item>
+              ))}
+            </Command.List>
+          </Command>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}

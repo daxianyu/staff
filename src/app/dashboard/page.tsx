@@ -32,18 +32,14 @@ const ATTENDANCE_STATUS = {
   PRESENT: -1,      // 正常出席
   LEAVE: 1,         // 请假
   ABSENT: 0,        // 旷课
+  LATE: 4,          // 迟到
 };
 
 const ATTENDANCE_STATUS_LABELS = {
   [ATTENDANCE_STATUS.PRESENT]: '出席',
   [ATTENDANCE_STATUS.LEAVE]: '请假',
   [ATTENDANCE_STATUS.ABSENT]: '旷课',
-};
-
-const ATTENDANCE_STATUS_COLORS = {
-  [ATTENDANCE_STATUS.PRESENT]: 'bg-green-100 text-green-800',
-  [ATTENDANCE_STATUS.LEAVE]: 'bg-yellow-100 text-yellow-800',
-  [ATTENDANCE_STATUS.ABSENT]: 'bg-red-100 text-red-800',
+  [ATTENDANCE_STATUS.LATE]: '迟到',
 };
 
 export default function DashboardPage() {
@@ -394,7 +390,7 @@ export default function DashboardPage() {
                               {item.topic_name}
                             </h3>
                             <p className="text-sm text-gray-600 mt-1">
-                              📅 {formatTime(item.start_time)} • 科目 #{item.subject_id} • 学生 {item.students.length} 人
+                              📅 {formatTime(item.start_time)} • 学生 {item.students.length} 人
                             </p>
                           </div>
                         </div>
@@ -471,43 +467,44 @@ export default function DashboardPage() {
                                 </div>
                               </div>
                               
-                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                              <div className="flex flex-col items-start sm:items-center">
                                 {hasComment ? (
                                   /* 已请假状态 - 只显示，不可修改 */
-                                  <div className="flex flex-col items-start sm:items-center">
-                                    <span className="text-xs text-gray-500 mb-1">状态</span>
-                                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                  <>
+                                    <span className="text-sm text-gray-500 mb-2">状态</span>
+                                    <span className="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                       已请假
                                     </span>
-                                    <p className="text-xs text-gray-500 mt-1">不可修改</p>
-                                  </div>
+                                    <p className="text-sm text-gray-500 mt-1">不可修改</p>
+                                  </>
                                 ) : (
-                                  /* 正常状态 - 可以修改 */
+                                  /* 正常状态 - 按钮组选择 */
                                   <>
-                                    <div className="flex flex-col items-start sm:items-end">
-                                      <label className="text-xs text-gray-500 mb-1">考勤状态</label>
-                                      <select
-                                        value={currentStatus}
-                                        onChange={(e) => handleAttendanceChange(
-                                          student.lesson_id, 
-                                          student.student_id, 
-                                          parseInt(e.target.value)
-                                        )}
-                                        className="w-full sm:w-auto rounded-lg border-gray-300 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      >
-                                        {Object.entries(ATTENDANCE_STATUS_LABELS).map(([value, label]) => (
-                                          <option key={value} value={value}>
+                                    <span className="text-sm text-gray-500 mb-2">考勤状态</span>
+                                    <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                                      {Object.entries(ATTENDANCE_STATUS_LABELS).map(([value, label], index) => {
+                                        const isSelected = currentStatus === parseInt(value);
+                                        return (
+                                          <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => handleAttendanceChange(
+                                              student.lesson_id, 
+                                              student.student_id, 
+                                              parseInt(value)
+                                            )}
+                                            className={`px-4 py-2 text-sm font-medium transition-colors ${
+                                              isSelected 
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                            } ${
+                                              index === 0 ? '' : 'border-l border-gray-300'
+                                            }`}
+                                          >
                                             {label}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                    
-                                    <div className="flex flex-col items-start sm:items-center">
-                                      <span className="text-xs text-gray-500 mb-1">当前状态</span>
-                                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${ATTENDANCE_STATUS_COLORS[currentStatus]}`}>
-                                        {ATTENDANCE_STATUS_LABELS[currentStatus]}
-                                      </span>
+                                          </button>
+                                        );
+                                      })}
                                     </div>
                                   </>
                                 )}
@@ -547,13 +544,13 @@ export default function DashboardPage() {
                             <div>
                               <h3 className="font-semibold text-gray-900 text-xl">{item.topic_name}</h3>
                               <p className="text-sm text-gray-600 mt-1">
-                                📋 学生 {item.student_name}(#{item.student_id}) • 科目 #{item.subject_id}
+                                📋 学生 {item.student_name}(#{item.student_id})
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
                             {/* <p className="text-xs text-gray-500">评价周期</p> */}
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-md text-gray-500 mt-1">
                               {formatDateRange(item.time_unit_start, item.time_unit_end)}
                             </p>
                           </div>

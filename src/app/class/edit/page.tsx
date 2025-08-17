@@ -2,263 +2,775 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { getClassInfo, ClassInfoData, ClassTopic } from '@/services/auth';
+import { 
+  getClassEditInfo,
+  editClass,
+  addToGroup,
+  type ClassEditData,
+  type EditClassParams,
+  type AddToGroupParams,
+  type ClassInfo,
+  type ClassSubjectEdit,
+  type ClassStudentEdit,
+  type Topic,
+  type ExamInfo,
+  type Campus,
+  type StudentInfo
+} from '@/services/auth';
+import {
+  ExclamationTriangleIcon,
+  ArrowLeftIcon,
+  PlusIcon,
+  TrashIcon,
+  UserGroupIcon,
+  BookOpenIcon,
+  CheckCircleIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
+import SearchableSelect from '@/components/SearchableSelect';
 
 export default function ClassEditPage() {
+  const { hasPermission } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { hasPermission } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [classData, setClassData] = useState<ClassInfoData | null>(null);
-  const [saving, setSaving] = useState(false);
-  
   const classId = searchParams.get('id');
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [editData, setEditData] = useState<ClassEditData | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // 权限检查
+  // 表单状态
+  const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
+  const [students, setStudents] = useState<Array<{
+    student_id: number;
+    start_time: number;
+    end_time: number;
+    name?: string;
+    isTransfer?: boolean;
+  }>>([]);
+  const [subjects, setSubjects] = useState<Array<{
+    topic_id: number;
+    teacher_id: number;
+    description: string;
+    student_signup: number;
+    exam_id: number;
+    topic_name?: string;
+    teacher_name?: string;
+    exam_name?: string;
+  }>>([]);
+
+  // Add to Group 状态
+  const [showAddToGroup, setShowAddToGroup] = useState(false);
+  const [addToGroupData, setAddToGroupData] = useState({
+    week_lessons: 1,
+    assign_name: ''
+  });
+
+  // 注意：移除了搜索状态，因为每个SearchableSelect都自己管理搜索状态
+
   const canEditClasses = hasPermission(PERMISSIONS.EDIT_CLASSES);
 
-  useEffect(() => {
-    if (!canEditClasses) {
-      setError('无权限编辑课程');
-      setLoading(false);
-      return;
-    }
-
+  const loadEditData = async () => {
     if (!classId) {
-      setError('缺少课程ID参数');
+      setError('Class ID not provided');
       setLoading(false);
       return;
     }
 
-    fetchClassData();
-  }, [classId, canEditClasses]);
-
-  const fetchClassData = async () => {
     try {
       setLoading(true);
-      const response = await getClassInfo(classId!);
+      const response = await getClassEditInfo(Number(classId));
       
-      if (response.status === 0 && response.data) {
-        setClassData(response.data);
+      if (response.code === 200 && response.data) {
+        setEditData(response.data);
+        setClassInfo(response.data.class_info);
+        
+        // 初始化学生列表
+        const studentsWithNames = response.data.class_student.map(student => {
+          const studentInfo = response.data!.student_info.find(s => s.id === student.student_id);
+          return {
+            ...student,
+            name: studentInfo?.name || 'Unknown',
+            isTransfer: student.start_time !== -1 || student.end_time !== -1
+          };
+        });
+        setStudents(studentsWithNames);
+
+        // 转换double_time为boolean
+        setClassInfo({
+          ...response.data.class_info,
+          double_time: response.data.class_info.double_time === 1
+        } as any);
+
+        // 初始化科目列表
+        const subjectsWithNames = response.data.class_subject.map(subject => {
+          const topicInfo = response.data!.topics.find(t => t.id === subject.topic_id);
+          const teacherInfo = response.data!.staff_info.find(s => s.id === subject.teacher_id);
+          const examInfo = response.data!.exam_info.find(e => e.id === subject.exam_id);
+          return {
+            topic_id: subject.topic_id,
+            teacher_id: subject.teacher_id,
+            description: subject.description,
+            student_signup: subject.student_signup,
+            exam_id: subject.exam_id,
+            topic_name: topicInfo?.name || 'Unknown Topic',
+            teacher_name: teacherInfo?.name || 'Unknown Teacher',
+            exam_name: examInfo?.name || ''
+          };
+        });
+        setSubjects(subjectsWithNames);
       } else {
-        setError(response.message || '获取班级信息失败');
+        setError(response.message || 'Failed to load edit data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取班级信息失败');
+      console.error('加载Class编辑数据失败:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load edit data');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadEditData();
+  }, [classId]);
+
+  // 格式化时间
+  const formatDate = (timestamp: number) => {
+    if (timestamp === -1) return '';
+    const date = new Date(timestamp * 1000);
+    return date.toISOString().split('T')[0];
+  };
+
+  const parseDate = (dateString: string): number => {
+    if (!dateString) return -1;
+    return Math.floor(new Date(dateString).getTime() / 1000);
+  };
+
+  // 学生管理
+  const addStudent = () => {
+    setStudents([...students, {
+      student_id: 0,
+      start_time: -1,
+      end_time: -1,
+      name: '',
+      isTransfer: false
+    }]);
+  };
+
+  const removeStudent = (index: number) => {
+    setStudents(students.filter((_, i) => i !== index));
+  };
+
+  const updateStudent = (index: number, field: string, value: any) => {
+    const newStudents = [...students];
+    if (field === 'student_id') {
+      // 检查学生是否已经存在
+      const existingStudentIndex = students.findIndex((s, i) => i !== index && s.student_id === value);
+      if (existingStudentIndex !== -1 && value !== 0) {
+        setErrorMessage('该学生已经添加过了');
+        setShowError(true);
+        return;
+      }
+      
+      const studentInfo = editData?.student_info.find(s => s.id === value);
+      newStudents[index] = {
+        ...newStudents[index],
+        student_id: value,
+        name: studentInfo?.name || 'Unknown'
+      };
+    } else if (field === 'isTransfer') {
+      newStudents[index] = {
+        ...newStudents[index],
+        isTransfer: value,
+        start_time: value ? parseDate('') : -1,
+        end_time: value ? parseDate('') : -1
+      };
+    } else {
+      newStudents[index] = {
+        ...newStudents[index],
+        [field]: value
+      };
+    }
+    setStudents(newStudents);
+  };
+
+  // 科目管理
+  const addSubject = () => {
+    setSubjects([...subjects, {
+      topic_id: 0,
+      teacher_id: 0,
+      description: '',
+      student_signup: 0,
+      exam_id: -1,
+      topic_name: '',
+      teacher_name: '',
+      exam_name: ''
+    }]);
+  };
+
+  const removeSubject = (index: number) => {
+    setSubjects(subjects.filter((_, i) => i !== index));
+  };
+
+  const updateSubject = (index: number, field: string, value: any) => {
+    const newSubjects = [...subjects];
+    
+    // 更新字段值
+    if (field === 'topic_id') {
+      const topicInfo = editData?.topics.find(t => t.id === value);
+      newSubjects[index] = {
+        ...newSubjects[index],
+        topic_id: value,
+        topic_name: topicInfo?.name || 'Unknown Topic'
+      };
+    } else if (field === 'teacher_id') {
+      const teacherInfo = editData?.staff_info.find(s => s.id === value);
+      newSubjects[index] = {
+        ...newSubjects[index],
+        teacher_id: value,
+        teacher_name: teacherInfo?.name || 'Unknown Teacher'
+      };
+    } else if (field === 'exam_id') {
+      const examInfo = editData?.exam_info.find(e => e.id === value);
+      newSubjects[index] = {
+        ...newSubjects[index],
+        exam_id: value,
+        exam_name: examInfo?.name || ''
+      };
+    } else {
+      newSubjects[index] = {
+        ...newSubjects[index],
+        [field]: value
+      };
+    }
+
+    // 检查科目组合是否重复（topic + teacher）
+    if (field === 'topic_id' || field === 'teacher_id') {
+      const currentSubject = newSubjects[index];
+      if (currentSubject.topic_id && currentSubject.teacher_id) {
+        const existingSubjectIndex = newSubjects.findIndex((s, i) => 
+          i !== index && 
+          s.topic_id === currentSubject.topic_id && 
+          s.teacher_id === currentSubject.teacher_id
+        );
+        
+        if (existingSubjectIndex !== -1) {
+          setErrorMessage('该Topic和Teacher的组合已经存在');
+          setShowError(true);
+          return;
+        }
+      }
+    }
+
+    setSubjects(newSubjects);
+  };
+
+  // 保存编辑
   const handleSave = async () => {
-    // TODO: 实现保存逻辑
-    setSaving(true);
-    setTimeout(() => {
+    if (!classInfo || !classId) return;
+
+    // 验证必填项
+    if (!classInfo.name.trim()) {
+      setErrorMessage('Class名称不能为空');
+      setShowError(true);
+      return;
+    }
+
+    // 验证学生
+    for (const student of students) {
+      if (!student.student_id) {
+        setErrorMessage('请选择所有学生');
+        setShowError(true);
+        return;
+      }
+    }
+
+    // 验证科目
+    for (const subject of subjects) {
+      if (!subject.topic_id || !subject.teacher_id) {
+        setErrorMessage('科目的Topic和Teacher为必选项');
+        setShowError(true);
+        return;
+      }
+    }
+
+    try {
+      setSaving(true);
+      const params: EditClassParams = {
+        record_id: Number(classId),
+        campus_id: classInfo.campus_id,
+        class_name: classInfo.name,
+        double_time: classInfo.double_time ? 1 : 0,
+        students: students.map(s => ({
+          student_id: s.student_id,
+          start_time: s.start_time,
+          end_time: s.end_time
+        })),
+        subjects: subjects.map(s => ({
+          topic_id: s.topic_id,
+          teacher_id: s.teacher_id,
+          description: s.description,
+          student_signup: s.student_signup,
+          exam_id: s.exam_id === -1 ? -1 : s.exam_id
+        }))
+      };
+
+      const response = await editClass(params);
+      
+      if (response.code === 200) {
+        setShowSuccess(true);
+        // 重新加载页面数据
+        await loadEditData();
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 2000);
+      } else {
+        setErrorMessage(response.message || '保存失败');
+        setShowError(true);
+      }
+    } catch (error) {
+      console.error('保存Class失败:', error);
+      setErrorMessage('保存失败');
+      setShowError(true);
+    } finally {
       setSaving(false);
-      alert('保存成功');
-    }, 1000);
+    }
+  };
+
+  // Add to Group
+  const handleAddToGroup = async () => {
+    if (!classId || !addToGroupData.assign_name.trim()) {
+      setErrorMessage('请填写Assign Name');
+      setShowError(true);
+      return;
+    }
+
+    try {
+      const params: AddToGroupParams = {
+        record_id: Number(classId),
+        week_lessons: addToGroupData.week_lessons,
+        assign_name: addToGroupData.assign_name
+      };
+
+      const response = await addToGroup(params);
+      
+      if (response.code === 200) {
+        setShowSuccess(true);
+        setShowAddToGroup(false);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        setErrorMessage(response.message || 'Add to Group失败');
+        setShowError(true);
+      }
+    } catch (error) {
+      console.error('Add to Group失败:', error);
+      setErrorMessage('Add to Group失败');
+      setShowError(true);
+    }
   };
 
   if (!canEditClasses) {
     return (
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">权限不足</h2>
-            <p className="text-gray-600">您没有权限编辑课程</p>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600">You don't have permission to edit classes</p>
         </div>
+      </div>
     );
   }
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">加载中...</p>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
         </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-red-600 mb-4">出错了</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button 
-              onClick={() => router.back()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              返回
-            </button>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Error</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!editData || !classInfo) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">No data available</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">编辑课程</h1>
-            <p className="text-gray-600 mt-1">课程ID: {classId}</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowAddToGroup(true)}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+              >
+                <UserGroupIcon className="h-4 w-4 mr-2" />
+                Add to Group
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+          <div className="mt-4">
+            <h1 className="text-3xl font-bold text-gray-900">Edit Class</h1>
+            <p className="text-gray-600 mt-2">Class ID: {classId}</p>
           </div>
         </div>
-      </div>
 
-      {/* 编辑表单 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="space-y-6">
-          {classData && (
-            <>
-              {/* 科目配置编辑 */}
+        {/* Success Message */}
+        {showSuccess && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex">
+              <CheckCircleIcon className="h-5 w-5 text-green-400" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-green-800">操作成功！</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {showError && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setShowError(false)}
+                  className="inline-flex text-red-400 hover:text-red-600"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-8">
+          {/* Basic Info */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">基本信息</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">科目配置</h3>
-                {classData.class_topics.map((topic, index) => (
-                  <div key={topic.id} className="border border-gray-200 rounded-lg p-4 mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          科目
-                        </label>
-                        <select
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          defaultValue={topic.topic_id}
-                        >
-                          {Object.entries(classData.topics).map(([id, name]) => (
-                            <option key={id} value={id}>
-                              {name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Class名称 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={classInfo.name}
+                  onChange={(e) => setClassInfo({...classInfo, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  placeholder="请输入班级名称"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">校区</label>
+                <select
+                  value={classInfo.campus_id}
+                  onChange={(e) => setClassInfo({...classInfo, campus_id: Number(e.target.value)})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                >
+                  {editData.campus_info.map((campus) => (
+                    <option key={campus.id} value={campus.id}>
+                      {campus.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          授课教师
-                        </label>
-                        <select
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          defaultValue={topic.teacher_id}
-                        >
-                          {Object.entries(classData.staff_list).map(([id, name]) => (
-                            <option key={id} value={id}>
-                              {name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+              <div className="flex items-center">
+                <label className="flex items-center space-x-2 mt-6">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(classInfo.double_time)}
+                    onChange={(e) => setClassInfo({...classInfo, double_time: e.target.checked ? 1 : 0})}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">双倍课时</span>
+                </label>
+              </div>
+            </div>
+          </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          考试
-                        </label>
-                        <select
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          defaultValue={topic.exam_id}
-                        >
-                          {classData.exam_list.map((exam) => (
-                            <option key={exam.id} value={exam.id}>
-                              {exam.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+          {/* Students Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <UserGroupIcon className="h-5 w-5 mr-2 text-blue-600" />
+                学生管理 ({students.length})
+              </h2>
+              <button
+                onClick={addStudent}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 hover:border-blue-700 transition-colors"
+              >
+                <PlusIcon className="h-4 w-4 mr-2" />
+                添加学生
+              </button>
+            </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          描述
-                        </label>
+            <div className="space-y-4">
+              {students.map((student, index) => (
+                <div key={`student-${index}-${student.student_id || 'new'}`} className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <div className={`grid gap-4 items-end ${student.isTransfer ? 'grid-cols-1 lg:grid-cols-6' : 'grid-cols-1 lg:grid-cols-4'}`}>
+                    <div className={student.isTransfer ? "lg:col-span-2" : "lg:col-span-2"}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">学生</label>
+                      <SearchableSelect
+                        options={editData.student_info}
+                        value={student.student_id}
+                        onValueChange={(value) => updateStudent(index, 'student_id', value)}
+                        placeholder="请选择学生"
+                        searchPlaceholder="搜索学生..."
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="flex items-center">
+                      <label className="flex items-center space-x-2 mt-6">
                         <input
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          defaultValue={topic.description}
-                          placeholder="请输入描述"
+                          type="checkbox"
+                          checked={student.isTransfer}
+                          onChange={(e) => updateStudent(index, 'isTransfer', e.target.checked)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
+                        <span className="text-sm font-medium text-gray-700">插班生</span>
+                      </label>
+                    </div>
+
+                    {student.isTransfer && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">开始时间</label>
+                          <input
+                            type="date"
+                            value={formatDate(student.start_time)}
+                            onChange={(e) => updateStudent(index, 'start_time', parseDate(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">结束时间</label>
+                          <input
+                            type="date"
+                            value={formatDate(student.end_time)}
+                            onChange={(e) => updateStudent(index, 'end_time', parseDate(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => removeStudent(index)}
+                        className="inline-flex items-center justify-center w-10 h-10 text-red-600 border border-red-300 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors"
+                        title="删除学生"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Subjects Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <BookOpenIcon className="h-5 w-5 mr-2 text-green-600" />
+                科目管理 ({subjects.length})
+              </h2>
+              <button
+                onClick={addSubject}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 hover:border-blue-700 transition-colors"
+              >
+                <PlusIcon className="h-4 w-4 mr-2" />
+                添加科目
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {subjects.map((subject, index) => (
+                <div key={`subject-${index}-${subject.topic_id || 'new'}-${subject.teacher_id || 'new'}`} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+                  {/* 主要选择项目 */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Topic <span className="text-red-500">*</span>
+                      </label>
+                      <SearchableSelect
+                        options={editData.topics}
+                        value={subject.topic_id}
+                        onValueChange={(value) => updateSubject(index, 'topic_id', value)}
+                        placeholder="请选择Topic"
+                        searchPlaceholder="搜索Topic..."
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Teacher <span className="text-red-500">*</span>
+                      </label>
+                      <SearchableSelect
+                        options={editData.staff_info}
+                        value={subject.teacher_id}
+                        onValueChange={(value) => updateSubject(index, 'teacher_id', value)}
+                        placeholder="请选择Teacher"
+                        searchPlaceholder="搜索Teacher..."
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Exam</label>
+                      <SearchableSelect
+                        options={[
+                          { id: -1, name: '无考试' },
+                          ...editData.exam_info
+                        ]}
+                        value={subject.exam_id}
+                        onValueChange={(value) => updateSubject(index, 'exam_id', value)}
+                        placeholder="请选择Exam"
+                        searchPlaceholder="搜索Exam..."
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 描述和设置 */}
+                  <div className="flex flex-col lg:flex-row gap-4 pt-4 border-t border-gray-100">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <input
+                        type="text"
+                        value={subject.description}
+                        onChange={(e) => updateSubject(index, 'description', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="描述"
+                      />
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4">
+                      <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={subject.student_signup === 1}
+                            onChange={(e) => updateSubject(index, 'student_signup', e.target.checked ? 1 : 0)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm font-medium text-gray-700">学生可报名</span>
+                        </label>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
+                        <button
+                          onClick={() => removeSubject(index)}
+                          className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors"
+                          title="删除科目"
+                        >
+                          <TrashIcon className="h-4 w-4 mr-1" />
+                          删除
+                        </button>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* 学生管理 */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">学生管理</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          学生姓名
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          开始时间
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          结束时间
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          操作
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {classData.class_student.map((student) => (
-                        <tr key={student.student_id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {classData.student_list[student.student_id] || '未知学生'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <input
-                              type="date"
-                              className="px-2 py-1 border border-gray-300 rounded text-sm"
-                              defaultValue={student.start_time > 0 ? new Date(student.start_time * 1000).toISOString().split('T')[0] : ''}
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <input
-                              type="date"
-                              className="px-2 py-1 border border-gray-300 rounded text-sm"
-                              defaultValue={student.end_time > 0 ? new Date(student.end_time * 1000).toISOString().split('T')[0] : ''}
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <button className="text-red-600 hover:text-red-800">移除</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
-              </div>
-            </>
-          )}
-
-          <div className="flex justify-end space-x-4">
-            <button
-              onClick={() => router.back()}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-            >
-              取消
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              {saving ? '保存中...' : '保存'}
-            </button>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Add to Group Modal */}
+        {showAddToGroup && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Add to Group</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Week Lessons <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={addToGroupData.week_lessons}
+                    onChange={(e) => setAddToGroupData({...addToGroupData, week_lessons: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="一周多少节课"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assign Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addToGroupData.assign_name}
+                    onChange={(e) => setAddToGroupData({...addToGroupData, assign_name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="别名或者后缀名字"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowAddToGroup(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleAddToGroup}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                >
+                  确认添加
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-} 
+}
