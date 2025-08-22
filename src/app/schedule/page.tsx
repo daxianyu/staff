@@ -1273,9 +1273,8 @@ export default function SchedulePage() {
         onAnimationComplete={handleAnimationComplete}
         onConflictCheck={checkTimeConflict}
         scheduleData={scheduleData}
-        staffId={staffId}
-        onRefreshData={refreshScheduleData}
-        onRepeatChange={(rep) => setSelectedTimeRange(prev => prev ? { ...prev, repeat: rep } : prev)}
+        // onRefreshData={refreshScheduleData}
+        // onRepeatChange={(rep) => setSelectedTimeRange(prev => prev ? { ...prev, repeat: rep } : prev)}
         isSaving={isSaving}
         mode="add"
         onDeleteUnavailable={handleDeleteUnavailable}
@@ -1297,9 +1296,9 @@ export default function SchedulePage() {
           onAnimationComplete={handleAnimationComplete}
           onConflictCheck={checkTimeConflict}
           scheduleData={scheduleData}
-          staffId={staffId}
-          onRefreshData={refreshScheduleData}
-          onRepeatChange={() => {}}
+          // staffId={staffId}
+          // onRefreshData={refreshScheduleData}
+          // onRepeatChange={() => {}}
           isSaving={isSaving}
           mode="edit"
           readOnly={isReadOnlyMode} // 使用状态控制只读模式

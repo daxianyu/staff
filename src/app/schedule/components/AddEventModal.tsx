@@ -1,8 +1,36 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import moment from 'moment';
 import TimePicker from '../../../components/TimePicker';
 import Button from '../../../components/Button';
 import NumberInput from '../../../components/NumberInput';
+
+// 时间限制配置（从组件内移到外部）
+const DAY_START_TIME = '09:00'; // 早上9点
+const DAY_END_TIME = '22:00';   // 晚上10点
+
+// 去抖的冲突检测hook
+function useDebouncedConflict(
+  enabled: boolean,
+  start: Date | null,
+  end: Date | null,
+  onConflictCheck?: (s: Date, e: Date) => Array<{start: Date; end: Date}>,
+  delay = 250
+) {
+  const [conflicts, setConflicts] = useState<Array<{start: Date; end: Date}>>([]);
+
+  useEffect(() => {
+    if (!enabled || !start || !end || !onConflictCheck) {
+      setConflicts([]);
+      return;
+    }
+    const id = setTimeout(() => {
+      setConflicts(onConflictCheck(start, end));
+    }, delay);
+    return () => clearTimeout(id);
+  }, [enabled, start?.getTime(), end?.getTime(), onConflictCheck, delay]);
+
+  return conflicts;
+}
 
 interface ScheduleEvent {
   id: string;
@@ -32,15 +60,12 @@ interface AddEventModalProps {
     note?: string; // 监考备注
     repeat_num?: number; // 重复次数
   }) => void;
-  onRepeatChange?: (repeat: 'none' | 'weekly') => void;
   selectedDate?: Date;
   selectedTimeRange?: { start: Date; end: Date };
   position?: { x: number; y: number; slideDirection?: 'left' | 'right' | 'center' };
   onAnimationComplete?: () => void;
   onConflictCheck?: (start: Date, end: Date) => Array<{ start: Date; end: Date }>;
   scheduleData?: any;
-  staffId?: string;
-  onRefreshData?: () => void; // 添加刷新数据的回调
   isSaving?: boolean;
   mode?: 'add' | 'edit';
   readOnly?: boolean; // 新增：是否为只读模式
@@ -54,7 +79,6 @@ export default function AddEventModal({
   isOpen, 
   onClose, 
   onSave,
-  onRepeatChange,
   onTimeChange,
   selectedDate,
   selectedTimeRange,
@@ -62,8 +86,6 @@ export default function AddEventModal({
   onAnimationComplete,
   onConflictCheck,
   scheduleData,
-  staffId = '',
-  onRefreshData,
   isSaving = false,
   mode = 'add',
   readOnly = false,
@@ -78,7 +100,6 @@ export default function AddEventModal({
   const [description, setDescription] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
-  const [currentConflicts, setCurrentConflicts] = useState<Array<{ start: Date; end: Date }>>([]);
   const [repeat, setRepeat] = useState<'none' | 'weekly'>('none');
 
   // 课程相关表单字段
@@ -109,9 +130,7 @@ export default function AddEventModal({
     startOffsetY: 0
   });
 
-  // 时间限制配置（从SchedulePage的日历配置同步）
-  const DAY_START_TIME = '09:00'; // 早上9点
-  const DAY_END_TIME = '22:00';   // 晚上10点
+  // 时间限制配置已移到组件外部
 
   useEffect(() => {
     if (!isOpen) {
@@ -287,43 +306,35 @@ export default function AddEventModal({
     }
   }, [selectedTimeRange, isOpen]);
 
-  // 当时间发生变化时，自主进行冲突检查
-  useEffect(() => {
-    if (!selectedDate || !isOpen || !onConflictCheck) {
-      setCurrentConflicts([]);
-      return;
-    }
-    
-    const start = moment(selectedDate).set({
-      hour: parseInt(startTime.split(':')[0]),
-      minute: parseInt(startTime.split(':')[1])
-    }).toDate();
-    
-    const end = moment(selectedDate).set({
-      hour: parseInt(endTime.split(':')[0]),
-      minute: parseInt(endTime.split(':')[1])
-    }).toDate();
-    
-    // 自主进行冲突检查
-    const conflicts = onConflictCheck(start, end);
-    setCurrentConflicts(conflicts);
-  }, [startTime, endTime, selectedDate, isOpen, onConflictCheck]);
+  // 使用去抖的冲突检测
+  const start = selectedDate ? moment(selectedDate).set({
+    hour: parseInt(startTime.split(':')[0]),
+    minute: parseInt(startTime.split(':')[1])
+  }).toDate() : null;
+  
+  const end = selectedDate ? moment(selectedDate).set({
+    hour: parseInt(endTime.split(':')[0]),
+    minute: parseInt(endTime.split(':')[1])
+  }).toDate() : null;
 
-  // 计算开始时间的限制
-  const getStartTimeConstraints = useCallback(() => {
-    return {
-      minTime: DAY_START_TIME,
-      maxTime: endTime < DAY_END_TIME ? endTime : DAY_END_TIME
-    };
-  }, [endTime]);
+  const currentConflicts = useDebouncedConflict(
+    Boolean(isOpen && selectedDate),
+    start,
+    end,
+    onConflictCheck,
+    250 // 250ms去抖延迟
+  );
 
-  // 计算结束时间的限制  
-  const getEndTimeConstraints = useCallback(() => {
-    return {
-      minTime: startTime > DAY_START_TIME ? startTime : DAY_START_TIME,
-      maxTime: DAY_END_TIME
-    };
-  }, [startTime]);
+  // 使用 useMemo 优化时间约束，避免不必要的重新计算
+  const startTimeConstraints = useMemo(() => ({
+    minTime: DAY_START_TIME,
+    maxTime: endTime < DAY_END_TIME ? endTime : DAY_END_TIME
+  }), [endTime]);
+
+  const endTimeConstraints = useMemo(() => ({
+    minTime: startTime > DAY_START_TIME ? startTime : DAY_START_TIME,
+    maxTime: DAY_END_TIME
+  }), [startTime]);
 
 
 
@@ -343,8 +354,9 @@ export default function AddEventModal({
       end,
       type: eventType,
       description,
-      teacherId: 'teacher1',
-      teacherName: '张老师',
+      // 从 initialEvent 获取教师信息，如果没有则不传递
+      ...(initialEvent?.teacherId && { teacherId: initialEvent.teacherId }),
+      ...(initialEvent?.teacherName && { teacherName: initialEvent.teacherName }),
       repeat,
       subject: eventType === 'lesson' ? selectedSubject : '',
       campus: selectedCampus,
@@ -914,6 +926,8 @@ export default function AddEventModal({
                           }}
                           className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
                         >
+                          <option value="none">不重复</option>
+                          <option value="weekly">每周</option>
                         </select>
                         
                         {/* 重复次数输入框 - 仅对课程，且选择重复时显示 */}
@@ -982,7 +996,7 @@ export default function AddEventModal({
                               onTimeChange(newStartTime, finalEndTime);
                             }
                           }}
-                          {...getStartTimeConstraints()}
+                          {...startTimeConstraints}
                         />
                         <TimePicker
                           label="结束时间"
@@ -1006,7 +1020,7 @@ export default function AddEventModal({
                               onTimeChange(finalStartTime, newEndTime);
                             }
                           }}
-                          {...getEndTimeConstraints()}
+                          {...endTimeConstraints}
                         />
                       </>
                     )}
