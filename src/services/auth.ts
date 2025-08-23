@@ -3070,3 +3070,351 @@ export const deleteClass = async (params: DeleteClassParams): Promise<ApiRespons
     };
   }
 };
+
+// Exam management APIs
+
+export interface ExamListItem {
+  id: number;
+  name: string;
+  code: string;
+  location?: string;
+  topic?: string;
+  price?: number;
+  price_string?: string;
+}
+
+export interface ExamListResponse {
+  status: number;
+  message: string;
+  data: { active: ExamListItem[]; disabled: ExamListItem[] };
+}
+
+export const getExamList = async (): Promise<ExamListResponse> => {
+  try {
+    const response = await fetch('/api/exam/get_exam_list', {
+      method: 'GET',
+      headers: getAuthHeader(),
+    });
+    const data = await response.json();
+    return {
+      status: data.status === 0 ? 200 : data.status,
+      message: data.message || '',
+      data: data.data || { active: [], disabled: [] },
+    };
+  } catch (error) {
+    console.error('获取考试列表失败:', error);
+    return {
+      status: 500,
+      message: '获取考试列表失败',
+      data: { active: [], disabled: [] },
+    };
+  }
+};
+
+export interface AddExamParams {
+  exam_name: string;
+  exam_location: string;
+  exam_topic: string;
+  exam_code: string;
+}
+
+export const addNewExam = async (params: AddExamParams): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/add_new_exam', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('添加考试失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '添加考试失败',
+    };
+  }
+};
+
+export interface UpdateExamStatusParams {
+  record_id: number;
+  status: number; // 0 disable, 1 enable
+}
+
+export const updateExamStatus = async (
+  params: UpdateExamStatusParams
+): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/update_exam_status', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新考试状态失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新考试状态失败',
+    };
+  }
+};
+
+export interface DeleteExamParams {
+  record_id: number;
+}
+
+export const deleteExam = async (
+  params: DeleteExamParams
+): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/delete_exam', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除考试失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除考试失败',
+    };
+  }
+};
+
+export const getExamEditInfo = async (
+  id: number
+): Promise<{ code: number; message: string; data?: any }> => {
+  try {
+    const response = await fetch(`/api/exam/get_exam_edit_info/${id}`, {
+      method: 'GET',
+      headers: getAuthHeader(),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : data.status,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取考试信息失败:', error);
+    return { code: 500, message: '获取考试信息失败' };
+  }
+};
+
+export interface EditExamParams {
+  record_id: number;
+  exam_name: string;
+  base_price: number;
+  exam_location: string;
+  exam_topic: string;
+  exam_topic_id: number;
+  exam_code: string;
+  period: number;
+  exam_type: number;
+  exam_time: number;
+  exam_time_2: number;
+  exam_time_3: number;
+  alipay_account: number;
+}
+
+export const editExam = async (params: EditExamParams): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/edit_exam', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('编辑考试失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '编辑考试失败',
+    };
+  }
+};
+
+export interface ChangePriceParams {
+  record_id?: number;
+  exam_id?: number;
+  change_price: number;
+  change_time: number;
+}
+
+export const addChangePrice = async (
+  params: Omit<ChangePriceParams, 'record_id'> & { exam_id: number }
+): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/add_change_price', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('添加价格变更失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '添加价格变更失败',
+    };
+  }
+};
+
+export const updateChangePrice = async (
+  params: ChangePriceParams & { record_id: number }
+): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/update_change_price', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新价格变更失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新价格变更失败',
+    };
+  }
+};
+
+export const deleteChangePrice = async (
+  params: { record_id: number }
+): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/delete_change_price', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除价格变更失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除价格变更失败',
+    };
+  }
+};
+
+export const deleteInnerSignup = async (
+  params: { record_id: number }
+): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/delete_inner_signup', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除内部报名失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除内部报名失败',
+    };
+  }
+};
+
+export const deletePublicSignup = async (
+  params: { record_id: number }
+): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/delete_public_signup', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除公共报名失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除公共报名失败',
+    };
+  }
+};
+
