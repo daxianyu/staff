@@ -55,6 +55,11 @@ export default function SchedulePage() {
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [apiErrors, setApiErrors] = useState<{
+    teacher_error?: string[];
+    student_error?: string[];
+    room_error?: string[];
+  } | null>(null);
 
   const [classInfo, setClassInfo] = useState<ClassScheduleData | null>(null);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
@@ -224,6 +229,7 @@ export default function SchedulePage() {
 
   const handleAddEvent = useCallback(async (payload: any) => {
     setIsSaving(true);
+    setApiErrors(null); // 清空之前的错误
     try {
       const { type, start, end, subject_id, room_id, repeat_num } = payload;
       if (type === 'lesson') {
@@ -235,24 +241,31 @@ export default function SchedulePage() {
           room_id: room_id || -1,
           repeat_num: repeat_num || 1
         });
-        if (resp.code === 200) { 
-          await refresh(); 
-          setShowAddModal(false); 
-          setSelectedTimeRange(null); 
+        if (resp.code === 200) {
+          await refresh();
+          setShowAddModal(false);
+          setSelectedTimeRange(null);
         } else {
-          alert(`新增课程失败: ${resp.message}`);
+          // 检查是否有详细的错误信息
+          if (resp.data && typeof resp.data === 'object' &&
+              ('teacher_error' in resp.data || 'student_error' in resp.data || 'room_error' in resp.data)) {
+            setApiErrors(resp.data as typeof apiErrors);
+          } else {
+            alert(`新增课程失败: ${resp.message}`);
+          }
         }
       }
-    } catch (e) { 
-      alert('新增课程失败，请重试'); 
+    } catch (e) {
+      alert('新增课程失败，请重试');
     }
-    finally { 
-      setIsSaving(false); 
+    finally {
+      setIsSaving(false);
     }
-  }, [refresh]);
+  }, [refresh, classId]);
 
   const handleEditEvent = useCallback(async (formData: any) => {
     setIsSaving(true);
+    setApiErrors(null); // 清空之前的错误
     try {
       if (formData.type === 'lesson') {
         const lessonId = parseInt(String(formData.id).replace('lesson_', ''));
@@ -263,19 +276,25 @@ export default function SchedulePage() {
           room_id: formData.room_id || -1,
           repeat_num: formData.repeat_num || 1
         } as any);
-        if (resp.code === 200) { 
-          await refresh(); 
-          setShowEditModal(false); 
-          setEditingEvent(null); 
+        if (resp.code === 200) {
+          await refresh();
+          setShowEditModal(false);
+          setEditingEvent(null);
         } else {
-          alert(`编辑课程失败: ${resp.message}`);
+          // 检查是否有详细的错误信息
+          if (resp.data && typeof resp.data === 'object' &&
+              ('teacher_error' in resp.data || 'student_error' in resp.data || 'room_error' in resp.data)) {
+            setApiErrors(resp.data as typeof apiErrors);
+          } else {
+            alert(`编辑课程失败: ${resp.message}`);
+          }
         }
       }
-    } catch { 
-      alert('编辑课程失败，请重试'); 
+    } catch {
+      alert('编辑课程失败，请重试');
     }
-    finally { 
-      setIsSaving(false); 
+    finally {
+      setIsSaving(false);
     }
   }, [refresh, editingEvent]);
 
@@ -423,6 +442,69 @@ export default function SchedulePage() {
         </div>
       </div>
 
+      {/* 错误信息展示 */}
+      {apiErrors && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-red-600">操作失败</h3>
+                <button
+                  onClick={() => setApiErrors(null)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {apiErrors.teacher_error && apiErrors.teacher_error.length > 0 && (
+                  <div className="border-l-4 border-yellow-400 bg-yellow-50 p-4">
+                    <h4 className="text-yellow-800 font-medium mb-2">教师错误：</h4>
+                    <div className="text-yellow-700 space-y-1">
+                      {apiErrors.teacher_error.map((error, index) => (
+                        <div key={index} className="text-sm">{error}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {apiErrors.student_error && apiErrors.student_error.length > 0 && (
+                  <div className="border-l-4 border-blue-400 bg-blue-50 p-4">
+                    <h4 className="text-blue-800 font-medium mb-2">学生错误：</h4>
+                    <div className="text-blue-700 space-y-1">
+                      {apiErrors.student_error.map((error, index) => (
+                        <div key={index} className="text-sm">{error}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {apiErrors.room_error && apiErrors.room_error.length > 0 && (
+                  <div className="border-l-4 border-red-400 bg-red-50 p-4">
+                    <h4 className="text-red-800 font-medium mb-2">教室错误：</h4>
+                    <div className="text-red-700 space-y-1">
+                      {apiErrors.room_error.map((error, index) => (
+                        <div key={index} className="text-sm">{error}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setApiErrors(null)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                >
+                  关闭
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 新增弹窗：班级课程 */}
       <AddEventModal
         isOpen={showAddModal}
@@ -450,6 +532,7 @@ export default function SchedulePage() {
         }}
         unavailableRangesSec={[]}
         onSaved={refresh}
+        onError={setApiErrors}
       />
 
       {/* 编辑弹窗：班级课程编辑 */}
@@ -483,6 +566,7 @@ export default function SchedulePage() {
           }}
           unavailableRangesSec={[]}
           onSaved={refresh}
+          onError={setApiErrors}
         />
       )}
     </div>

@@ -228,7 +228,19 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
           room_id: Number(form.pickRoom) || -1,
           repeat_num: form.repeat_num ?? 1,
         });
-        if (r.code !== 200) throw new Error(r.message || '新增失败');
+
+        // 检查是否有详细的错误信息
+        if (r.code !== 200) {
+          if (r.data && typeof r.data === 'object' &&
+              ('teacher_error' in r.data || 'student_error' in r.data || 'room_error' in r.data)) {
+            // 将错误信息作为特殊格式的错误抛出
+            const error = new Error(JSON.stringify(r.data));
+            (error as any).data = r.data;
+            throw error;
+          } else {
+            throw new Error(r.message || '新增失败');
+          }
+        }
       } else if (ctx.mode === 'edit' && ctx.initialEvent?.id) {
         const lessonId = parseInt(String(ctx.initialEvent.id).replace('lesson_', ''));
         const r = await api.editClassLesson({
@@ -238,7 +250,19 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
           room_id: Number(form.pickRoom) || -1,
           repeat_num: form.repeat_num ?? 1,
         });
-        if (r.code !== 200) throw new Error(r.message || '编辑失败');
+
+        // 检查是否有详细的错误信息
+        if (r.code !== 200) {
+          if (r.data && typeof r.data === 'object' &&
+              ('teacher_error' in r.data || 'student_error' in r.data || 'room_error' in r.data)) {
+            // 将错误信息作为特殊格式的错误抛出
+            const error = new Error(JSON.stringify(r.data));
+            (error as any).data = r.data;
+            throw error;
+          } else {
+            throw new Error(r.message || '编辑失败');
+          }
+        }
       }
     } else if (api.editStaffLesson && api.staffId) {
       // 员工课表模式（兼容旧版本）

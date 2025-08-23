@@ -100,6 +100,7 @@ interface AddEventModalProps {
   api?: ApiBundle;
   unavailableRangesSec?: Array<{ start_time: number; end_time: number }>; // 秒，用于策略内部不可用计算
   onSaved?: () => void; // 策略保存/删除成功后的回调（一般用于刷新）
+  onError?: (errorData: { teacher_error?: string[]; student_error?: string[]; room_error?: string[] }) => void; // 错误处理回调
 }
 
 const typeLabel: Record<EventKind, string> = {
@@ -133,6 +134,7 @@ export default function AddEventModal({
   api,
   unavailableRangesSec,
   onSaved,
+  onError,
 }: AddEventModalProps) {
   // ===== 基础状态 =====
   const [startTime, setStartTime] = useState('09:00');
@@ -315,87 +317,143 @@ export default function AddEventModal({
   const setForm = (patch: any) => { if (!strategy) return; setFormMap(prev => ({ ...prev, [strategy.key]: { ...form, ...patch } })); };
 
   // ===== 计算模态尺寸与定位（保留原逻辑但更紧凑） =====
-  const calculateModalProps = () => {
-    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
-    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
-    const modalWidth = 384; const margin = 16; const estimatedContentHeight = 480;
-    const headerHeight = 50; const footerHeight = 70;
-    let modalClassName = 'bg-white rounded-lg shadow-2xl border border-gray-200';
-    let contentMaxHeight: number | undefined;
-    const maxAvailableHeight = screenHeight - 2 * margin; let modalHeight = estimatedContentHeight;
-    if (estimatedContentHeight > maxAvailableHeight) { modalHeight = maxAvailableHeight; contentMaxHeight = modalHeight - headerHeight - footerHeight; }
+  // 简化DOM查找逻辑
+  const findEventElement = (): Element | null => {
+    if (typeof document === 'undefined') return null;
 
-    let adjustedX: number; let adjustedY: number; let finalSlideDirection: 'left' | 'right' | 'center' = 'right';
-    const selectedEventElement = typeof document !== 'undefined' ? (document.querySelector('[title="选中时间段"], [data-selected-event="true"]') as HTMLElement | null) : null;
-
-    if (selectedEventElement) {
-      const rect = selectedEventElement.getBoundingClientRect();
-      const leftSpace = rect.left; const rightSpace = screenWidth - rect.right; const need = modalWidth + margin;
-      if (rightSpace >= need) { adjustedX = rect.right + 20; finalSlideDirection = 'right'; }
-      else if (leftSpace >= need) { adjustedX = rect.left - modalWidth - 20; finalSlideDirection = 'left'; }
-      else { adjustedX = Math.max(margin, (screenWidth - modalWidth) / 2); finalSlideDirection = 'center'; }
-      adjustedX = Math.max(margin, Math.min(adjustedX, screenWidth - modalWidth - margin));
-      const selectionCenterY = rect.top + rect.height / 2; const idealY = selectionCenterY - modalHeight / 2;
-      if (idealY >= margin && idealY + modalHeight <= screenHeight - margin) adjustedY = idealY;
-      else if (idealY < margin) adjustedY = Math.max(margin, rect.top);
-      else adjustedY = Math.max(margin, rect.bottom - modalHeight);
-    } else if (position) {
-      const { x, y, slideDirection = 'right' } = position;
-      // `calculateModalPosition` already returns viewport-based coordinates.
-      // Using them directly keeps the modal aligned with the selected time slot
-      // even when the page is scrolled vertically.
-      const viewportX = x;
-      const viewportY = y;
-      adjustedX = Math.min(
-        Math.max(margin, viewportX),
-        screenWidth - modalWidth - margin,
-      );
-      const isSelectionVisible =
-        viewportY >= -50 && viewportY <= screenHeight + 50;
-      finalSlideDirection = slideDirection;
-      if (isSelectionVisible) {
-        const idealBelowY = Math.max(margin, viewportY + 10);
-        const idealAboveY = Math.max(
-          margin,
-          viewportY - modalHeight - 10,
-        );
-        const spaceBelow = screenHeight - idealBelowY - modalHeight;
-        const spaceAbove = idealAboveY - margin;
-        if (spaceBelow >= 0) adjustedY = idealBelowY;
-        else if (spaceAbove >= 0) adjustedY = idealAboveY;
-        else
-          adjustedY =
-            viewportY < screenHeight / 2
-              ? Math.min(
-                  screenHeight - modalHeight - margin,
-                  Math.max(margin, viewportY + 20),
-                )
-              : Math.max(
-                  margin,
-                  Math.min(
-                    viewportY - modalHeight - 20,
-                    screenHeight - modalHeight - margin,
-                  ),
-                );
-      } else {
-        adjustedY =
-          viewportY < -50
-            ? Math.max(
-                margin,
-                screenHeight * 0.6 - modalHeight / 2,
-              )
-            : Math.min(
-                screenHeight - modalHeight - margin,
-                screenHeight * 0.4 - modalHeight / 2,
-              );
-        finalSlideDirection = 'center';
+    // 编辑模式：查找对应的事件元素
+    if (mode === 'edit' && initialEvent) {
+      const eventId = initialEvent.id;
+      if (eventId) {
+        const element = document.querySelector(`[data-event-id="${eventId}"]`) ||
+                       document.querySelector(`.rbc-event[title*="${initialEvent.title || ''}"]`);
+        if (element) return element;
       }
-    } else {
-      adjustedX = (screenWidth - modalWidth) / 2; adjustedY = Math.max(margin, (screenHeight - modalHeight) / 2); finalSlideDirection = 'center';
+
+      // 通过时间匹配
+      if (initialEvent.start) {
+        const eventTime = moment(initialEvent.start).format('HH:mm');
+        const allEvents = document.querySelectorAll('.rbc-event');
+        for (const eventEl of allEvents) {
+          const title = eventEl.getAttribute('title');
+          if (title?.includes(eventTime)) return eventEl;
+        }
+      }
     }
 
-    adjustedX = Math.max(margin, Math.min(adjustedX, screenWidth - modalWidth - margin));
-    adjustedY = Math.max(margin, Math.min(adjustedY, screenHeight - modalHeight - margin));
+    // 新建模式：查找选中的时间段
+    const customEvents = document.querySelectorAll('.rbc-event .custom-event');
+    for (const customEvent of customEvents) {
+      if (customEvent.textContent?.includes('选中时间段')) {
+        return customEvent.closest('.rbc-event');
+      }
+    }
+
+    // 最后备选：通过title查找
+    const allEvents = document.querySelectorAll('.rbc-event');
+    for (const eventEl of allEvents) {
+      if (eventEl.getAttribute('title')?.includes('选中时间段')) {
+        return eventEl;
+      }
+    }
+
+    return null;
+  };
+
+  const calculateModalProps = (): { modalStyle: React.CSSProperties; modalClassName: string; contentMaxHeight?: number } => {
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+    const modalWidth = 384;
+    const margin = 16;
+    const estimatedContentHeight = 480;
+    const headerHeight = 50;
+    const footerHeight = 70;
+
+    // 计算弹框尺寸
+    const maxAvailableHeight = screenHeight - 2 * margin;
+    const modalHeight = estimatedContentHeight > maxAvailableHeight ?
+                       maxAvailableHeight : estimatedContentHeight;
+    const contentMaxHeight = estimatedContentHeight > maxAvailableHeight ?
+                            modalHeight - headerHeight - footerHeight : undefined;
+
+    let adjustedX: number;
+    let adjustedY: number;
+    let finalSlideDirection: 'left' | 'right' | 'center' = 'center';
+    const modalClassName: string = 'bg-white rounded-lg shadow-2xl border border-gray-200';
+
+    // 查找事件元素
+    const selectedEventElement = findEventElement();
+
+    // 统一的定位计算函数
+    const calculatePosition = (rect: DOMRect, isEventElement = false) => {
+      const elementCenterX = rect.left + rect.width / 2;
+      const elementLeft = rect.left;
+      const elementRight = rect.right;
+
+      // X坐标计算：智能选择左右位置
+      const safeMargin = isEventElement ? 10 : 0; // 事件元素需要额外安全距离
+      const leftSpace = elementLeft - margin;
+      const rightSpace = screenWidth - elementRight - margin;
+
+      let x: number;
+      if (rightSpace >= modalWidth + safeMargin) {
+        x = elementRight + safeMargin;
+        finalSlideDirection = 'right';
+      } else if (leftSpace >= modalWidth + safeMargin) {
+        x = elementLeft - modalWidth - safeMargin;
+        finalSlideDirection = 'left';
+      } else {
+        x = elementCenterX - modalWidth / 2;
+        finalSlideDirection = 'center';
+        // 边界检查
+        x = Math.max(margin, Math.min(x, screenWidth - modalWidth - margin));
+      }
+
+      // Y坐标计算：垂直居中对齐
+      const elementCenterY = rect.top + rect.height / 2;
+      let y = elementCenterY - modalHeight / 2;
+
+      // 边界检查和调整
+      if (y < margin) y = Math.max(margin, rect.top);
+      else if (y + modalHeight > screenHeight - margin) {
+        y = Math.max(margin, rect.bottom - modalHeight);
+      }
+
+      return { x, y };
+    };
+
+    if (selectedEventElement) {
+      // 基于找到的事件元素定位
+      const rect = selectedEventElement.getBoundingClientRect();
+      const pos = calculatePosition(rect, true);
+      adjustedX = pos.x;
+      adjustedY = pos.y;
+    } else if (position) {
+      // 基于传入的位置参数定位
+      const { x, y, slideDirection = 'right' } = position;
+      const scrollTop = window?.pageYOffset || document?.documentElement.scrollTop || 0;
+      const scrollLeft = window?.pageXOffset || document?.documentElement.scrollLeft || 0;
+
+      // 转换为视口坐标
+      const viewportX = x - scrollLeft;
+      const viewportY = y - scrollTop;
+
+      // 创建虚拟的DOMRect来复用计算逻辑
+      const virtualRect = new DOMRect(viewportX, viewportY, 0, 0);
+      const pos = calculatePosition(virtualRect, false);
+      adjustedX = pos.x;
+      adjustedY = pos.y;
+      finalSlideDirection = slideDirection;
+    } else {
+      // 默认居中显示
+      adjustedX = (screenWidth - modalWidth) / 2;
+      adjustedY = (screenHeight - modalHeight) / 2;
+      finalSlideDirection = 'center';
+
+      // 边界检查
+      adjustedX = Math.max(margin, Math.min(adjustedX, screenWidth - modalWidth - margin));
+      adjustedY = Math.max(margin, Math.min(adjustedY, screenHeight - modalHeight - margin));
+    }
 
     let transform: string;
     if (isAnimating) transform = 'translateX(0) scale(1)';
@@ -427,9 +485,23 @@ export default function AddEventModal({
         await strategy.onSave(form, ctx, api);
         onSaved?.();
         onClose();
-      } catch (err: any) {
-        alert(err?.message || '保存失败');
-      }
+              } catch (err: any) {
+          // 检查是否是详细错误信息
+          if (err?.data && typeof err.data === 'object' &&
+              ('teacher_error' in err.data || 'student_error' in err.data || 'room_error' in err.data)) {
+            // 触发父组件的错误处理
+            if (onError) {
+              const errorData = {
+                teacher_error: err.data.teacher_error || [],
+                student_error: err.data.student_error || [],
+                room_error: err.data.room_error || []
+              };
+              onError(errorData);
+              return; // 成功处理错误，不显示alert
+            }
+          }
+          alert(err?.message || '保存失败');
+        }
       return;
     }
 
