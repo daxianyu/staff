@@ -295,6 +295,15 @@ export default function AddEventModal({
     return { mode, readOnly, scheduleData, initialEvent, selectedDate, start, end, unavailableRangesSec };
   }, [hasStrategy, mode, readOnly, scheduleData, initialEvent, selectedDate, start, end, unavailableRangesSec]);
 
+  // 策略验证状态
+  const validationErrors = useMemo(() => {
+    if (!hasStrategy || !strategy || !ctx) return [];
+    const form = formMap[eventType] || {};
+    return strategy.validate?.(form, ctx) ?? [];
+  }, [hasStrategy, strategy, ctx, formMap, eventType]);
+
+  const hasValidationErrors = validationErrors.length > 0;
+
   // 首次进入某策略时 init 表单
   useEffect(() => {
     if (!hasStrategy || !strategy || !isOpen || !ctx) return;
@@ -375,8 +384,7 @@ export default function AddEventModal({
     // 策略模式：优先调用策略
     if (hasStrategy && strategy && ctx && api) {
       try {
-        const errs = strategy.validate?.(form, ctx) ?? [];
-        if (errs.length) return alert(errs[0]);
+        // 验证已在UI层处理，这里直接保存
         await strategy.onSave(form, ctx, api);
         onSaved?.();
         onClose();
@@ -462,7 +470,7 @@ export default function AddEventModal({
   const renderStrategyForm = () => {
     if (!(hasStrategy && strategy && ctx)) return null;
     // 策略自行渲染表单（表单状态通过 form/setForm 传递）
-    return strategy.render({ form, setForm, readOnly, scheduleData });
+    return strategy.render({ form, setForm, readOnly, scheduleData, ctx });
   };
 
   const renderFallbackForm = () => {
@@ -662,6 +670,20 @@ export default function AddEventModal({
 
           {/* 底部 */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-white rounded-b-lg">
+            {/* 验证错误提示 */}
+            {hasValidationErrors && (
+              <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded">
+                <div className="flex items-start">
+                  <span className="text-red-500 mr-2">⚠️</span>
+                  <div className="text-sm text-red-700">
+                    {validationErrors.map((error, index) => (
+                      <div key={index}>{error}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="flex justify-end space-x-2">
               {conflictOnlyDelete ? (
                 <Button variant="danger" size="sm" onClick={() => onDeleteUnavailable?.(currentConflicts)} disabled={isSaving}>删除不可用时间段</Button>
@@ -681,7 +703,7 @@ export default function AddEventModal({
                     <Button variant="danger" size="sm" onClick={() => setShowDeleteMode(true)} disabled={isSaving}>删除</Button>
                   )}
                   <Button variant="ghost" size="sm" onClick={onClose}>取消</Button>
-                  <Button variant="primary" size="sm" onClick={handleSubmit} disabled={!selectedDate || !startTime || !endTime || isSaving}>{isSaving ? '保存中...' : '保存'}</Button>
+                  <Button variant="primary" size="sm" onClick={handleSubmit} disabled={!selectedDate || !startTime || !endTime || isSaving || hasValidationErrors}>{isSaving ? '保存中...' : '保存'}</Button>
                 </>
               )}
             </div>

@@ -336,8 +336,6 @@ export default function AddEventModal({
     maxTime: DAY_END_TIME
   }), [startTime]);
 
-
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDate) return;

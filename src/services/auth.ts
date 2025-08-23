@@ -1066,8 +1066,8 @@ export async function updateStaffUnavailable(staffId: string, unavailableData: U
   return data;
 }
 
-// 新增课程参数
-export interface AddLessonParams {
+// 员工课表相关接口定义（旧版本，用于员工课表）
+export interface StaffAddLessonParams {
   subject_id: string;
   start_time: number; // 时间戳
   end_time: number;   // 时间戳
@@ -1075,8 +1075,8 @@ export interface AddLessonParams {
   repeat_num?: number; // 重复次数，默认1
 }
 
-// 编辑课程参数
-export interface EditLessonParams {
+// 员工课表编辑课程参数
+export interface StaffEditLessonParams {
   lesson_id: string;
   subject_id: string;
   start_time: number; // 时间戳
@@ -1085,14 +1085,14 @@ export interface EditLessonParams {
   repeat_num?: number; // 重复次数
 }
 
-// 删除课程参数
-export interface DeleteLessonParams {
+// 员工课表删除课程参数
+export interface StaffDeleteLessonParams {
   lesson_ids: string[];
   repeat_num?: number; // 删除周数
 }
 
 // 新增课程
-export async function addStaffLesson(staffId: string, params: AddLessonParams) {
+export async function addStaffLesson(staffId: string, params: StaffAddLessonParams) {
   return updateStaffSchedule(staffId, {
     event_type: 2,
     add_lesson: 1,
@@ -1101,7 +1101,7 @@ export async function addStaffLesson(staffId: string, params: AddLessonParams) {
 }
 
 // 编辑课程
-export async function editStaffLesson(staffId: string, params: EditLessonParams) {
+export async function editStaffLesson(staffId: string, params: StaffEditLessonParams) {
   return updateStaffSchedule(staffId, {
     event_type: 2,
     change_lesson: 1,
@@ -1110,7 +1110,7 @@ export async function editStaffLesson(staffId: string, params: EditLessonParams)
 }
 
 // 删除课程
-export async function deleteStaffLesson(staffId: string, params: DeleteLessonParams) {
+export async function deleteStaffLesson(staffId: string, params: StaffDeleteLessonParams) {
   return updateStaffSchedule(staffId, {
     event_type: 2,
     delete_ids: params.lesson_ids.join(','),
@@ -1349,6 +1349,243 @@ export const getStudentName = async (studentId: number | string): Promise<Studen
   } catch (error) {
     console.error('获取学生姓名失败:', error);
     return { status: -1, message: '获取学生姓名失败', data: '' } as StudentNameResponse;
+  }
+};
+
+// ======== 班级课表相关接口 ========
+
+// 班级课表数据结构
+export interface ClassScheduleLesson {
+  id: number;
+  start_time: number;
+  end_time: number;
+  room_id: number;
+  room_name: string;
+  students: string;
+  student_ids: number[];
+  topic_name: string;
+  subject_id: number;
+}
+
+export interface ClassScheduleSubject {
+  id: number;
+  class_id: number;
+  teacher_id: number;
+  topic_id: number;
+  teacher_name: string;
+  topic_name: string;
+}
+
+export interface ClassScheduleData {
+  class_name: string;
+  class_id: string;
+  class_campus_id: number;
+  class_campus_name: string;
+  class_subjects: ClassScheduleSubject[];
+  teacher_class: Record<string, any>;
+  lessons: ClassScheduleLesson[];
+  room_taken: Record<number, number[][]>;
+  all_rooms: Array<{ id: number; name: string }>;
+}
+
+export interface ClassScheduleResponse {
+  status: number;
+  message: string;
+  data: ClassScheduleData;
+}
+
+// 获取班级课表
+export const getClassSchedule = async (classId: string, weekNum: string): Promise<ClassScheduleResponse> => {
+  try {
+    const url = `/api/class/schedule/${classId}/${weekNum}`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, { method: 'GET', headers });
+    const data = await response.json();
+    return {
+      status: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    } as ClassScheduleResponse;
+  } catch (error) {
+    console.error('获取班级课表失败:', error);
+    return { status: -1, message: '获取班级课表失败', data: {} as ClassScheduleData } as ClassScheduleResponse;
+  }
+};
+
+// 房间使用情况数据结构
+export interface RoomUsageData {
+  room_taken: Record<number, number[][]>;
+  all_rooms: Array<{ id: number; name: string }>;
+}
+
+export interface RoomUsageResponse {
+  status: number;
+  message: string;
+  data: RoomUsageData;
+}
+
+// 获取房间使用情况
+export const getRoomUsage = async (weekNum: string): Promise<RoomUsageResponse> => {
+  try {
+    const url = `/api/class/get_room_usage/${weekNum}`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, { method: 'GET', headers });
+    const data = await response.json();
+    return {
+      status: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    } as RoomUsageResponse;
+  } catch (error) {
+    console.error('获取房间使用情况失败:', error);
+    return { status: -1, message: '获取房间使用情况失败', data: {} as RoomUsageData } as RoomUsageResponse;
+  }
+};
+
+// 班级课表编辑课程参数
+export interface EditLessonParams {
+  record_id: number;
+  repeat_num: number;
+  start_time: number;
+  end_time: number;
+  room_id: number;
+}
+
+// 编辑课程
+export const editClassLesson = async (params: EditLessonParams): Promise<ApiResponse> => {
+  try {
+    const url = `/api/class/edit_lesson`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    
+    // 处理特殊的错误格式
+    let errorMessage = '';
+    if (data.status !== 0 && data.message) {
+      if (typeof data.message === 'object' && data.message.error) {
+        // 处理 {message: {error: [...], teacher_flag: 0, student_flag: 0, room_flag: 1}} 格式
+        errorMessage = Array.isArray(data.message.error) 
+          ? data.message.error.join('; ') 
+          : String(data.message.error);
+      } else if (typeof data.message === 'string') {
+        errorMessage = data.message;
+      } else {
+        errorMessage = JSON.stringify(data.message);
+      }
+    }
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: errorMessage || data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('编辑课程失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '编辑课程失败',
+    };
+  }
+};
+
+// 班级课表新增课程参数
+export interface AddLessonParams {
+  class_id: string;
+  repeat_num: number;
+  start_time: number;
+  end_time: number;
+  room_id: number;
+  subject_id: number;
+}
+
+// 新增课程
+export const addClassLesson = async (params: AddLessonParams): Promise<ApiResponse> => {
+  try {
+    const url = `/api/class/add_lesson`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    
+    // 处理特殊的错误格式
+    let errorMessage = '';
+    if (data.status !== 0 && data.message) {
+      if (typeof data.message === 'object' && data.message.error) {
+        // 处理 {message: {error: [...], teacher_flag: 0, student_flag: 0, room_flag: 1}} 格式
+        errorMessage = Array.isArray(data.message.error) 
+          ? data.message.error.join('; ') 
+          : String(data.message.error);
+      } else if (typeof data.message === 'string') {
+        errorMessage = data.message;
+      } else {
+        errorMessage = JSON.stringify(data.message);
+      }
+    }
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: errorMessage || data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('新增课程失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '新增课程失败',
+    };
+  }
+};
+
+// 班级课表删除课程参数
+export interface DeleteLessonParams {
+  record_id: number;
+  repeat_num: number;
+}
+
+// 删除课程
+export const deleteClassLesson = async (params: DeleteLessonParams): Promise<ApiResponse> => {
+  try {
+    const url = `/api/class/delete_lesson`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除课程失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除课程失败',
+    };
   }
 };
 

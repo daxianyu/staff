@@ -681,6 +681,14 @@ export default function ClassesPage() {
                           >
                             <PencilIcon className="h-4 w-4 mr-1" />
                           </button>
+                          <span className="text-gray-300">|</span>
+                          {/* Schedule */}
+                          <button 
+                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium inline-flex items-center"
+                            onClick={() => router.push(`/class/schedule?class_id=${classItem.id}`)}
+                          >
+                            <CalendarDaysIcon className="h-4 w-4 mr-2" />
+                          </button>
                           
                           {/* 下拉菜单按钮 */}
                           <div className="relative">
@@ -708,17 +716,7 @@ export default function ClassesPage() {
                                 }}
                               >
                                 <div className="py-1">
-                                  {/* Schedule */}
-                                  <button
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                                    onClick={() => {
-                                      router.push(`/class/schedule?class_id=${classItem.id}`);
-                                      setOpenDropdown(null);
-                                    }}
-                                  >
-                                    <CalendarDaysIcon className="h-4 w-4 mr-2" />
-                                    Schedule
-                                  </button>
+                                  
                                   
                                   {/* Disable/Enable */}
                                   {canManageClasses && (

@@ -18,7 +18,7 @@ export const InvigilateStrategy: EventTypeStrategy<Form> = {
     };
   },
 
-  render({ form, setForm, readOnly, scheduleData }) {
+  render({ form, setForm, readOnly, scheduleData, ctx }) {
     const topics: Record<string, string> = scheduleData?.class_topics || {};
     return (
       <>
@@ -61,6 +61,11 @@ export const InvigilateStrategy: EventTypeStrategy<Form> = {
   },
 
   async onSave(form, ctx, api) {
+    // 只有在员工课表模式下才支持监考
+    if (!api.updateStaffInvigilate || !api.addStaffInvigilate || !api.staffId) {
+      throw new Error('当前模式不支持监考功能');
+    }
+
     const { start, end, mode, initialEvent } = ctx;
     const start_time = toSec(start);
     const end_time = toSec(end);
@@ -91,6 +96,9 @@ export const InvigilateStrategy: EventTypeStrategy<Form> = {
   },
 
   async onDelete(current, _ctx, api) {
+    if (!api.deleteStaffInvigilate) {
+      throw new Error('当前模式不支持删除监考');
+    }
     // 监考删除不需要 repeat_num
     const record_id = String(current.id).replace('invigilate_', '');
     const r = await api.deleteStaffInvigilate({ record_id });

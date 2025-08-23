@@ -88,7 +88,7 @@ export default function SearchableSelect({
               {options.map((option) => (
                 <Command.Item
                   key={option.id}
-                  value={option.id.toString()}
+                  value={`${option.id} ${option.name}`}
                   onSelect={() => handleSelect(option.id.toString())}
                   className="
                     relative flex items-center px-3 py-2 text-sm select-none cursor-pointer rounded

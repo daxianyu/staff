@@ -14,7 +14,7 @@ export const UnavailableStrategy: EventTypeStrategy<Form> = {
     return { repeat: 'none' };
   },
 
-  render({ form, setForm, readOnly }) {
+  render({ form, setForm, readOnly, scheduleData, ctx }) {
     if (readOnly) return null;
     return (
       <div className="mt-2">
@@ -32,6 +32,11 @@ export const UnavailableStrategy: EventTypeStrategy<Form> = {
   },
 
   async onSave(form, ctx, api) {
+    // 只有在员工课表模式下才支持不可用时段
+    if (!api.updateStaffUnavailable || !api.staffId || !api.getWeekNum) {
+      throw new Error('当前模式不支持不可用时段功能');
+    }
+
     // 简化：weekly 先按单次处理；如果需要生成多天段，可在此展开
     const { start, end, unavailableRangesSec = [] } = ctx;
     const addOne = [{ start_time: toSec(start), end_time: toSec(end) }];
@@ -47,6 +52,10 @@ export const UnavailableStrategy: EventTypeStrategy<Form> = {
   },
 
   async onDelete(current, ctx, api) {
+    if (!api.updateStaffUnavailable || !api.staffId || !api.getWeekNum) {
+      throw new Error('当前模式不支持删除不可用时段');
+    }
+
     // 全量：现有 - 当前
     const origS = Number(String(ctx.initialEvent?.start?.getTime?.() ?? 0) ? Math.floor(ctx.initialEvent.start.getTime() / 1000) : 0);
     const origE = Number(String(ctx.initialEvent?.end?.getTime?.() ?? 0) ? Math.floor(ctx.initialEvent.end.getTime() / 1000) : 0);
