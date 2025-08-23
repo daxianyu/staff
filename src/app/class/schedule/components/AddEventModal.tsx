@@ -485,23 +485,36 @@ export default function AddEventModal({
         await strategy.onSave(form, ctx, api);
         onSaved?.();
         onClose();
-              } catch (err: any) {
-          // 检查是否是详细错误信息
-          if (err?.data && typeof err.data === 'object' &&
-              ('teacher_error' in err.data || 'student_error' in err.data || 'room_error' in err.data)) {
-            // 触发父组件的错误处理
+      } catch (err: any) {
+        // 优先处理带有详细错误信息的情况
+        const handleDetailError = (data: any) => {
+          if (
+            data &&
+            typeof data === 'object' &&
+            ('teacher_error' in data || 'student_error' in data || 'room_error' in data)
+          ) {
             if (onError) {
-              const errorData = {
-                teacher_error: err.data.teacher_error || [],
-                student_error: err.data.student_error || [],
-                room_error: err.data.room_error || []
-              };
-              onError(errorData);
-              return; // 成功处理错误，不显示alert
+              onError({
+                teacher_error: data.teacher_error || [],
+                student_error: data.student_error || [],
+                room_error: data.room_error || [],
+              });
+              return true;
             }
           }
-          alert(err?.message || '保存失败');
-        }
+          return false;
+        };
+
+        if (err?.data && handleDetailError(err.data)) return;
+
+        // 某些情况错误信息可能被序列化在 message 中
+        try {
+          const parsed = JSON.parse(err?.message ?? '');
+          if (handleDetailError(parsed)) return;
+        } catch {}
+
+        alert(err?.message || '保存失败');
+      }
       return;
     }
 

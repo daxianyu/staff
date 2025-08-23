@@ -231,15 +231,21 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
 
         // 检查是否有详细的错误信息
         if (r.code !== 200) {
-          if (r.data && typeof r.data === 'object' &&
-              ('teacher_error' in r.data || 'student_error' in r.data || 'room_error' in r.data)) {
-            // 将错误信息作为特殊格式的错误抛出
-            const error = new Error(JSON.stringify(r.data));
-            (error as any).data = r.data;
+          if (
+            r.data &&
+            typeof r.data === 'object' &&
+            ('teacher_error' in r.data || 'student_error' in r.data || 'room_error' in r.data)
+          ) {
+            // 将后端返回的详细错误信息附加到 Error 对象上抛出
+            const error = new Error(r.message || '新增失败');
+            (error as any).data = {
+              teacher_error: (r.data as any).teacher_error || [],
+              student_error: (r.data as any).student_error || [],
+              room_error: (r.data as any).room_error || [],
+            };
             throw error;
-          } else {
-            throw new Error(r.message || '新增失败');
           }
+          throw new Error(r.message || '新增失败');
         }
       } else if (ctx.mode === 'edit' && ctx.initialEvent?.id) {
         const lessonId = parseInt(String(ctx.initialEvent.id).replace('lesson_', ''));
@@ -253,15 +259,21 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
 
         // 检查是否有详细的错误信息
         if (r.code !== 200) {
-          if (r.data && typeof r.data === 'object' &&
-              ('teacher_error' in r.data || 'student_error' in r.data || 'room_error' in r.data)) {
-            // 将错误信息作为特殊格式的错误抛出
-            const error = new Error(JSON.stringify(r.data));
-            (error as any).data = r.data;
+          if (
+            r.data &&
+            typeof r.data === 'object' &&
+            ('teacher_error' in r.data || 'student_error' in r.data || 'room_error' in r.data)
+          ) {
+            // 将后端返回的详细错误信息附加到 Error 对象上抛出
+            const error = new Error(r.message || '编辑失败');
+            (error as any).data = {
+              teacher_error: (r.data as any).teacher_error || [],
+              student_error: (r.data as any).student_error || [],
+              room_error: (r.data as any).room_error || [],
+            };
             throw error;
-          } else {
-            throw new Error(r.message || '编辑失败');
           }
+          throw new Error(r.message || '编辑失败');
         }
       }
     } else if (api.editStaffLesson && api.staffId) {
