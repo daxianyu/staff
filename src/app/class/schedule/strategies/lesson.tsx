@@ -91,7 +91,7 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
           <div className="mb-2">
             <label className="block text-xs font-medium text-gray-700 mb-1">科目</label>
             <select
-              className="w-full px-3 py-1.5 text-sm border rounded"
+              className="w-full px-3 py-1.5 text-sm border rounded border-gray-300"
               value={form.subject_id || ''}
               onChange={(e) => setForm({ subject_id: Number(e.target.value) || undefined })}
             >
@@ -111,7 +111,7 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
         ) : (
           <>
             <select
-              className="w-full px-3 py-1.5 text-sm border rounded"
+              className="w-full px-3 py-1.5 text-sm border rounded border-gray-300"
               value={roomId}
               onChange={(e) => setForm({ pickRoom: Number(e.target.value) || e.target.value })}
             >
@@ -146,7 +146,7 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
               type="number"
               min={1}
               max={52}
-              className="w-full px-3 py-1.5 text-sm border rounded"
+              className="w-full px-3 py-1.5 text-sm border rounded border-gray-300"
               value={form.repeat_num ?? 1}
               onChange={(e) => setForm({ repeat_num: Number(e.target.value) || 1 })}
             />
