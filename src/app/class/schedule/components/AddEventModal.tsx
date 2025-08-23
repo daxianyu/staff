@@ -340,15 +340,54 @@ export default function AddEventModal({
       else if (idealY < margin) adjustedY = Math.max(margin, rect.top);
       else adjustedY = Math.max(margin, rect.bottom - modalHeight);
     } else if (position) {
-      const { x, y, slideDirection = 'right' } = position; const scrollTop = typeof window !== 'undefined' ? (window.pageYOffset || document.documentElement.scrollTop) : 0; const scrollLeft = typeof window !== 'undefined' ? (window.pageXOffset || document.documentElement.scrollLeft) : 0;
-      const viewportX = x - scrollLeft; const viewportY = y - scrollTop; adjustedX = Math.min(Math.max(margin, viewportX), screenWidth - modalWidth - margin);
-      const isSelectionVisible = viewportY >= -50 && viewportY <= screenHeight + 50; finalSlideDirection = slideDirection;
+      const { x, y, slideDirection = 'right' } = position;
+      // `calculateModalPosition` already returns viewport-based coordinates.
+      // Using them directly keeps the modal aligned with the selected time slot
+      // even when the page is scrolled vertically.
+      const viewportX = x;
+      const viewportY = y;
+      adjustedX = Math.min(
+        Math.max(margin, viewportX),
+        screenWidth - modalWidth - margin,
+      );
+      const isSelectionVisible =
+        viewportY >= -50 && viewportY <= screenHeight + 50;
+      finalSlideDirection = slideDirection;
       if (isSelectionVisible) {
-        const idealBelowY = Math.max(margin, viewportY + 10); const idealAboveY = Math.max(margin, viewportY - modalHeight - 10);
-        const spaceBelow = screenHeight - idealBelowY - modalHeight; const spaceAbove = idealAboveY - margin;
-        if (spaceBelow >= 0) adjustedY = idealBelowY; else if (spaceAbove >= 0) adjustedY = idealAboveY; else adjustedY = viewportY < screenHeight / 2 ? Math.min(screenHeight - modalHeight - margin, Math.max(margin, viewportY + 20)) : Math.max(margin, Math.min(viewportY - modalHeight - 20, screenHeight - modalHeight - margin));
+        const idealBelowY = Math.max(margin, viewportY + 10);
+        const idealAboveY = Math.max(
+          margin,
+          viewportY - modalHeight - 10,
+        );
+        const spaceBelow = screenHeight - idealBelowY - modalHeight;
+        const spaceAbove = idealAboveY - margin;
+        if (spaceBelow >= 0) adjustedY = idealBelowY;
+        else if (spaceAbove >= 0) adjustedY = idealAboveY;
+        else
+          adjustedY =
+            viewportY < screenHeight / 2
+              ? Math.min(
+                  screenHeight - modalHeight - margin,
+                  Math.max(margin, viewportY + 20),
+                )
+              : Math.max(
+                  margin,
+                  Math.min(
+                    viewportY - modalHeight - 20,
+                    screenHeight - modalHeight - margin,
+                  ),
+                );
       } else {
-        adjustedY = viewportY < -50 ? Math.max(margin, screenHeight * 0.6 - modalHeight / 2) : Math.min(screenHeight - modalHeight - margin, screenHeight * 0.4 - modalHeight / 2);
+        adjustedY =
+          viewportY < -50
+            ? Math.max(
+                margin,
+                screenHeight * 0.6 - modalHeight / 2,
+              )
+            : Math.min(
+                screenHeight - modalHeight - margin,
+                screenHeight * 0.4 - modalHeight / 2,
+              );
         finalSlideDirection = 'center';
       }
     } else {
