@@ -59,6 +59,12 @@ export default function SchedulePage() {
   const [classInfo, setClassInfo] = useState<ClassScheduleData | null>(null);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [roomUsage, setRoomUsage] = useState<Record<number, number[][]>>({});
+  const [lastMousePosition, setLastMousePosition] = useState<{
+    x: number;
+    y: number;
+    target?: EventTarget | null;
+  }>();
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   // week num（从 1970-01-01 + 偏移到周一）
   const weekNum = useMemo(() => {
@@ -135,23 +141,40 @@ export default function SchedulePage() {
     return events.some(ev => ev.type === 'lesson' && start < ev.end && end > ev.start);
   }, [events]);
 
-  // 选区 & 定位
-  const handleSelectSlot = useCallback(({ start, end, box }: any) => {
-    setShowEditModal(false);
-    const actualEnd = end || new Date(start.getTime() + 30 * 60 * 1000);
-    if (hasConflict(start, actualEnd)) {
-      alert('所选时间段与已有课程重叠！');
-      return;
+  // 记录最后一次鼠标位置，用于弹窗定位
+  const handleMouseDown = useCallback((e: MouseEvent) => {
+    if (calendarRef.current && calendarRef.current.contains(e.target as Node)) {
+      setLastMousePosition({ x: e.clientX, y: e.clientY, target: e.target });
     }
-    setSelectedDate(start);
-    setSelectedTimeRange({ start, end: actualEnd });
+  }, []);
 
-    // 使用统一的位置计算函数
-    const position = calculateModalPosition(box);
-    setModalPosition(position);
-    setIsClosingModal(false);
-    setShowAddModal(true);
-  }, [hasConflict]);
+  useEffect(() => {
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+    };
+  }, [handleMouseDown]);
+
+  // 选区 & 定位
+  const handleSelectSlot = useCallback(
+    ({ start, end, box }: any) => {
+      setShowEditModal(false);
+      const actualEnd = end || new Date(start.getTime() + 30 * 60 * 1000);
+      if (hasConflict(start, actualEnd)) {
+        alert('所选时间段与已有课程重叠！');
+        return;
+      }
+      setSelectedDate(start);
+      setSelectedTimeRange({ start, end: actualEnd });
+
+      // 使用统一的位置计算函数，若 box 不存在则回退到最后的鼠标位置
+      const position = calculateModalPosition(box || lastMousePosition);
+      setModalPosition(position);
+      setIsClosingModal(false);
+      setShowAddModal(true);
+    },
+    [hasConflict, lastMousePosition],
+  );
 
   const handleSelectEvent = useCallback((event: ScheduleEvent) => {
     if (event.type === 'selected') return;
@@ -361,7 +384,7 @@ export default function SchedulePage() {
 
       {/* 日历主体 */}
       <div className="flex-1 pt-3 sm:pt-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div ref={calendarRef} className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <div className="flex items-center space-x-1">
               <button onClick={() => navigate('PREV')} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="上一页"><ChevronLeftIcon className="h-5 w-5" /></button>
