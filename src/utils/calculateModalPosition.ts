@@ -1,5 +1,6 @@
 export interface ModalPosition {
   x: number;
+  // vertical center of the related time slot or interaction point
   y: number;
   slideDirection: 'left' | 'right' | 'center';
 }
@@ -29,7 +30,7 @@ export function calculateModalPosition(
   // Initial coordinates: use box values when available, otherwise fall back
   // to the center of the screen.
   let modalX = box?.clientX ?? box?.x ?? screenWidth / 2;
-  let modalY = box?.clientY ?? box?.y ?? window.innerHeight / 2;
+  const modalY = box?.clientY ?? box?.y ?? window.innerHeight / 2;
 
   // Try to find the related time slot element to determine optimal placement.
   const element =
@@ -44,26 +45,24 @@ export function calculateModalPosition(
     const rect = timeSlot.getBoundingClientRect();
     const leftSpace = rect.left;
     const rightSpace = screenWidth - rect.right;
+    const verticalCenter = rect.top + rect.height / 2;
 
     let slideDirection: 'left' | 'right' | 'center';
     if (rightSpace >= modalWidth + 30) {
       modalX = rect.right + 20;
-      modalY = rect.top;
       slideDirection = 'right';
     } else if (leftSpace >= modalWidth + 30) {
       modalX = rect.left - modalWidth - 20;
-      modalY = rect.top;
       slideDirection = 'left';
     } else {
       modalX = Math.max(
         10,
         Math.min(rect.left + (rect.width - modalWidth) / 2, screenWidth - modalWidth - 10),
       );
-      modalY = rect.bottom + 10;
       slideDirection = 'center';
     }
 
-    return { x: modalX, y: modalY, slideDirection };
+    return { x: modalX, y: verticalCenter, slideDirection };
   }
 
   // Fallback: place modal relative to viewport when no slot is found.
