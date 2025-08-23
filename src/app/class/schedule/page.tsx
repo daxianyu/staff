@@ -54,7 +54,6 @@ export default function SchedulePage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [apiErrors, setApiErrors] = useState<{
     teacher_error?: string[];
     student_error?: string[];
@@ -223,106 +222,6 @@ export default function SchedulePage() {
       setSelectedTimeRange(null);
     }
   }, [isClosingModal]);
-
-  // ===== 保存/编辑/删除（注意：不可用统一使用「秒」） =====
-  const toSec = (d?: Date) => (d ? Math.floor(d.getTime() / 1000) : 0);
-
-  const handleAddEvent = useCallback(async (payload: any) => {
-    setIsSaving(true);
-    setApiErrors(null); // 清空之前的错误
-    try {
-      const { type, start, end, subject_id, room_id, repeat_num } = payload;
-      if (type === 'lesson') {
-        const resp = await addClassLesson({
-          class_id: classId,
-          subject_id: subject_id || '',
-          start_time: toSec(start),
-          end_time: toSec(end),
-          room_id: room_id || -1,
-          repeat_num: repeat_num || 1
-        });
-        if (resp.code === 200) {
-          await refresh();
-          setShowAddModal(false);
-          setSelectedTimeRange(null);
-        } else {
-          // 检查是否有详细的错误信息
-          if (resp.data && typeof resp.data === 'object' &&
-              ('teacher_error' in resp.data || 'student_error' in resp.data || 'room_error' in resp.data)) {
-            setApiErrors(resp.data as typeof apiErrors);
-          } else {
-            alert(`新增课程失败: ${resp.message}`);
-          }
-        }
-      }
-    } catch (e) {
-      alert('新增课程失败，请重试');
-    }
-    finally {
-      setIsSaving(false);
-    }
-  }, [refresh, classId]);
-
-  const handleEditEvent = useCallback(async (formData: any) => {
-    setIsSaving(true);
-    setApiErrors(null); // 清空之前的错误
-    try {
-      if (formData.type === 'lesson') {
-        const lessonId = parseInt(String(formData.id).replace('lesson_', ''));
-        const resp = await editClassLesson({
-          record_id: lessonId,
-          start_time: toSec(formData.start),
-          end_time: toSec(formData.end),
-          room_id: formData.room_id || -1,
-          repeat_num: formData.repeat_num || 1
-        } as any);
-        if (resp.code === 200) {
-          await refresh();
-          setShowEditModal(false);
-          setEditingEvent(null);
-        } else {
-          // 检查是否有详细的错误信息
-          if (resp.data && typeof resp.data === 'object' &&
-              ('teacher_error' in resp.data || 'student_error' in resp.data || 'room_error' in resp.data)) {
-            setApiErrors(resp.data as typeof apiErrors);
-          } else {
-            alert(`编辑课程失败: ${resp.message}`);
-          }
-        }
-      }
-    } catch {
-      alert('编辑课程失败，请重试');
-    }
-    finally {
-      setIsSaving(false);
-    }
-  }, [refresh, editingEvent]);
-
-  const handleDeleteEvent = useCallback(async (repeat_num?: number) => {
-    if (!editingEvent) return;
-    setIsSaving(true);
-    try {
-      if (editingEvent.type === 'lesson') {
-        const lessonId = parseInt(String(editingEvent.id).replace('lesson_', ''));
-        const resp = await deleteClassLesson({
-          record_id: lessonId,
-          repeat_num: repeat_num || 1
-        } as any);
-        if (resp.code === 200) { 
-          await refresh(); 
-          setShowEditModal(false); 
-          setEditingEvent(null); 
-        } else {
-          alert(`删除课程失败: ${resp.message}`);
-        }
-      }
-    } catch { 
-      alert('删除课程失败，请重试'); 
-    }
-    finally { 
-      setIsSaving(false); 
-    }
-  }, [editingEvent, refresh]);
 
 
 
@@ -509,7 +408,6 @@ export default function SchedulePage() {
       <AddEventModal
         isOpen={showAddModal}
         onClose={handleCloseModal}
-        onSave={handleAddEvent}
         selectedDate={selectedDate}
         onTimeChange={onTimeChange}
         selectedTimeRange={selectedTimeRange || undefined}
@@ -517,7 +415,6 @@ export default function SchedulePage() {
         onAnimationComplete={handleAnimationComplete}
         onConflictCheck={(s, e) => []}
         scheduleData={classInfo || {}}
-        isSaving={isSaving}
         mode="add"
         typeRegistry={STRATEGIES}
         allowedTypes={['lesson']}
@@ -540,15 +437,12 @@ export default function SchedulePage() {
         <AddEventModal
           isOpen={showEditModal}
           onClose={() => { setShowEditModal(false); setEditingEvent(null); setIsReadOnlyMode(false); }}
-          onSave={handleEditEvent}
-          onDelete={handleDeleteEvent}
           selectedDate={editingEvent.start}
           onTimeChange={onTimeChange}
           position={modalPosition}
           onAnimationComplete={handleAnimationComplete}
           onConflictCheck={(s, e) => []}
           scheduleData={classInfo || {}}
-          isSaving={isSaving}
           mode="edit"
           readOnly={isReadOnlyMode}
           initialEvent={editingEvent}

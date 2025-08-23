@@ -67,7 +67,7 @@ interface AddEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTimeChange: (startTime: string, endTime: string) => void;
-  onSave: (event: Partial<ScheduleEvent> & {
+  onSave?: (event: Partial<ScheduleEvent> & {
     repeat?: 'none' | 'weekly';
     subject?: string;
     campus?: string;
@@ -506,7 +506,7 @@ export default function AddEventModal({
     }
 
     // 兼容旧逻辑：组装 payload 调用父 onSave
-    onSave({
+    onSave?.({
       start,
       end,
       type: eventType,
