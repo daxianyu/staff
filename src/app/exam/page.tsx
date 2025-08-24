@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import {
@@ -9,8 +8,11 @@ import {
   addNewExam,
   updateExamStatus,
   deleteExam,
+  getExamEditInfo,
+  editExam,
   type ExamListItem,
   type AddExamParams,
+  type EditExamParams,
 } from '@/services/auth';
 import {
   PlusIcon,
@@ -24,12 +26,12 @@ import {
   CurrencyDollarIcon,
   EyeIcon,
   EllipsisVerticalIcon,
+  MapPinIcon,
+  TagIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
-import Button from '@/components/Button';
-import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function ExamPage() {
-  const router = useRouter();
   const { hasPermission } = useAuth();
   const canEdit = hasPermission(PERMISSIONS.EDIT_EXAMS);
 
@@ -43,6 +45,23 @@ export default function ExamPage() {
     exam_topic: '',
     exam_code: '',
   });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<EditExamParams>({
+    record_id: 0,
+    exam_name: '',
+    base_price: 0,
+    exam_location: '',
+    exam_topic: '',
+    exam_topic_id: 0,
+    exam_code: '',
+    period: 0,
+    exam_type: 0,
+    exam_time: 0,
+    exam_time_2: 0,
+    exam_time_3: 0,
+    alipay_account: 0,
+  });
+  const [editLoading, setEditLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -121,6 +140,45 @@ export default function ExamPage() {
     await deleteExam({ record_id: exam.id });
     setActionLoading(false);
     loadData();
+  };
+
+  const handleEdit = async (id: number) => {
+    setEditLoading(true);
+    const resp = await getExamEditInfo(id);
+    setEditLoading(false);
+    if (resp.code === 200 && resp.data) {
+      const ed = resp.data.exam_data;
+      setEditForm({
+        record_id: ed.id,
+        exam_name: ed.name || '',
+        base_price: ed.base_price || 0,
+        exam_location: ed.location || '',
+        exam_topic: ed.topic || '',
+        exam_topic_id: ed.topic_id || 0,
+        exam_code: ed.code || '',
+        period: ed.period || 0,
+        exam_type: ed.type || 0,
+        exam_time: ed.time || 0,
+        exam_time_2: ed.time_2 || 0,
+        exam_time_3: ed.time_3 || 0,
+        alipay_account: ed.alipay_account || 0,
+      });
+      setShowEditModal(true);
+    } else {
+      setError(resp.message || 'Failed to load exam');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    setEditLoading(true);
+    const resp = await editExam(editForm);
+    setEditLoading(false);
+    if (resp.code === 200) {
+      setShowEditModal(false);
+      loadData();
+    } else {
+      setError(resp.message || '编辑考试失败');
+    }
   };
 
   // 显示确认对话框
@@ -313,7 +371,7 @@ export default function ExamPage() {
                         <td className="px-3 py-4 text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
                             <button
-                              onClick={() => router.push(`/exam/edit?id=${exam.id}`)}
+                              onClick={() => handleEdit(exam.id)}
                               className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                               title="Edit Exam"
                             >
@@ -426,7 +484,7 @@ export default function ExamPage() {
                         <td className="px-3 py-4 text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
                             <button
-                              onClick={() => router.push(`/exam/edit?id=${exam.id}`)}
+                              onClick={() => handleEdit(exam.id)}
                               className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                               title="Edit Exam"
                             >
@@ -582,6 +640,214 @@ export default function ExamPage() {
                         </div>
                       ) : (
                         'Create Exam'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowEditModal(false)}></div>
+              <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+                <div className="absolute top-0 right-0 pt-4 pr-4">
+                  <button
+                    onClick={() => setShowEditModal(false)}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <PencilIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Edit Exam</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Exam Name <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                            placeholder="Enter exam name"
+                            value={editForm.exam_name}
+                            onChange={(e) => setEditForm({ ...editForm, exam_name: e.target.value })}
+                          />
+                          <ClipboardDocumentListIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Base Price <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                            placeholder="0.00"
+                            value={editForm.base_price}
+                            onChange={(e) => setEditForm({ ...editForm, base_price: Number(e.target.value) })}
+                          />
+                          <CurrencyDollarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Location <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                            placeholder="Exam location"
+                            value={editForm.exam_location}
+                            onChange={(e) => setEditForm({ ...editForm, exam_location: e.target.value })}
+                          />
+                          <MapPinIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Topic <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                            placeholder="Exam topic"
+                            value={editForm.exam_topic}
+                            onChange={(e) => setEditForm({ ...editForm, exam_topic: e.target.value })}
+                          />
+                          <TagIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Exam Code <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Unique exam code"
+                          value={editForm.exam_code}
+                          onChange={(e) => setEditForm({ ...editForm, exam_code: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Period"
+                          value={editForm.period}
+                          onChange={(e) => setEditForm({ ...editForm, period: Number(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Type"
+                          value={editForm.exam_type}
+                          onChange={(e) => setEditForm({ ...editForm, exam_type: Number(e.target.value) })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Time 1</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                            placeholder="Time"
+                            value={editForm.exam_time}
+                            onChange={(e) => setEditForm({ ...editForm, exam_time: Number(e.target.value) })}
+                          />
+                          <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Time 2</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                            placeholder="Time 2"
+                            value={editForm.exam_time_2}
+                            onChange={(e) => setEditForm({ ...editForm, exam_time_2: Number(e.target.value) })}
+                          />
+                          <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Time 3</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                            placeholder="Time 3"
+                            value={editForm.exam_time_3}
+                            onChange={(e) => setEditForm({ ...editForm, exam_time_3: Number(e.target.value) })}
+                          />
+                          <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Alipay Account</label>
+                      <input
+                        type="number"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Alipay Account"
+                        value={editForm.alipay_account}
+                        onChange={(e) => setEditForm({ ...editForm, alipay_account: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-6">
+                    <button
+                      type="button"
+                      onClick={() => setShowEditModal(false)}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={editLoading}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {editLoading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Saving...
+                        </div>
+                      ) : (
+                        'Save Changes'
                       )}
                     </button>
                   </div>
