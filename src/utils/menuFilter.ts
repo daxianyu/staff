@@ -185,6 +185,21 @@ export const defaultMenuConfig: MenuItem[] = [
     ],
   },
   {
+    key: 'exams',
+    label: 'Exam Management',
+    icon: 'clipboard-document-list',
+    requiredPermissions: ['edit_exams'],
+    children: [
+      {
+        key: 'exams-list',
+        label: 'Exam List',
+        path: '/exam',
+        icon: 'clipboard-document-list',
+        requiredPermissions: ['edit_exams'],
+      },
+    ],
+  },
+  {
     key: 'classrooms',
     label: 'Classroom Manage',
     icon: 'building',
