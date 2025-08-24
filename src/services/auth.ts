@@ -3079,7 +3079,7 @@ export interface ExamListItem {
   code: string;
   type?: number | string;
   topic?: string;
-  period?: number | string;
+  period?: number;
   time?: number | string;
   location?: string;
   price?: number;

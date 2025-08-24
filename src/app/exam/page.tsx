@@ -275,40 +275,42 @@ export default function ExamPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+              <div className="w-full">
+                <table className="w-full divide-y divide-gray-200 table-fixed">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alipay Account</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Exam</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Code</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Type</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Subject</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Period</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Time</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Location</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Price</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Alipay Account</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredExams.map((exam) => (
                       <tr key={exam.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.code}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.type ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.topic ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.period ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.time ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.location}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.type ?? '-'}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.topic ?? '-'}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{['Summer', 'Winter', 'Spring'][exam.period ?? 0]}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">
+                          {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
+                        </td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.location}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900">
                           <div className="flex items-center">
                             <CurrencyDollarIcon className="h-4 w-4 text-green-600 mr-1" />
                             <span>{exam.price}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.alipay_account ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.alipay_account ?? '-'}</td>
+                        <td className="px-3 py-4 text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
                             <button
                               onClick={() => router.push(`/exam/edit?id=${exam.id}`)}
@@ -387,39 +389,41 @@ export default function ExamPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="w-full divide-y divide-gray-200 table-fixed">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alipay Account</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Exam</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Code</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Type</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Subject</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Period</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Time</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Location</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Price</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Alipay Account</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredDisabledExams.map((exam) => (
                       <tr key={exam.id} className="hover:bg-gray-50 transition-colors opacity-75">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.code}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.type ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.topic ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.period ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.time ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.location}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.type ?? '-'}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.topic ?? '-'}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{['Summer', 'Winter', 'Spring'][exam.period ?? 0]}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">
+                          {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
+                        </td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.location}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900">
                           <div className="flex items-center">
                             <CurrencyDollarIcon className="h-4 w-4 text-green-600 mr-1" />
                             <span>{exam.price}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.alipay_account ?? '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.alipay_account ?? '-'}</td>
+                        <td className="px-3 py-4 text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
                             <button
                               onClick={() => router.push(`/exam/edit?id=${exam.id}`)}
