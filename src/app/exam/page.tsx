@@ -24,6 +24,7 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   EyeIcon,
+  EllipsisVerticalIcon,
 } from '@heroicons/react/24/outline';
 import Button from '@/components/Button';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -47,6 +48,18 @@ export default function ExamPage() {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all');
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    action: () => void;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    action: () => {},
+  });
 
   const loadData = async () => {
     try {
@@ -72,6 +85,13 @@ export default function ExamPage() {
     }
   }, [canEdit]);
 
+  // 关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = () => setOpenDropdown(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const handleAddExam = async () => {
     setActionLoading(true);
     const resp = await addNewExam(addForm);
@@ -93,11 +113,39 @@ export default function ExamPage() {
   };
 
   const handleDelete = async (exam: ExamListItem) => {
-    if (!confirm('确认删除该考试?')) return;
     setActionLoading(true);
     await deleteExam({ record_id: exam.id });
     setActionLoading(false);
     loadData();
+  };
+
+  // 显示确认对话框
+  const showConfirmDialog = (title: string, message: string, action: () => void) => {
+    setConfirmAction({
+      show: true,
+      title,
+      message,
+      action,
+    });
+  };
+
+  // 处理禁用/启用确认
+  const handleStatusChangeConfirm = (exam: ExamListItem, disable: boolean) => {
+    const action = disable ? '禁用' : '启用';
+    showConfirmDialog(
+      `${action}考试`,
+      `确定要${action}考试 "${exam.name}" 吗？`,
+      () => handleToggleStatus(exam, disable)
+    );
+  };
+
+  // 处理删除确认
+  const handleDeleteConfirm = (exam: ExamListItem) => {
+    showConfirmDialog(
+      '删除考试',
+      `确定要删除考试 "${exam.name}" 吗？此操作不可撤销！`,
+      () => handleDelete(exam)
+    );
   };
 
   // 过滤考试列表
@@ -304,20 +352,47 @@ export default function ExamPage() {
                             >
                               <PencilIcon className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleToggleStatus(exam, true)}
-                              className="flex items-center justify-center w-8 h-8 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
-                              title="Disable Exam"
-                            >
-                              <XMarkIcon className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(exam)}
-                              className="flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                              title="Delete Exam"
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                            </button>
+                            
+                            {/* 更多操作下拉菜单 */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdown(openDropdown === exam.id ? null : exam.id);
+                                }}
+                                className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                                title="More Actions"
+                              >
+                                <EllipsisVerticalIcon className="w-4 h-4" />
+                              </button>
+                              
+                              {openDropdown === exam.id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                                  <div className="py-1">
+                                    <button
+                                      onClick={() => {
+                                        setOpenDropdown(null);
+                                        handleStatusChangeConfirm(exam, true);
+                                      }}
+                                      className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50"
+                                    >
+                                      <XMarkIcon className="w-4 h-4 mr-2" />
+                                      Disable Exam
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setOpenDropdown(null);
+                                        handleDeleteConfirm(exam);
+                                      }}
+                                      className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                                    >
+                                      <TrashIcon className="w-4 h-4 mr-2" />
+                                      Delete Exam
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -401,19 +476,53 @@ export default function ExamPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
                             <button
-                              onClick={() => handleToggleStatus(exam, false)}
-                              className="flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                              title="Enable Exam"
+                              onClick={() => router.push(`/exam/edit?id=${exam.id}`)}
+                              className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                              title="Edit Exam"
                             >
-                              <CheckIcon className="w-4 h-4" />
+                              <PencilIcon className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleDelete(exam)}
-                              className="flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                              title="Delete Exam"
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                            </button>
+                            
+                            {/* 更多操作下拉菜单 */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdown(openDropdown === exam.id ? null : exam.id);
+                                }}
+                                className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                                title="More Actions"
+                              >
+                                <EllipsisVerticalIcon className="w-4 h-4" />
+                              </button>
+                              
+                              {openDropdown === exam.id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                                  <div className="py-1">
+                                    <button
+                                      onClick={() => {
+                                        setOpenDropdown(null);
+                                        handleStatusChangeConfirm(exam, false);
+                                      }}
+                                      className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50"
+                                    >
+                                      <CheckIcon className="w-4 h-4 mr-2" />
+                                      Enable Exam
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setOpenDropdown(null);
+                                        handleDeleteConfirm(exam);
+                                      }}
+                                      className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                                    >
+                                      <TrashIcon className="w-4 h-4 mr-2" />
+                                      Delete Exam
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -532,6 +641,56 @@ export default function ExamPage() {
                       )}
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 确认操作对话框 */}
+        {confirmAction.show && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setConfirmAction({ ...confirmAction, show: false })}></div>
+              <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    {confirmAction.title}
+                  </h3>
+                </div>
+                
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600">{confirmAction.message}</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction({ ...confirmAction, show: false })}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      confirmAction.action();
+                      setConfirmAction({ ...confirmAction, show: false });
+                    }}
+                    disabled={actionLoading}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {actionLoading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </div>
+                    ) : (
+                      'Confirm'
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
