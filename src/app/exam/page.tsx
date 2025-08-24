@@ -21,7 +21,6 @@ import {
   ClipboardDocumentListIcon,
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
-  ClockIcon,
   CurrencyDollarIcon,
   EyeIcon,
   EllipsisVerticalIcon,
@@ -47,7 +46,7 @@ export default function ExamPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all');
+  const [showDisabled, setShowDisabled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
     show: boolean;
@@ -87,7 +86,12 @@ export default function ExamPage() {
 
   // 关闭下拉菜单
   useEffect(() => {
-    const handleClickOutside = () => setOpenDropdown(null);
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.exam-action-dropdown')) {
+        setOpenDropdown(null);
+      }
+    };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
@@ -217,42 +221,15 @@ export default function ExamPage() {
                 />
               </div>
 
-              {/* 状态过滤器 */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">Exam Status:</span>
-                <div className="flex bg-gray-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setStatusFilter('all')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                      statusFilter === 'all'
-                        ? 'bg-white text-gray-800 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    All Exams
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('active')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                      statusFilter === 'active'
-                        ? 'bg-white text-green-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Active
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('disabled')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                      statusFilter === 'disabled'
-                        ? 'bg-white text-red-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Disabled
-                  </button>
-                </div>
-              </div>
+              <label className="inline-flex items-center text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                  checked={showDisabled}
+                  onChange={(e) => setShowDisabled(e.target.checked)}
+                />
+                <span className="ml-2">Show disabled</span>
+              </label>
             </div>
 
             <button
@@ -276,8 +253,7 @@ export default function ExamPage() {
         )}
 
         {/* Active Exams */}
-        {(statusFilter === 'all' || statusFilter === 'active') && (
-          <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <div className="p-1 bg-green-100 rounded">
@@ -303,46 +279,35 @@ export default function ExamPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Exam Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Location & Topic
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Price
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alipay Account</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredExams.map((exam) => (
                       <tr key={exam.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                                <ClipboardDocumentListIcon className="h-5 w-5 text-blue-600" />
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{exam.name}</div>
-                              <div className="text-sm text-gray-500">Code: {exam.code}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{exam.location}</div>
-                          <div className="text-sm text-gray-500">{exam.topic}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.code}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.type ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.topic ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.period ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.time ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.location}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div className="flex items-center">
                             <CurrencyDollarIcon className="h-4 w-4 text-green-600 mr-1" />
-                            <span className="text-sm font-medium text-gray-900">{exam.price}</span>
+                            <span>{exam.price}</span>
                           </div>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.alipay_account ?? '-'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
                             <button
@@ -352,20 +317,14 @@ export default function ExamPage() {
                             >
                               <PencilIcon className="w-4 h-4" />
                             </button>
-                            
-                            {/* 更多操作下拉菜单 */}
-                            <div className="relative">
+                            <div className="relative exam-action-dropdown">
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenDropdown(openDropdown === exam.id ? null : exam.id);
-                                }}
+                                onClick={() => setOpenDropdown(openDropdown === exam.id ? null : exam.id)}
                                 className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                                 title="More Actions"
                               >
                                 <EllipsisVerticalIcon className="w-4 h-4" />
                               </button>
-                              
                               {openDropdown === exam.id && (
                                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
                                   <div className="py-1">
@@ -401,11 +360,10 @@ export default function ExamPage() {
                 </table>
               </div>
             )}
-          </div>
-        )}
+        </div>
 
         {/* Disabled Exams */}
-        {(statusFilter === 'all' || statusFilter === 'disabled') && (
+        {showDisabled && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center gap-3">
@@ -432,47 +390,35 @@ export default function ExamPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Exam Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Location & Topic
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Price
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alipay Account</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredDisabledExams.map((exam) => (
                       <tr key={exam.id} className="hover:bg-gray-50 transition-colors opacity-75">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                <ClipboardDocumentListIcon className="h-5 w-5 text-gray-400" />
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{exam.name}</div>
-                              <div className="text-sm text-gray-500">Code: {exam.code}</div>
-                              <div className="text-xs text-red-600 mt-1">Disabled</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{exam.location}</div>
-                          <div className="text-sm text-gray-500">{exam.topic}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.code}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.type ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.topic ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.period ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.time ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.location}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div className="flex items-center">
                             <CurrencyDollarIcon className="h-4 w-4 text-green-600 mr-1" />
-                            <span className="text-sm font-medium text-gray-900">{exam.price}</span>
+                            <span>{exam.price}</span>
                           </div>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.alipay_account ?? '-'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
                             <button
@@ -482,20 +428,14 @@ export default function ExamPage() {
                             >
                               <PencilIcon className="w-4 h-4" />
                             </button>
-                            
-                            {/* 更多操作下拉菜单 */}
-                            <div className="relative">
+                            <div className="relative exam-action-dropdown">
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenDropdown(openDropdown === exam.id ? null : exam.id);
-                                }}
+                                onClick={() => setOpenDropdown(openDropdown === exam.id ? null : exam.id)}
                                 className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                                 title="More Actions"
                               >
                                 <EllipsisVerticalIcon className="w-4 h-4" />
                               </button>
-                              
                               {openDropdown === exam.id && (
                                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
                                   <div className="py-1">

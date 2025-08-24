@@ -3077,10 +3077,14 @@ export interface ExamListItem {
   id: number;
   name: string;
   code: string;
-  location?: string;
+  type?: number | string;
   topic?: string;
+  period?: number | string;
+  time?: number | string;
+  location?: string;
   price?: number;
   price_string?: string;
+  alipay_account?: string | number;
 }
 
 export interface ExamListResponse {
