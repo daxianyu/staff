@@ -539,9 +539,9 @@ export default function ExamPage() {
         {/* Add Exam Modal */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="flex items-center justify-center min-h-screen px-4">
               <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowAddModal(false)}></div>
-              <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg">
                 <div className="absolute top-0 right-0 pt-4 pr-4">
                   <button
                     onClick={() => setShowAddModal(false)}
@@ -649,11 +649,11 @@ export default function ExamPage() {
           </div>
         )}
 
-        {showEditModal && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowEditModal(false)}></div>
-              <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+                 {showEditModal && (
+           <div className="fixed inset-0 z-50 overflow-y-auto">
+             <div className="flex items-center justify-center min-h-screen px-4">
+               <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowEditModal(false)}></div>
+               <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-2xl">
                 <div className="absolute top-0 right-0 pt-4 pr-4">
                   <button
                     onClick={() => setShowEditModal(false)}
@@ -749,72 +749,85 @@ export default function ExamPage() {
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
-                        <input
-                          type="number"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Period"
-                          value={editForm.period}
-                          onChange={(e) => setEditForm({ ...editForm, period: Number(e.target.value) })}
-                        />
-                      </div>
-                    </div>
+                                             <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                         <select
+                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           value={editForm.period}
+                           onChange={(e) => setEditForm({ ...editForm, period: Number(e.target.value) })}
+                         >
+                           <option value={0}>Summer</option>
+                           <option value={1}>Winter</option>
+                           <option value={2}>Spring</option>
+                         </select>
+                       </div>
+                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
-                        <input
-                          type="number"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Type"
-                          value={editForm.exam_type}
-                          onChange={(e) => setEditForm({ ...editForm, exam_type: Number(e.target.value) })}
-                        />
-                      </div>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+                         <select
+                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           value={editForm.exam_type}
+                           onChange={(e) => setEditForm({ ...editForm, exam_type: Number(e.target.value) })}
+                         >
+                           <option value={0}>Type 0</option>
+                           <option value={1}>Type 1</option>
+                           <option value={2}>Type 2</option>
+                           <option value={3}>Type 3</option>
+                         </select>
+                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Time 1</label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
-                            placeholder="Time"
-                            value={editForm.exam_time}
-                            onChange={(e) => setEditForm({ ...editForm, exam_time: Number(e.target.value) })}
-                          />
-                          <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        </div>
-                      </div>
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Time 1</label>
+                         <div className="relative">
+                           <input
+                             type="datetime-local"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                             value={editForm.exam_time ? new Date(Number(editForm.exam_time) * 1000).toISOString().slice(0, 16) : ''}
+                             onChange={(e) => {
+                               const timestamp = e.target.value ? Math.floor(new Date(e.target.value).getTime() / 1000) : 0;
+                               setEditForm({ ...editForm, exam_time: timestamp });
+                             }}
+                           />
+                           <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                         </div>
+                       </div>
+                     </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Time 2</label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
-                            placeholder="Time 2"
-                            value={editForm.exam_time_2}
-                            onChange={(e) => setEditForm({ ...editForm, exam_time_2: Number(e.target.value) })}
-                          />
-                          <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        </div>
-                      </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Time 2</label>
+                         <div className="relative">
+                           <input
+                             type="datetime-local"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                             value={editForm.exam_time_2 ? new Date(Number(editForm.exam_time_2) * 1000).toISOString().slice(0, 16) : ''}
+                             onChange={(e) => {
+                               const timestamp = e.target.value ? Math.floor(new Date(e.target.value).getTime() / 1000) : 0;
+                               setEditForm({ ...editForm, exam_time_2: timestamp });
+                             }}
+                           />
+                           <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                         </div>
+                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Time 3</label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
-                            placeholder="Time 3"
-                            value={editForm.exam_time_3}
-                            onChange={(e) => setEditForm({ ...editForm, exam_time_3: Number(e.target.value) })}
-                          />
-                          <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        </div>
-                      </div>
-                    </div>
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Time 3</label>
+                         <div className="relative">
+                           <input
+                             type="datetime-local"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                             value={editForm.exam_time_3 ? new Date(Number(editForm.exam_time_3) * 1000).toISOString().slice(0, 16) : ''}
+                             onChange={(e) => {
+                               const timestamp = e.target.value ? Math.floor(new Date(e.target.value).getTime() / 1000) : 0;
+                               setEditForm({ ...editForm, exam_time_3: timestamp });
+                             }}
+                           />
+                           <ClockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                         </div>
+                       </div>
+                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Alipay Account</label>
