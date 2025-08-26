@@ -99,7 +99,7 @@ export interface TeacherSchedule {
 }
 
 // 获取存储的token
-const getAuthHeader = (): HeadersInit => {
+export const getAuthHeader = (): HeadersInit => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
     return token ? { 'Authorization': token } : {};
@@ -3087,10 +3087,24 @@ export interface ExamListItem {
   alipay_account?: string | number;
 }
 
+// 首次费用报名记录接口定义
+export interface FirstFeeRecord {
+  student_id: number;
+  name: string;
+  signup_time: number;
+}
+
+// 完整的考试列表响应接口定义
 export interface ExamListResponse {
   status: number;
   message: string;
-  data: { active: ExamListItem[]; disabled: ExamListItem[] };
+  data: {
+    active: ExamListItem[];
+    disabled: ExamListItem[];
+    inner_first_fee: FirstFeeRecord[];
+    outside_first_fee: FirstFeeRecord[];
+    can_download: number;
+  };
 }
 
 export const getExamList = async (): Promise<ExamListResponse> => {
@@ -3103,14 +3117,26 @@ export const getExamList = async (): Promise<ExamListResponse> => {
     return {
       status: data.status === 0 ? 200 : data.status,
       message: data.message || '',
-      data: data.data || { active: [], disabled: [] },
+      data: data.data || {
+        active: [],
+        disabled: [],
+        inner_first_fee: [],
+        outside_first_fee: [],
+        can_download: 0
+      },
     };
   } catch (error) {
     console.error('获取考试列表失败:', error);
     return {
       status: 500,
       message: '获取考试列表失败',
-      data: { active: [], disabled: [] },
+      data: {
+        active: [],
+        disabled: [],
+        inner_first_fee: [],
+        outside_first_fee: [],
+        can_download: 0
+      },
     };
   }
 };

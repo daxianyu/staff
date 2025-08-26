@@ -13,6 +13,7 @@ import {
   type ExamListItem,
   type AddExamParams,
   type EditExamParams,
+  getAuthHeader,
 } from '@/services/auth';
 import {
   PlusIcon,
@@ -34,6 +35,21 @@ import {
 export default function ExamPage() {
   const { hasPermission } = useAuth();
   const canEdit = hasPermission(PERMISSIONS.EDIT_EXAMS);
+
+  // 考试期间和类型常量
+  const EXAM_PERIODS_DICT = {
+    0: "Summer",
+    1: "Winter", 
+    2: "Spring",
+  };
+
+  const EXAM_TYPES = {
+    0: "Edexcel",
+    1: "CIE",
+    2: "AQA", 
+    4: "PHY",
+    3: "OTHER",
+  };
 
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState<ExamListItem[]>([]);
@@ -65,6 +81,8 @@ export default function ExamPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState<number | ''>('');
+  const [filterType, setFilterType] = useState<number | ''>('');
   const [showDisabled, setShowDisabled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
@@ -79,6 +97,19 @@ export default function ExamPage() {
     action: () => {},
   });
 
+  // Tab状态管理
+  const [activeTab, setActiveTab] = useState<'exams' | 'firstFee'>('exams');
+
+  // 首次费用报名数据
+  const [innerFirstFee, setInnerFirstFee] = useState<any[]>([]);
+  const [outsideFirstFee, setOutsideFirstFee] = useState<any[]>([]);
+  const [canDownload, setCanDownload] = useState<number>(0);
+
+  // 分页相关状态
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10); // 每页显示10条记录
+  const [totalRecords, setTotalRecords] = useState(0);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -86,6 +117,11 @@ export default function ExamPage() {
       if (resp.status === 200) {
         setExams(resp.data.active || []);
         setDisabledExams(resp.data.disabled || []);
+        setInnerFirstFee(resp.data.inner_first_fee || []);
+        setOutsideFirstFee(resp.data.outside_first_fee || []);
+        setCanDownload(resp.data.can_download || 0);
+        // 计算总记录数
+        setTotalRecords((resp.data.inner_first_fee || []).length + (resp.data.outside_first_fee || []).length);
       } else {
         setError(resp.message || 'Failed to load exams');
       }
@@ -96,6 +132,8 @@ export default function ExamPage() {
       setLoading(false);
     }
   };
+
+
 
   useEffect(() => {
     if (canEdit) {
@@ -210,20 +248,89 @@ export default function ExamPage() {
     );
   };
 
-  // 过滤考试列表
-  const filteredExams = exams.filter(exam =>
-    exam.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.topic?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 处理下载报名信息
+  const handleDownload = async (examType: string) => {
+    try {
+      const response = await fetch(`/api/exam/download_exam_signup_info/${examType}`, {
+        method: 'GET',
+        headers: getAuthHeader(),
+      });
 
-  const filteredDisabledExams = disabledExams.filter(exam =>
-    exam.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.topic?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 0 && data.data?.file_url) {
+          // 创建下载链接
+          const link = document.createElement('a');
+          link.href = data.data.file_url;
+          link.download = `exam_signup_${examType}_${Date.now()}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else {
+          setError(data.message || '下载失败');
+        }
+      } else {
+        setError('下载请求失败');
+      }
+    } catch (error) {
+      console.error('下载异常:', error);
+      setError('下载失败，请重试');
+    }
+  };
+
+  // 分页相关计算函数
+  const getPaginatedData = () => {
+    const allData = [
+      ...innerFirstFee.map(item => ({ ...item, type: 'inner' })),
+      ...outsideFirstFee.map(item => ({ ...item, type: 'outside' }))
+    ];
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+
+    return {
+      data: allData.slice(startIndex, endIndex),
+      total: allData.length,
+      totalPages: Math.ceil(allData.length / pageSize)
+    };
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Tab切换处理
+  const handleTabChange = (tab: 'exams' | 'firstFee') => {
+    setActiveTab(tab);
+    if (tab === 'firstFee') {
+      setCurrentPage(1); // 切换到首次费用tab时重置页码
+    }
+  };
+
+  // 过滤考试列表
+  const filteredExams = exams.filter(exam => {
+    const matchesSearch = exam.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exam.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exam.topic?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exam.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesPeriod = filterPeriod === '' || exam.period === filterPeriod;
+    const matchesType = filterType === '' || exam.type === filterType;
+    
+    return matchesSearch && matchesPeriod && matchesType;
+  });
+
+  const filteredDisabledExams = disabledExams.filter(exam => {
+    const matchesSearch = exam.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exam.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exam.topic?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exam.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesPeriod = filterPeriod === '' || exam.period === filterPeriod;
+    const matchesType = filterType === '' || exam.type === filterType;
+    
+    return matchesSearch && matchesPeriod && matchesType;
+  });
 
   if (!canEdit) {
     return (
@@ -264,8 +371,48 @@ export default function ExamPage() {
           </div>
         </div>
 
-        {/* 搜索和操作栏 */}
-        <div className="bg-white rounded-lg shadow mb-6 p-6">
+        {/* Tab导航 */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => handleTabChange('exams')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'exams'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <ClipboardDocumentListIcon className="h-5 w-5" />
+                  考试管理
+                </div>
+              </button>
+              <button
+                onClick={() => handleTabChange('firstFee')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'firstFee'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <CurrencyDollarIcon className="h-5 w-5" />
+                  首次费用报名记录
+                  <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {totalRecords}
+                  </span>
+                </div>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Tab内容 */}
+        {activeTab === 'exams' && (
+          <>
+            {/* 搜索和操作栏 */}
+            <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <div className="relative flex-1 max-w-md">
@@ -278,6 +425,30 @@ export default function ExamPage() {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+
+              <select
+                value={filterPeriod}
+                onChange={(e) => setFilterPeriod(e.target.value === '' ? '' : Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Periods</option>
+                <option value={0}>Summer</option>
+                <option value={1}>Winter</option>
+                <option value={2}>Spring</option>
+              </select>
+
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value === '' ? '' : Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Types</option>
+                <option value={0}>Edexcel</option>
+                <option value={1}>CIE</option>
+                <option value={2}>AQA</option>
+                <option value={4}>PHY</option>
+                <option value={3}>OTHER</option>
+              </select>
 
               <label className="inline-flex items-center text-sm text-gray-700">
                 <input
@@ -300,15 +471,140 @@ export default function ExamPage() {
           </div>
         </div>
 
-        {/* 错误提示 */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-3" />
-              <p className="text-red-700">{error}</p>
+
+
+
+          </>
+        )}
+
+        {/* 首次费用报名记录Tab内容 */}
+        {activeTab === 'firstFee' && (
+          <>
+            {/* 首次费用报名信息 */}
+            <div className="bg-white rounded-lg shadow mb-6">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1 bg-blue-100 rounded">
+                      <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">首次费用报名记录</h2>
+                  </div>
+
+              {/* 下载按钮 */}
+              {canDownload === 1 && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleDownload('0')}
+                    className="flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                  >
+                    <TagIcon className="h-4 w-4 mr-1" />
+                    下载Edexcel
+                  </button>
+                  <button
+                    onClick={() => handleDownload('1')}
+                    className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    <TagIcon className="h-4 w-4 mr-1" />
+                    下载CIE
+                  </button>
+                  <button
+                    onClick={() => handleDownload('2')}
+                    className="flex items-center px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    <TagIcon className="h-4 w-4 mr-1" />
+                    下载AQA
+                  </button>
+                  <button
+                    onClick={() => handleDownload('3')}
+                    className="flex items-center px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                  >
+                    <TagIcon className="h-4 w-4 mr-1" />
+                    下载其他
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        )}
+
+              <div className="p-6">
+                {/* 分页信息和分页控件 */}
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    显示第 {(currentPage - 1) * pageSize + 1} 到 {Math.min(currentPage * pageSize, totalRecords)} 条，共 {totalRecords} 条记录
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      上一页
+                    </button>
+                    <span className="text-sm text-gray-700">
+                      第 {currentPage} 页 / 共 {Math.ceil(totalRecords / pageSize)} 页
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === Math.ceil(totalRecords / pageSize)}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      下一页
+                    </button>
+                  </div>
+                </div>
+
+                {/* 分页数据表格 */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">学生ID/来源</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">学生姓名</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">报名时间</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getPaginatedData().data.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              item.type === 'inner'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {item.type === 'inner' ? '内部' : '外部'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            {item.type === 'inner' ? item[0] : item[0]}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-gray-900">{item[1]}</td>
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            {new Date(Number(item[2]) * 1000).toLocaleString('zh-CN', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {totalRecords === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <CurrencyDollarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-lg font-medium">暂无首次费用报名记录</p>
+                      <p className="text-sm">当有新的首次费用报名时，将会显示在这里</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+        </div>
 
         {/* Active Exams */}
         <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
@@ -345,7 +641,6 @@ export default function ExamPage() {
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Time</th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Location</th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Price</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Alipay Account</th>
                       <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Actions</th>
                     </tr>
                   </thead>
@@ -354,20 +649,19 @@ export default function ExamPage() {
                       <tr key={exam.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                         <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
-                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.type ?? '-'}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{EXAM_TYPES[exam.type as keyof typeof EXAM_TYPES] ?? '-'}</td>
                         <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.topic ?? '-'}</td>
-                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{['Summer', 'Winter', 'Spring'][exam.period ?? 0]}</td>
+                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{EXAM_PERIODS_DICT[exam.period as keyof typeof EXAM_PERIODS_DICT] ?? '-'}</td>
                         <td className="px-3 py-4 text-sm text-gray-900 break-words">
                           {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
                         </td>
                         <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.location}</td>
                         <td className="px-3 py-4 text-sm text-gray-900">
                           <div className="flex items-center">
-                            <CurrencyDollarIcon className="h-4 w-4 text-green-600 mr-1" />
+                            <span className="text-green-600 mr-1">¥</span>
                             <span>{exam.price}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.alipay_account ?? '-'}</td>
                         <td className="px-3 py-4 text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
                             <button
@@ -533,6 +827,18 @@ export default function ExamPage() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+        </>
+        )}
+
+        {/* 错误提示 - 在所有tab外部显示 */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-3" />
+              <p className="text-red-700">{error}</p>
+            </div>
           </div>
         )}
 
