@@ -197,13 +197,6 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'clipboard-document-list',
         requiredPermissions: ['edit_exams'],
       },
-      {
-        key: 'exams-edit',
-        label: 'Edit Exam',
-        path: '/exam/edit',
-        icon: 'clipboard-document-list',
-        requiredPermissions: ['edit_exams'],
-      },
     ],
   },
   {
