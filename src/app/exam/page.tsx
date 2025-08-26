@@ -412,141 +412,7 @@ export default function ExamPage() {
                   Add Exam
                 </button>
               </div>
-            </div>
-
-
-
-
-          </>
-        )}
-
-        {/* 首次费用报名记录Tab内容 */}
-        {activeTab === 'firstFee' && (
-          <>
-            {/* 首次费用报名信息 */}
-            <div className="bg-white rounded-lg shadow mb-6">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1 bg-blue-100 rounded">
-                      <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <h2 className="text-lg font-semibold text-gray-900">首次费用报名记录</h2>
-                  </div>
-
-                  {/* 下载按钮 */}
-                  {canDownload === 1 && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDownload('0')}
-                        className="flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                      >
-                        <TagIcon className="h-4 w-4 mr-1" />
-                        下载Edexcel
-                      </button>
-                      <button
-                        onClick={() => handleDownload('1')}
-                        className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                      >
-                        <TagIcon className="h-4 w-4 mr-1" />
-                        下载CIE
-                      </button>
-                      <button
-                        onClick={() => handleDownload('2')}
-                        className="flex items-center px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                      >
-                        <TagIcon className="h-4 w-4 mr-1" />
-                        下载AQA
-                      </button>
-                      <button
-                        onClick={() => handleDownload('3')}
-                        className="flex items-center px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                      >
-                        <TagIcon className="h-4 w-4 mr-1" />
-                        下载其他
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
-
-              <div className="p-6">
-                {/* 分页信息和分页控件 */}
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="text-sm text-gray-700">
-                    显示第 {(currentPage - 1) * pageSize + 1} 到 {Math.min(currentPage * pageSize, totalRecords)} 条，共 {totalRecords} 条记录
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      上一页
-                    </button>
-                    <span className="text-sm text-gray-700">
-                      第 {currentPage} 页 / 共 {Math.ceil(totalRecords / pageSize)} 页
-                    </span>
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === Math.ceil(totalRecords / pageSize)}
-                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      下一页
-                    </button>
-                  </div>
-                </div>
-
-                {/* 分页数据表格 */}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">学生ID/来源</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">学生姓名</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">报名时间</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {getPaginatedData().data.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-3 py-2 text-sm text-gray-900">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.type === 'inner'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-blue-100 text-blue-800'
-                              }`}>
-                              {item.type === 'inner' ? '内部' : '外部'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-sm text-gray-900">
-                            {item.type === 'inner' ? item[0] : item[0]}
-                          </td>
-                          <td className="px-3 py-2 text-sm text-gray-900">{item[1]}</td>
-                          <td className="px-3 py-2 text-sm text-gray-900">
-                            {new Date(Number(item[2]) * 1000).toLocaleString('zh-CN', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {totalRecords === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <CurrencyDollarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-lg font-medium">暂无首次费用报名记录</p>
-                      <p className="text-sm">当有新的首次费用报名时，将会显示在这里</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
             {/* Active Exams */}
             <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
@@ -771,6 +637,137 @@ export default function ExamPage() {
                 )}
               </div>
             )}
+
+            </>
+          )}
+
+        {/* 首次费用报名记录Tab内容 */}
+        {activeTab === 'firstFee' && (
+          <>
+            {/* 首次费用报名信息 */}
+            <div className="bg-white rounded-lg shadow mb-6">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1 bg-blue-100 rounded">
+                      <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">首次费用报名记录</h2>
+                  </div>
+
+                  {/* 下载按钮 */}
+                  {canDownload === 1 && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleDownload('0')}
+                        className="flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                      >
+                        <TagIcon className="h-4 w-4 mr-1" />
+                        下载Edexcel
+                      </button>
+                      <button
+                        onClick={() => handleDownload('1')}
+                        className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        <TagIcon className="h-4 w-4 mr-1" />
+                        下载CIE
+                      </button>
+                      <button
+                        onClick={() => handleDownload('2')}
+                        className="flex items-center px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                      >
+                        <TagIcon className="h-4 w-4 mr-1" />
+                        下载AQA
+                      </button>
+                      <button
+                        onClick={() => handleDownload('3')}
+                        className="flex items-center px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                      >
+                        <TagIcon className="h-4 w-4 mr-1" />
+                        下载其他
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* 分页信息和分页控件 */}
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    显示第 {(currentPage - 1) * pageSize + 1} 到 {Math.min(currentPage * pageSize, totalRecords)} 条，共 {totalRecords} 条记录
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      上一页
+                    </button>
+                    <span className="text-sm text-gray-700">
+                      第 {currentPage} 页 / 共 {Math.ceil(totalRecords / pageSize)} 页
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === Math.ceil(totalRecords / pageSize)}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      下一页
+                    </button>
+                  </div>
+                </div>
+
+                {/* 分页数据表格 */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">学生ID/来源</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">学生姓名</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">报名时间</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getPaginatedData().data.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.type === 'inner'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-blue-100 text-blue-800'
+                              }`}>
+                              {item.type === 'inner' ? '内部' : '外部'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            {item.type === 'inner' ? item[0] : item[0]}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-gray-900">{item[1]}</td>
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            {new Date(Number(item[2]) * 1000).toLocaleString('zh-CN', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {totalRecords === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <CurrencyDollarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-lg font-medium">暂无首次费用报名记录</p>
+                      <p className="text-sm">当有新的首次费用报名时，将会显示在这里</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </>
         )}
 
