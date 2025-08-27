@@ -192,21 +192,16 @@ export default function EditExamPage() {
     }
   };
 
-  // 取消编辑价格变动项
+  // 取消新增的价格变动项
   const cancelPriceChange = (index: number) => {
-    const change = priceChanges[index];
-    if (change.id) {
-      // 如果有ID，恢复到原始状态
-      // 这里可以重新获取数据或者保持当前状态
-    } else {
-      // 如果没有ID，从列表中移除
-      setPriceChanges(priceChanges.filter((_, i) => i !== index));
-    }
+    setPriceChanges(priceChanges.filter((_, i) => i !== index));
   };
 
+  // 删除价格变动项，删除已保存项时需要确认
   const removePriceChange = async (index: number) => {
     const change = priceChanges[index];
     if (change.id) {
+      if (!window.confirm('确定要删除该价格规则吗？')) return;
       try {
         const resp = await deleteChangePrice({ record_id: change.id });
         if (resp.code === 200) {
@@ -218,7 +213,7 @@ export default function EditExamPage() {
         setError('删除价格变动失败');
       }
     } else {
-      // 如果没有ID，说明是新增的还未保存，直接从本地删除
+      // 未保存的项直接移除
       setPriceChanges(priceChanges.filter((_, i) => i !== index));
     }
   };
@@ -684,48 +679,76 @@ export default function EditExamPage() {
                     <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                       <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">生效日期</label>
-                        <input
-                          type="date"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={change.date}
-                          onChange={(e) => updatePriceChangeLocal(index, 'date', e.target.value)}
-                        />
+                        {change.id ? (
+                          <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                            value={change.date}
+                            disabled
+                          />
+                        ) : (
+                          <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            value={change.date}
+                            onChange={(e) => updatePriceChangeLocal(index, 'date', e.target.value)}
+                          />
+                        )}
                       </div>
                       <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">价格</label>
                         <div className="relative">
-                          <input
-                            type="number"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-8"
-                            placeholder="0.00"
-                            value={change.price}
-                            onChange={(e) => updatePriceChangeLocal(index, 'price', Number(e.target.value))}
-                          />
-                          <CurrencyDollarIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          {change.id ? (
+                            <>
+                              <input
+                                type="number"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg pl-8 bg-gray-100 cursor-not-allowed"
+                                value={change.price}
+                                disabled
+                              />
+                              <CurrencyDollarIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            </>
+                          ) : (
+                            <>
+                              <input
+                                type="number"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-8"
+                                placeholder="0.00"
+                                value={change.price}
+                                onChange={(e) => updatePriceChangeLocal(index, 'price', Number(e.target.value))}
+                              />
+                              <CurrencyDollarIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-end gap-2">
-                        <button
-                          onClick={() => savePriceChange(index)}
-                          className="inline-flex items-center px-3 py-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
-                        >
-                          <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          确定
-                        </button>
-                        <button
-                          onClick={() => cancelPriceChange(index)}
-                          className="inline-flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
-                        >
-                          取消
-                        </button>
-                        <button
-                          onClick={() => removePriceChange(index)}
-                          className="inline-flex items-center px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                        {change.id ? (
+                          <button
+                            onClick={() => removePriceChange(index)}
+                            className="inline-flex items-center px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => savePriceChange(index)}
+                              className="inline-flex items-center px-3 py-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                            >
+                              <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              确定
+                            </button>
+                            <button
+                              onClick={() => cancelPriceChange(index)}
+                              className="inline-flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+                            >
+                              取消
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
