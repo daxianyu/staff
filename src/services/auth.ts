@@ -3084,7 +3084,6 @@ export interface ExamListItem {
   location?: string;
   price?: number;
   price_string?: string;
-  alipay_account?: string | number;
 }
 
 // 首次费用报名记录接口定义
@@ -3272,7 +3271,6 @@ export interface EditExamParams {
   exam_time: number;
   exam_time_2: number;
   exam_time_3: number;
-  alipay_account: number;
 }
 
 export const editExam = async (params: EditExamParams): Promise<ApiResponse> => {

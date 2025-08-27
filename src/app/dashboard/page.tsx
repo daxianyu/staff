@@ -299,7 +299,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* 头部欢迎区域 */}
-      <div className="bg-gradient-to-br from-blue-500 to-indigo-400 rounded-xl p-8 text-white shadow-xl">
+      <div className="bg-gradient-to-br from-blue-400 to-indigo-200 rounded-xl p-8 text-white shadow-xl">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-3">

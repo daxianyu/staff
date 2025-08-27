@@ -26,6 +26,7 @@ import {
   EyeIcon,
   EllipsisVerticalIcon,
   TagIcon,
+  DocumentArrowUpIcon,
 } from '@heroicons/react/24/outline';
 
 export default function ExamPage() {
@@ -89,6 +90,14 @@ export default function ExamPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10); // 每页显示10条记录
   const [totalRecords, setTotalRecords] = useState(0);
+
+  // 下载相关状态
+  const [downloadLoading, setDownloadLoading] = useState<{[key: string]: boolean}>({});
+
+  // 批量上传相关状态
+  const [showBatchUploadModal, setShowBatchUploadModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [batchUploadLoading, setBatchUploadLoading] = useState(false);
 
   const loadData = async () => {
     try {
@@ -195,7 +204,11 @@ export default function ExamPage() {
 
   // 处理下载报名信息
   const handleDownload = async (examType: string) => {
+    // 设置当前下载类型为loading状态
+    setDownloadLoading(prev => ({ ...prev, [examType]: true }));
+
     try {
+      // 第一步：获取文件URL
       const response = await fetch(`/api/exam/download_exam_signup_info/${examType}`, {
         method: 'GET',
         headers: getAuthHeader(),
@@ -204,15 +217,33 @@ export default function ExamPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.status === 0 && data.data?.file_url) {
-          // 创建下载链接
-          const link = document.createElement('a');
-          link.href = data.data.file_url;
-          link.download = `exam_signup_${examType}_${Date.now()}.xlsx`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          // 第二步：使用返回的file_url下载文件
+          const fileUrl = data.data.file_url;
+          const downloadResponse = await fetch(fileUrl, {
+            method: 'GET',
+            headers: getAuthHeader(),
+          });
+
+          if (downloadResponse.ok) {
+            // 获取文件内容
+            const blob = await downloadResponse.blob();
+
+            // 创建下载链接
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `exam_signup_${examType}_${Date.now()}.csv`;
+            document.body.appendChild(link);
+            link.click();
+
+            // 清理资源
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          } else {
+            setError('文件下载失败');
+          }
         } else {
-          setError(data.message || '下载失败');
+          setError(data.message || '获取下载链接失败');
         }
       } else {
         setError('下载请求失败');
@@ -220,6 +251,81 @@ export default function ExamPage() {
     } catch (error) {
       console.error('下载异常:', error);
       setError('下载失败，请重试');
+    } finally {
+      // 无论成功还是失败，都要清除loading状态
+      setDownloadLoading(prev => ({ ...prev, [examType]: false }));
+    }
+  };
+
+  // 处理批量上传考试
+  const handleBatchUpload = async () => {
+    if (!selectedFile) {
+      setError('请选择要上传的Excel文件');
+      return;
+    }
+
+    setBatchUploadLoading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const response = await fetch('/api/exam/add_exam_batch', {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 0) {
+          setShowBatchUploadModal(false);
+          setSelectedFile(null);
+          loadData(); // 刷新考试列表
+          alert('批量添加考试成功！');
+        } else {
+          setError(data.message || '批量添加考试失败');
+        }
+      } else {
+        setError('上传请求失败');
+      }
+    } catch (error) {
+      console.error('上传异常:', error);
+      setError('上传失败，请重试');
+    } finally {
+      setBatchUploadLoading(false);
+    }
+  };
+
+  // 处理文件选择
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // 检查文件类型
+      const allowedTypes = [
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/csv'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        setError('请选择有效的Excel文件 (.xls, .xlsx) 或CSV文件');
+        setSelectedFile(null);
+        event.target.value = '';
+        return;
+      }
+
+      // 检查文件大小 (限制为10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('文件大小不能超过10MB');
+        setSelectedFile(null);
+        event.target.value = '';
+        return;
+      }
+
+      setSelectedFile(file);
+      setError('');
     }
   };
 
@@ -404,13 +510,22 @@ export default function ExamPage() {
                   </label>
                 </div>
 
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  Add Exam
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <PlusIcon className="h-5 w-5 mr-2" />
+                    Add Exam
+                  </button>
+                  <button
+                    onClick={() => setShowBatchUploadModal(true)}
+                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <DocumentArrowUpIcon className="h-5 w-5 mr-2" />
+                    批量导入
+                  </button>
+                </div>
               </div>
               </div>
 
@@ -461,7 +576,7 @@ export default function ExamPage() {
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.topic ?? '-'}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{EXAM_PERIODS_DICT[exam.period as keyof typeof EXAM_PERIODS_DICT] ?? '-'}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">
-                            {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
+                            {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}
                           </td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.location}</td>
                           <td className="px-3 py-4 text-sm text-gray-900">
@@ -560,7 +675,7 @@ export default function ExamPage() {
                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Time</th>
                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Location</th>
                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Price</th>
-                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Alipay Account</th>
+
                           <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Actions</th>
                         </tr>
                       </thead>
@@ -573,7 +688,7 @@ export default function ExamPage() {
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.topic ?? '-'}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{['Summer', 'Winter', 'Spring'][exam.period ?? 0]}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">
-                              {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
+                              {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}
                             </td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.location}</td>
                             <td className="px-3 py-4 text-sm text-gray-900">
@@ -582,7 +697,7 @@ export default function ExamPage() {
                                 <span>{exam.price}</span>
                               </div>
                             </td>
-                            <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.alipay_account ?? '-'}</td>
+
                             <td className="px-3 py-4 text-right text-sm font-medium">
                               <div className="flex items-center justify-end space-x-2">
                                 <button
@@ -637,7 +752,6 @@ export default function ExamPage() {
                 )}
               </div>
             )}
-
             </>
           )}
 
@@ -657,34 +771,57 @@ export default function ExamPage() {
 
                   {/* 下载按钮 */}
                   {canDownload === 1 && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => handleDownload('0')}
-                        className="flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                        disabled={downloadLoading['0']}
+                        className="flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
                       >
-                        <TagIcon className="h-4 w-4 mr-1" />
-                        下载Edexcel
+                        {downloadLoading['0'] ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                            下载中...
+                          </>
+                        ) : (
+                          <>
+                            <TagIcon className="h-4 w-4 mr-1" />
+                            下载Edexcel
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={() => handleDownload('1')}
-                        className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        disabled={downloadLoading['1']}
+                        className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                       >
-                        <TagIcon className="h-4 w-4 mr-1" />
-                        下载CIE
+                        {downloadLoading['1'] ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                            下载中...
+                          </>
+                        ) : (
+                          <>
+                            <TagIcon className="h-4 w-4 mr-1" />
+                            下载CIE
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={() => handleDownload('2')}
-                        className="flex items-center px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                        disabled={downloadLoading['2']}
+                        className="flex items-center px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors"
                       >
-                        <TagIcon className="h-4 w-4 mr-1" />
-                        下载AQA
-                      </button>
-                      <button
-                        onClick={() => handleDownload('3')}
-                        className="flex items-center px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                      >
-                        <TagIcon className="h-4 w-4 mr-1" />
-                        下载其他
+                        {downloadLoading['2'] ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                            下载中...
+                          </>
+                        ) : (
+                          <>
+                            <TagIcon className="h-4 w-4 mr-1" />
+                            下载AQA
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
@@ -692,65 +829,35 @@ export default function ExamPage() {
               </div>
 
               <div className="p-6">
-                {/* 分页信息和分页控件 */}
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="text-sm text-gray-700">
-                    显示第 {(currentPage - 1) * pageSize + 1} 到 {Math.min(currentPage * pageSize, totalRecords)} 条，共 {totalRecords} 条记录
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      上一页
-                    </button>
-                    <span className="text-sm text-gray-700">
-                      第 {currentPage} 页 / 共 {Math.ceil(totalRecords / pageSize)} 页
-                    </span>
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === Math.ceil(totalRecords / pageSize)}
-                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      下一页
-                    </button>
-                  </div>
-                </div>
-
                 {/* 分页数据表格 */}
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto mb-6">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">学生ID/来源</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">学生姓名</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">报名时间</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生ID/来源</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生姓名</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">报名时间</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {getPaginatedData().data.map((item, index) => (
                         <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-3 py-2 text-sm text-gray-900">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.type === 'inner'
+                          <td className="px-3 py-4 text-sm text-gray-900">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${item.type === 'inner'
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-blue-100 text-blue-800'
                               }`}>
                               {item.type === 'inner' ? '内部' : '外部'}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-sm text-gray-900">
-                            {item.type === 'inner' ? item[0] : item[0]}
-                          </td>
-                          <td className="px-3 py-2 text-sm text-gray-900">{item[1]}</td>
-                          <td className="px-3 py-2 text-sm text-gray-900">
+                          <td className="px-3 py-4 text-sm text-gray-900 break-words">{item[0]}</td>
+                          <td className="px-3 py-4 text-sm text-gray-900 break-words">{item[1]}</td>
+                          <td className="px-3 py-4 text-sm text-gray-900 whitespace-nowrap">
                             {new Date(Number(item[2]) * 1000).toLocaleString('zh-CN', {
                               year: 'numeric',
                               month: '2-digit',
                               day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit'
                             })}
                           </td>
                         </tr>
@@ -759,13 +866,85 @@ export default function ExamPage() {
                   </table>
 
                   {totalRecords === 0 && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-12">
                       <CurrencyDollarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-lg font-medium">暂无首次费用报名记录</p>
-                      <p className="text-sm">当有新的首次费用报名时，将会显示在这里</p>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">暂无首次费用报名记录</h3>
+                      <p className="text-gray-500">当有新的首次费用报名时，将会显示在这里</p>
                     </div>
                   )}
                 </div>
+
+                {/* 分页器 - 放在表格下方 */}
+                {totalRecords > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="text-sm text-gray-700">
+                      显示第 {(currentPage - 1) * pageSize + 1} 到 {Math.min(currentPage * pageSize, totalRecords)} 条，共 {totalRecords} 条记录
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <span className="sr-only">上一页</span>
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        上一页
+                      </button>
+
+                      {/* 页码按钮组 */}
+                      <div className="flex items-center space-x-1">
+                        {Array.from({ length: Math.ceil(totalRecords / pageSize) }, (_, i) => i + 1)
+                          .filter(page => {
+                            // 只显示当前页附近的页码
+                            const delta = 2;
+                            return page === 1 ||
+                                   page === Math.ceil(totalRecords / pageSize) ||
+                                   (page >= currentPage - delta && page <= currentPage + delta);
+                          })
+                          .map((page, index, array) => {
+                            // 添加省略号
+                            const showEllipsisBefore = index > 0 && array[index - 1] !== page - 1;
+                            const showEllipsisAfter = index < array.length - 1 && array[index + 1] !== page + 1;
+
+                            return (
+                              <div key={page} className="flex items-center">
+                                {showEllipsisBefore && (
+                                  <span className="px-2 py-1 text-sm text-gray-400">...</span>
+                                )}
+                                <button
+                                  onClick={() => handlePageChange(page)}
+                                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                    page === currentPage
+                                      ? 'bg-blue-600 text-white'
+                                      : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                                {showEllipsisAfter && index === array.length - 1 && (
+                                  <span className="px-2 py-1 text-sm text-gray-400">...</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === Math.ceil(totalRecords / pageSize)}
+                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        下一页
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <span className="sr-only">下一页</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </>
@@ -894,6 +1073,109 @@ export default function ExamPage() {
           </div>
         )}
 
+        {/* Batch Upload Modal */}
+        {showBatchUploadModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen px-4">
+              <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowBatchUploadModal(false)}></div>
+              <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg">
+                <div className="absolute top-0 right-0 pt-4 pr-4">
+                  <button
+                    onClick={() => setShowBatchUploadModal(false)}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <DocumentArrowUpIcon className="h-5 w-5 text-green-600" />
+                    </div>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      批量导入考试
+                    </h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        选择Excel文件 <span className="text-red-500">*</span>
+                      </label>
+                      <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                        <div className="space-y-1 text-center">
+                          <DocumentArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
+                          <div className="flex text-sm text-gray-600">
+                            <label
+                              htmlFor="file-upload"
+                              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                            >
+                              <span>点击选择文件</span>
+                              <input
+                                id="file-upload"
+                                name="file-upload"
+                                type="file"
+                                className="sr-only"
+                                accept=".xls,.xlsx,.csv"
+                                onChange={handleFileSelect}
+                              />
+                            </label>
+                            <p className="pl-1">或拖拽文件到此处</p>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            支持 .xls, .xlsx, .csv 文件，最大 10MB
+                          </p>
+                          {selectedFile && (
+                            <p className="text-sm text-green-600 font-medium">
+                              已选择: {selectedFile.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div className="flex items-center">
+                          <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-2" />
+                          <p className="text-red-700 text-sm">{error}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 pt-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBatchUploadModal(false);
+                        setSelectedFile(null);
+                        setError('');
+                      }}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={handleBatchUpload}
+                      disabled={!selectedFile || batchUploadLoading}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {batchUploadLoading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          上传中...
+                        </div>
+                      ) : (
+                        '开始上传'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 确认操作对话框 */}
         {confirmAction.show && (
