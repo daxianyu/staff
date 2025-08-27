@@ -300,6 +300,13 @@ export default function EditExamPage() {
   };
 
   const handleRemoveOutsideStudent = async (index: number) => {
+    const student = outsideStudents[index];
+    const confirmed = window.confirm(`确定要删除学生 "${student.name}" 吗？此操作不可撤销。`);
+    
+    if (!confirmed) {
+      return;
+    }
+    
     try {
       // 这里应该调用后端API删除外部学生
       // const response = await removeOutsideStudent(examId, outsideStudents[index].id);
@@ -312,12 +319,13 @@ export default function EditExamPage() {
 
   const handleDownloadStudentCSV = () => {
     const csvContent = [
-      ['学生ID', '姓名', '报名时间', '状态'].join(','),
+      ['Name', 'Campus', 'Sign up date', 'Price', 'Paid'].join(','), 
       ...studentList.map(student => [
-        student.id,
-        student.name,
-        new Date(student.signupTime).toLocaleString('zh-CN'),
-        student.status
+        student.student_name || student.name,
+        student.campus || '-',
+        new Date(student.signup_time * 1000).toLocaleDateString('zh-CN'),
+        student.price || form.base_price || 0,
+        student.paid ? 'Yes' : 'No'
       ].join(','))
     ].join('\n');
 
@@ -681,7 +689,7 @@ export default function EditExamPage() {
 
                 <div className="space-y-4">
                   {priceChanges.map((change, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div key={index} className="flex items-end gap-4 p-4 bg-gray-50 rounded-lg">
                       <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">生效日期</label>
                         {change.id ? (
@@ -727,11 +735,12 @@ export default function EditExamPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-end gap-2">
+                      <div className="flex items-center gap-2">
                         {change.id ? (
                           <button
                             onClick={() => removePriceChange(index)}
-                            className="inline-flex items-center px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                            className="inline-flex items-center justify-center w-10 h-10 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                            title="删除"
                           >
                             <TrashIcon className="h-4 w-4" />
                           </button>
@@ -819,38 +828,42 @@ export default function EditExamPage() {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生ID</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">姓名</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">报名时间</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campus</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sign up date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Delete</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {studentList.map((student, index) => (
                           <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-4 py-4 text-sm text-gray-900">{student.id}</td>
-                            <td className="px-4 py-4 text-sm text-gray-900">{student.name}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.student_name}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.campus || '-'}</td>
                             <td className="px-4 py-4 text-sm text-gray-900">
-                              {new Date(student.signupTime).toLocaleString('zh-CN')}
+                              {new Date(student.signup_time * 1000).toLocaleDateString('zh-CN')}
+                            </td>
+                            <td className="px-4 py-4 text-sm text-gray-900">
+                              ¥{student.price || form.base_price || 0}
                             </td>
                             <td className="px-4 py-4 text-sm">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                已报名
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                student.paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {student.paid ? '已支付' : '未支付'}
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right text-sm font-medium">
-                              <div className="flex items-center justify-end gap-2">
-                                <button className="text-blue-600 hover:text-blue-900">查看详情</button>
-                                {form.base_price === 0 && (
-                                  <button
-                                    onClick={() => handleRemoveStudent(student.id)}
-                                    className="text-red-600 hover:text-red-800 ml-3"
-                                  >
-                                    <TrashIcon className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
+                              {form.base_price === 0 && (
+                                <button
+                                  onClick={() => handleRemoveStudent(student.id)}
+                                  className="text-red-600 hover:text-red-800"
+                                  title="删除"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -884,25 +897,36 @@ export default function EditExamPage() {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">来源</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">姓名</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">联系方式</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">报名时间</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Birthday</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Previous CAIE center number</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Previous CAIE candidate number</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Previous Edexcel candidate number</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sign up date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current school</th>
                           <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {outsideStudents.map((student, index) => (
                           <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-4 py-4 text-sm text-gray-900">{student.source}</td>
-                            <td className="px-4 py-4 text-sm text-gray-900">{student.name}</td>
-                            <td className="px-4 py-4 text-sm text-gray-900">{student.contact}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.name || '-'}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.email || '-'}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.birthday || '-'}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.gender || '-'}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.previous_caie_center || '-'}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.previous_caie_candidate || '-'}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.previous_edexcel_candidate || '-'}</td>
                             <td className="px-4 py-4 text-sm text-gray-900">
-                              {new Date(student.signupTime).toLocaleString('zh-CN')}
+                              {new Date(student.signup_time * 1000).toLocaleDateString('zh-CN')}
                             </td>
+                            <td className="px-4 py-4 text-sm text-gray-900">¥{student.price || form.base_price || 0}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.current_school || '-'}</td>
                             <td className="px-4 py-4 text-right text-sm font-medium">
                               <div className="flex items-center justify-end gap-2">
-                                <button className="text-blue-600 hover:text-blue-900">查看详情</button>
                                 <button
                                   onClick={() => handleRemoveOutsideStudent(index)}
                                   className="text-red-600 hover:text-red-800 ml-3"
