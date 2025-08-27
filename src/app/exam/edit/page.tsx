@@ -55,7 +55,7 @@ export default function EditExamPage() {
   });
 
   // 价格变动数据
-  const [priceChanges, setPriceChanges] = useState<{ id?: number, date: string, price: number, time?: number }[]>([]);
+  const [priceChanges, setPriceChanges] = useState<{ id?: number, date: string, price: string, time?: number }[]>([]);
 
   // 学生报名数据
   const [studentList, setStudentList] = useState<any[]>([]);
@@ -94,7 +94,7 @@ export default function EditExamPage() {
           const formattedPriceChanges = resp.data.price_data.map((item: any) => ({
             id: item.id,
             date: item.time ? new Date(item.time * 1000).toISOString().slice(0, 10) : '',
-            price: item.price || 0,
+            price: item.price !== undefined ? String(item.price) : '',
             time: item.time || 0
           }));
           setPriceChanges(formattedPriceChanges);
@@ -130,19 +130,24 @@ export default function EditExamPage() {
 
   // 价格变动管理函数
   const addPriceChange = () => {
-    setPriceChanges([...priceChanges, { date: '', price: 0 }]);
+    setPriceChanges([...priceChanges, { date: '', price: '' }]);
   };
 
-  const updatePriceChangeLocal = (index: number, field: 'date' | 'price', value: string | number) => {
+  const updatePriceChangeLocal = (index: number, field: 'date' | 'price', value: string) => {
     const updated = [...priceChanges];
-    updated[index] = { ...updated[index], [field]: value };
+    if (field === 'price') {
+      updated[index] = { ...updated[index], price: value };
+    } else {
+      updated[index] = { ...updated[index], date: value };
+    }
     setPriceChanges(updated);
   };
 
   // 保存单个价格变动项
   const savePriceChange = async (index: number) => {
     const change = priceChanges[index];
-    if (!change.date || change.price <= 0) {
+    const priceValue = Number(change.price);
+    if (!change.date || !change.price || priceValue <= 0) {
       setError('请填写完整的价格变动信息');
       return;
     }
@@ -153,7 +158,7 @@ export default function EditExamPage() {
         // 更新现有价格变动
         const resp = await updateChangePrice({
           record_id: change.id,
-          change_price: change.price,
+          change_price: priceValue,
           change_time: timestamp
         });
         if (resp.code === 200) {
@@ -168,7 +173,7 @@ export default function EditExamPage() {
         // 添加新的价格变动
         const resp = await addChangePrice({
           exam_id: examId,
-          change_price: change.price,
+          change_price: priceValue,
           change_time: timestamp
         });
         if (resp.code === 200) {
@@ -178,7 +183,7 @@ export default function EditExamPage() {
             const formattedPriceChanges = dataResp.data.price_data.map((item: any) => ({
               id: item.id,
               date: item.time ? new Date(item.time * 1000).toISOString().slice(0, 10) : '',
-              price: item.price || 0,
+              price: item.price !== undefined ? String(item.price) : '',
               time: item.time || 0
             }));
             setPriceChanges(formattedPriceChanges);
@@ -715,7 +720,7 @@ export default function EditExamPage() {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-8"
                                 placeholder="0.00"
                                 value={change.price}
-                                onChange={(e) => updatePriceChangeLocal(index, 'price', Number(e.target.value))}
+                                onChange={(e) => updatePriceChangeLocal(index, 'price', e.target.value)}
                               />
                               <CurrencyDollarIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             </>
