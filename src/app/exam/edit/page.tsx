@@ -839,7 +839,14 @@ export default function EditExamPage() {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {studentList.map((student, index) => (
                           <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-4 py-4 text-sm text-gray-900">{student.student_name}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">
+                              {student.student_name}
+                              {student.withdrawal ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 ml-2">
+                                  退考
+                                </span>
+                              ): ''}
+                            </td>
                             <td className="px-4 py-4 text-sm text-gray-900">{student.campus || '-'}</td>
                             <td className="px-4 py-4 text-sm text-gray-900">
                               {new Date(student.signup_time * 1000).toLocaleDateString('zh-CN')}

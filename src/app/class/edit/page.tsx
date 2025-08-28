@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
@@ -581,73 +581,101 @@ export default function ClassEditPage() {
               </button>
             </div>
 
-            <div className="space-y-2">
-              {students.map((student, index) => (
-                <div key={`student-${index}-${student.student_id || 'new'}`} className="border border-gray-200 rounded-md p-3 bg-gray-50">
-                  <div className={`grid gap-3 items-center ${student.isTransfer ? 'grid-cols-1 lg:grid-cols-6' : 'grid-cols-1 lg:grid-cols-4'}`}>
-                    <div className={student.isTransfer ? "lg:col-span-2" : "lg:col-span-2"}>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">学生</label>
-                      <SearchableSelect
-                        options={editData.student_info}
-                        value={student.student_id}
-                        onValueChange={(value) => updateStudent(index, 'student_id', value)}
-                        placeholder="请选择学生"
-                        searchPlaceholder="搜索学生..."
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">&nbsp;</label>
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={student.isTransfer}
-                          onChange={(e) => updateStudent(index, 'isTransfer', e.target.checked)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <span className="text-sm font-medium text-gray-700">插班生</span>
-                      </label>
-                    </div>
-
-                    {student.isTransfer && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">开始时间</label>
-                          <input
-                            type="date"
-                            value={formatDate(student.start_time)}
-                            onChange={(e) => updateStudent(index, 'start_time', parseDate(e.target.value))}
-                            className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/3">
+                      学生
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                      类型
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {students.map((student, index) => (
+                    <React.Fragment key={`student-${index}-${student.student_id || 'new'}`}>
+                      <tr className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-4">
+                          <SearchableSelect
+                            options={editData.student_info}
+                            value={student.student_id}
+                            onValueChange={(value) => updateStudent(index, 'student_id', value)}
+                            placeholder="请选择学生"
+                            searchPlaceholder="搜索学生..."
+                            className="w-full max-w-xs"
                           />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">结束时间</label>
-                          <input
-                            type="date"
-                            value={formatDate(student.end_time)}
-                            onChange={(e) => updateStudent(index, 'end_time', parseDate(e.target.value))}
-                            className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">&nbsp;</label>
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => removeStudent(index)}
-                          className="inline-flex items-center justify-center w-8 h-8 text-red-600 border border-red-300 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors"
-                          title="删除学生"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                        </td>
+                        <td className="px-4 py-4">
+                          <label className="inline-flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={student.isTransfer}
+                              onChange={(e) => updateStudent(index, 'isTransfer', e.target.checked)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-gray-900">插班生</span>
+                          </label>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="inline-flex gap-1">
+                            {student.student_id && (
+                              <button
+                                onClick={() => router.push(`/students/schedule?studentId=${student.student_id}`)}
+                                className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                                title="查看学生课程安排"
+                              >
+                                <ClockIcon className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => removeStudent(index)}
+                              className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                              title="删除学生"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {student.isTransfer && (
+                        <tr className="bg-blue-50">
+                          <td colSpan={3} className="px-4 py-3">
+                            <div className="flex flex-col sm:flex-row gap-4">
+                              <div className="flex-1">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  开始时间
+                                </label>
+                                <input
+                                  type="date"
+                                  value={formatDate(student.start_time)}
+                                  onChange={(e) => updateStudent(index, 'start_time', parseDate(e.target.value))}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  结束时间
+                                </label>
+                                <input
+                                  type="date"
+                                  value={formatDate(student.end_time)}
+                                  onChange={(e) => updateStudent(index, 'end_time', parseDate(e.target.value))}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -816,7 +844,26 @@ export default function ClassEditPage() {
         {showAddStudentsModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">批量添加学生</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">批量添加学生</h3>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowAddStudentsModal(false);
+                      setSelectedStudentIds([]);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={addMultipleStudents}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                  >
+                    确认添加
+                  </button>
+                </div>
+              </div>
               
               <div className="space-y-4">
                 <div>
@@ -838,24 +885,6 @@ export default function ClassEditPage() {
                     已选择 {selectedStudentIds.length} 名学生
                   </p>
                 </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowAddStudentsModal(false);
-                    setSelectedStudentIds([]);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={addMultipleStudents}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
-                >
-                  确认添加
-                </button>
               </div>
             </div>
           </div>
