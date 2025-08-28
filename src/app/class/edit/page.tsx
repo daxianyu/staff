@@ -27,7 +27,8 @@ import {
   UserGroupIcon,
   BookOpenIcon,
   CheckCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 import SearchableSelect from '@/components/SearchableSelect';
 
@@ -153,14 +154,43 @@ export default function ClassEditPage() {
   };
 
   // 学生管理
-  const addStudent = () => {
-    setStudents([...students, {
-      student_id: 0,
-      start_time: -1,
-      end_time: -1,
-      name: '',
-      isTransfer: false
-    }]);
+  const [showAddStudentsModal, setShowAddStudentsModal] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([]);
+
+
+
+  const addMultipleStudents = () => {
+    if (selectedStudentIds.length === 0) {
+      setErrorMessage('请选择要添加的学生');
+      setShowError(true);
+      return;
+    }
+
+    // 过滤掉已经添加的学生
+    const existingStudentIds = students.map(s => s.student_id);
+    const newStudentIds = selectedStudentIds.filter(id => !existingStudentIds.includes(id));
+
+    if (newStudentIds.length === 0) {
+      setErrorMessage('选中的学生已经全部添加过了');
+      setShowError(true);
+      return;
+    }
+
+    // 添加新学生
+    const newStudents = newStudentIds.map(studentId => {
+      const studentInfo = editData?.student_info.find(s => s.id === studentId);
+      return {
+        student_id: studentId,
+        start_time: -1,
+        end_time: -1,
+        name: studentInfo?.name || 'Unknown',
+        isTransfer: false
+      };
+    });
+
+    setStudents([...students, ...newStudents]);
+    setSelectedStudentIds([]);
+    setShowAddStudentsModal(false);
   };
 
   const removeStudent = (index: number) => {
@@ -428,8 +458,15 @@ export default function ClassEditPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
+                onClick={() => router.push(`/class/schedule?class_id=${classId}`)}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700"
+              >
+                <ClockIcon className="h-4 w-4 mr-2" />
+                Schedule
+              </button>
+              <button
                 onClick={() => setShowAddToGroup(true)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-md hover:bg-emerald-700"
               >
                 <UserGroupIcon className="h-4 w-4 mr-2" />
                 Add to Group
@@ -530,13 +567,13 @@ export default function ClassEditPage() {
 
           {/* Students Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center">
                 <UserGroupIcon className="h-5 w-5 mr-2 text-blue-600" />
                 学生管理 ({students.length})
               </h2>
               <button
-                onClick={addStudent}
+                onClick={() => setShowAddStudentsModal(true)}
                 className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 hover:border-blue-700 transition-colors"
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
@@ -544,12 +581,12 @@ export default function ClassEditPage() {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               {students.map((student, index) => (
-                <div key={`student-${index}-${student.student_id || 'new'}`} className="border border-gray-200 rounded-lg p-4 bg-white">
-                  <div className={`grid gap-4 items-end ${student.isTransfer ? 'grid-cols-1 lg:grid-cols-6' : 'grid-cols-1 lg:grid-cols-4'}`}>
+                <div key={`student-${index}-${student.student_id || 'new'}`} className="border border-gray-200 rounded-md p-3 bg-gray-50">
+                  <div className={`grid gap-3 items-center ${student.isTransfer ? 'grid-cols-1 lg:grid-cols-6' : 'grid-cols-1 lg:grid-cols-4'}`}>
                     <div className={student.isTransfer ? "lg:col-span-2" : "lg:col-span-2"}>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">学生</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">学生</label>
                       <SearchableSelect
                         options={editData.student_info}
                         value={student.student_id}
@@ -560,8 +597,9 @@ export default function ClassEditPage() {
                       />
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="flex items-center space-x-2 mt-6">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">&nbsp;</label>
+                      <label className="flex items-center space-x-2">
                         <input
                           type="checkbox"
                           checked={student.isTransfer}
@@ -575,34 +613,37 @@ export default function ClassEditPage() {
                     {student.isTransfer && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">开始时间</label>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">开始时间</label>
                           <input
                             type="date"
                             value={formatDate(student.start_time)}
                             onChange={(e) => updateStudent(index, 'start_time', parseDate(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">结束时间</label>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">结束时间</label>
                           <input
                             type="date"
                             value={formatDate(student.end_time)}
                             onChange={(e) => updateStudent(index, 'end_time', parseDate(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                       </>
                     )}
 
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => removeStudent(index)}
-                        className="inline-flex items-center justify-center w-10 h-10 text-red-600 border border-red-300 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors"
-                        title="删除学生"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">&nbsp;</label>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => removeStudent(index)}
+                          className="inline-flex items-center justify-center w-8 h-8 text-red-600 border border-red-300 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors"
+                          title="删除学生"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -762,6 +803,55 @@ export default function ClassEditPage() {
                 </button>
                 <button
                   onClick={handleAddToGroup}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                >
+                  确认添加
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Students Modal */}
+        {showAddStudentsModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">批量添加学生</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    选择学生 <span className="text-red-500">*</span>
+                  </label>
+                  <SearchableSelect
+                    options={editData.student_info.filter(student => 
+                      !students.some(s => s.student_id === student.id)
+                    )}
+                    value={selectedStudentIds}
+                    onValueChange={(value) => setSelectedStudentIds(value as number[])}
+                    placeholder="请选择要添加的学生"
+                    searchPlaceholder="搜索学生..."
+                    className="w-full"
+                    multiple={true}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    已选择 {selectedStudentIds.length} 名学生
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowAddStudentsModal(false);
+                    setSelectedStudentIds([]);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={addMultipleStudents}
                   className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
                 >
                   确认添加

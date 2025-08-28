@@ -658,7 +658,7 @@ export default function ClassesPage() {
                       {/* Campus */}
                       <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                         <div className="text-sm text-gray-900">
-                          Campus {classItem.campus_name || '-'}
+                          {classItem.campus_name || '-'}
                         </div>
                       </td>
                       

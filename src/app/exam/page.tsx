@@ -91,6 +91,9 @@ export default function ExamPage() {
   const [pageSize] = useState(10); // 每页显示10条记录
   const [totalRecords, setTotalRecords] = useState(0);
 
+  // 搜索相关状态
+  const [firstFeeSearchTerm, setFirstFeeSearchTerm] = useState('');
+
   // 下载相关状态
   const [downloadLoading, setDownloadLoading] = useState<{[key: string]: boolean}>({});
 
@@ -331,10 +334,25 @@ export default function ExamPage() {
 
   // 分页相关计算函数
   const getPaginatedData = () => {
-    const allData = [
+    let allData = [
       ...innerFirstFee.map(item => ({ ...item, type: 'inner' })),
       ...outsideFirstFee.map(item => ({ ...item, type: 'outside' }))
     ];
+
+    // 搜索过滤
+    if (firstFeeSearchTerm.trim()) {
+      const searchTerm = firstFeeSearchTerm.toLowerCase().replace(/\s+/g, '');
+      allData = allData.filter(item => {
+        // 搜索学生ID、姓名、拼音
+        const studentId = String(item[0] || '').toLowerCase();
+        const studentName = String(item[1] || '').toLowerCase();
+        const pinyin = String(item[3] || '').toLowerCase().replace(/\s+/g, '');
+        
+        return studentId.includes(searchTerm) || 
+               studentName.includes(searchTerm) || 
+               pinyin.includes(searchTerm);
+      });
+    }
 
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -355,6 +373,7 @@ export default function ExamPage() {
     setActiveTab(tab);
     if (tab === 'firstFee') {
       setCurrentPage(1); // 切换到首次费用tab时重置页码
+      setFirstFeeSearchTerm(''); // 重置搜索
     }
   };
 
@@ -828,6 +847,23 @@ export default function ExamPage() {
                 </div>
               </div>
 
+              {/* 搜索栏 */}
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="relative max-w-md">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="搜索学生ID、姓名或拼音..."
+                    value={firstFeeSearchTerm}
+                    onChange={(e) => {
+                      setFirstFeeSearchTerm(e.target.value);
+                      setCurrentPage(1); // 搜索时重置到第一页
+                    }}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
               <div className="p-6">
                 {/* 分页数据表格 */}
                 <div className="overflow-x-auto mb-6">
@@ -835,8 +871,9 @@ export default function ExamPage() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生ID/来源</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生ID</th>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生姓名</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">姓名拼音</th>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">报名时间</th>
                       </tr>
                     </thead>
@@ -853,6 +890,7 @@ export default function ExamPage() {
                           </td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{item[0]}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{item[1]}</td>
+                          <td className="px-3 py-4 text-sm text-gray-900 break-words">{item[3]}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 whitespace-nowrap">
                             {new Date(Number(item[2]) * 1000).toLocaleString('zh-CN', {
                               year: 'numeric',
@@ -875,76 +913,79 @@ export default function ExamPage() {
                 </div>
 
                 {/* 分页器 - 放在表格下方 */}
-                {totalRecords > 0 && (
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="text-sm text-gray-700">
-                      显示第 {(currentPage - 1) * pageSize + 1} 到 {Math.min(currentPage * pageSize, totalRecords)} 条，共 {totalRecords} 条记录
-                    </div>
-                    <div className="flex items-center justify-center space-x-2">
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <span className="sr-only">上一页</span>
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        上一页
-                      </button>
-
-                      {/* 页码按钮组 */}
-                      <div className="flex items-center space-x-1">
-                        {Array.from({ length: Math.ceil(totalRecords / pageSize) }, (_, i) => i + 1)
-                          .filter(page => {
-                            // 只显示当前页附近的页码
-                            const delta = 2;
-                            return page === 1 ||
-                                   page === Math.ceil(totalRecords / pageSize) ||
-                                   (page >= currentPage - delta && page <= currentPage + delta);
-                          })
-                          .map((page, index, array) => {
-                            // 添加省略号
-                            const showEllipsisBefore = index > 0 && array[index - 1] !== page - 1;
-                            const showEllipsisAfter = index < array.length - 1 && array[index + 1] !== page + 1;
-
-                            return (
-                              <div key={page} className="flex items-center">
-                                {showEllipsisBefore && (
-                                  <span className="px-2 py-1 text-sm text-gray-400">...</span>
-                                )}
-                                <button
-                                  onClick={() => handlePageChange(page)}
-                                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                    page === currentPage
-                                      ? 'bg-blue-600 text-white'
-                                      : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  {page}
-                                </button>
-                                {showEllipsisAfter && index === array.length - 1 && (
-                                  <span className="px-2 py-1 text-sm text-gray-400">...</span>
-                                )}
-                              </div>
-                            );
-                          })}
+                {(() => {
+                  const paginatedData = getPaginatedData();
+                  return paginatedData.total > 0 && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="text-sm text-gray-700">
+                        显示第 {(currentPage - 1) * pageSize + 1} 到 {Math.min(currentPage * pageSize, paginatedData.total)} 条，共 {paginatedData.total} 条记录
                       </div>
+                      <div className="flex items-center justify-center space-x-2">
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <span className="sr-only">上一页</span>
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                          上一页
+                        </button>
 
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === Math.ceil(totalRecords / pageSize)}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        下一页
-                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        <span className="sr-only">下一页</span>
-                      </button>
+                        {/* 页码按钮组 */}
+                        <div className="flex items-center space-x-1">
+                          {Array.from({ length: paginatedData.totalPages }, (_, i) => i + 1)
+                            .filter(page => {
+                              // 只显示当前页附近的页码
+                              const delta = 2;
+                              return page === 1 ||
+                                     page === paginatedData.totalPages ||
+                                     (page >= currentPage - delta && page <= currentPage + delta);
+                            })
+                            .map((page, index, array) => {
+                              // 添加省略号
+                              const showEllipsisBefore = index > 0 && array[index - 1] !== page - 1;
+                              const showEllipsisAfter = index < array.length - 1 && array[index + 1] !== page + 1;
+
+                              return (
+                                <div key={page} className="flex items-center">
+                                  {showEllipsisBefore && (
+                                    <span className="px-2 py-1 text-sm text-gray-400">...</span>
+                                  )}
+                                  <button
+                                    onClick={() => handlePageChange(page)}
+                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                      page === currentPage
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    {page}
+                                  </button>
+                                  {showEllipsisAfter && index === array.length - 1 && (
+                                    <span className="px-2 py-1 text-sm text-gray-400">...</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
+
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === paginatedData.totalPages}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          下一页
+                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span className="sr-only">下一页</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           </>

@@ -1079,8 +1079,6 @@ export default function EditExamPage() {
           </div>
         )}
 
-
-
         {/* 操作按钮卡片 - 只在考试详情tab显示 */}
         {activeTab === 'examDetails' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

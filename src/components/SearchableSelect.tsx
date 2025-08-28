@@ -12,12 +12,13 @@ interface Option {
 
 interface SearchableSelectProps {
   options: Option[];
-  value: number;
-  onValueChange: (value: number) => void;
+  value: number | number[];
+  onValueChange: (value: number | number[]) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
   disabled?: boolean;
+  multiple?: boolean;
 }
 
 export default function SearchableSelect({
@@ -27,17 +28,51 @@ export default function SearchableSelect({
   placeholder = "请选择...",
   searchPlaceholder = "搜索...",
   className = "",
-  disabled = false
+  disabled = false,
+  multiple = false
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // 当前选中项
-  const selectedOption = options.find(option => option.id === value);
+  const selectedOptions = multiple 
+    ? options.filter(option => (value as number[]).includes(option.id))
+    : options.find(option => option.id === value);
 
   // 处理选择
   const handleSelect = (selectedValue: string) => {
-    onValueChange(Number(selectedValue));
-    setIsOpen(false);
+    const selectedId = Number(selectedValue);
+    
+    if (multiple) {
+      const currentValues = value as number[];
+      const newValues = currentValues.includes(selectedId)
+        ? currentValues.filter(id => id !== selectedId)
+        : [...currentValues, selectedId];
+      onValueChange(newValues);
+    } else {
+      onValueChange(selectedId);
+      setIsOpen(false);
+    }
+  };
+
+  // 移除多选中的项目
+  const removeSelected = (idToRemove: number) => {
+    if (multiple) {
+      const currentValues = value as number[];
+      const newValues = currentValues.filter(id => id !== idToRemove);
+      onValueChange(newValues);
+    }
+  };
+
+  // 显示文本
+  const getDisplayText = () => {
+    if (multiple) {
+      const selected = selectedOptions as Option[];
+      if (selected.length === 0) return placeholder;
+      if (selected.length === 1) return selected[0].name;
+      return `${selected.length} 项已选择`;
+    } else {
+      return (selectedOptions as Option)?.name || placeholder;
+    }
   };
 
   return (
@@ -54,9 +89,32 @@ export default function SearchableSelect({
           `}
           aria-label={placeholder}
         >
-          <span className="text-left truncate">
-            {selectedOption?.name || placeholder}
-          </span>
+          <div className="flex-1 text-left">
+            {multiple && (selectedOptions as Option[]).length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {(selectedOptions as Option[]).map(option => (
+                  <span
+                    key={option.id}
+                    className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
+                  >
+                    {option.name}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeSelected(option.id);
+                      }}
+                      className="ml-1 hover:text-blue-600"
+                    >
+                      <CheckIcon className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="truncate">{getDisplayText()}</span>
+            )}
+          </div>
           <ChevronDownIcon className="h-4 w-4 ml-2 flex-shrink-0" />
         </button>
       </Popover.Trigger>
@@ -70,7 +128,7 @@ export default function SearchableSelect({
             data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
             data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
             data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2
-            z-50 overflow-hidden
+            z-[9999] overflow-hidden
           "
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
@@ -85,23 +143,29 @@ export default function SearchableSelect({
               <Command.Empty className="px-3 py-2 text-sm text-gray-500 text-center">
                 没有找到匹配项
               </Command.Empty>
-              {options.map((option) => (
-                <Command.Item
-                  key={option.id}
-                  value={`${option.id} ${option.name}`}
-                  onSelect={() => handleSelect(option.id.toString())}
-                  className="
-                    relative flex items-center px-3 py-2 text-sm select-none cursor-pointer rounded
-                    data-[selected]:bg-blue-50 data-[selected]:text-blue-900
-                    hover:bg-gray-50
-                  "
-                >
-                  <span>{option.name}</span>
-                  {option.id === value && (
-                    <CheckIcon className="h-4 w-4 ml-auto" />
-                  )}
-                </Command.Item>
-              ))}
+              {options.map((option) => {
+                const isSelected = multiple 
+                  ? (value as number[]).includes(option.id)
+                  : option.id === value;
+                
+                return (
+                  <Command.Item
+                    key={option.id}
+                    value={`${option.id} ${option.name}`}
+                    onSelect={() => handleSelect(option.id.toString())}
+                    className="
+                      relative flex items-center px-3 py-2 text-sm select-none cursor-pointer rounded
+                      data-[selected]:bg-blue-50 data-[selected]:text-blue-900
+                      hover:bg-gray-50
+                    "
+                  >
+                    <span>{option.name}</span>
+                    {isSelected && (
+                      <CheckIcon className="h-4 w-4 ml-auto" />
+                    )}
+                  </Command.Item>
+                );
+              })}
             </Command.List>
           </Command>
         </Popover.Content>

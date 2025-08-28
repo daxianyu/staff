@@ -1,6 +1,7 @@
 // /schedule/strategies/lesson.tsx
 import * as React from 'react';
 import { EventTypeStrategy } from './types';
+import SearchableSelect from '@/components/SearchableSelect';
 
 type Form = {
   pickRoom?: string | number;
@@ -110,25 +111,24 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
           <p className="w-full px-3 py-1.5 text-sm bg-gray-50 border rounded">{roomLabel}</p>
         ) : (
           <>
-            <select
-              className="w-full px-3 py-1.5 text-sm border rounded border-gray-300"
-              value={roomId}
-              onChange={(e) => setForm({ pickRoom: Number(e.target.value) || e.target.value })}
-            >
-              <option value="">请选择教室</option>
-              {roomsWithConflict.map((room: any) => (
-                <option 
-                  key={room.id} 
-                  value={room.id}
-                  style={{ 
-                    color: room.hasConflict ? '#dc2626' : 'inherit',
-                    backgroundColor: room.hasConflict ? '#fef2f2' : 'inherit'
-                  }}
-                >
-                  {room.name}{room.hasConflict ? ' (时间冲突)' : ''}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              options={roomsWithConflict
+                .sort((a: any, b: any) => {
+                  // 没有冲突的排在前面，有冲突的排在后面
+                  if (a.hasConflict && !b.hasConflict) return 1;
+                  if (!a.hasConflict && b.hasConflict) return -1;
+                  return 0;
+                })
+                .map((room: any) => ({
+                  id: room.id,
+                  name: room.hasConflict ? `${room.name} (时间冲突)` : room.name
+                }))}
+              value={form.pickRoom ? Number(form.pickRoom) : 0}
+              onValueChange={(value) => setForm({ pickRoom: value as number })}
+              placeholder="请选择教室"
+              searchPlaceholder="搜索教室..."
+              className="w-full"
+            />
             {/* 显示选中房间的冲突警告 */}
             {roomId && roomsWithConflict.find(r => String(r.id) === roomId)?.hasConflict && (
               <div className="mt-1 text-xs text-red-600 flex items-center">
