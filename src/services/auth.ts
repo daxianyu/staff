@@ -3743,6 +3743,8 @@ export interface AddServiceParams {
   campus: number;
   mentor_id?: number;
   is_dormitory: number;
+  start_time?: number;
+  end_time?: number;
 }
 
 // 编辑 Service 参数接口
@@ -3949,6 +3951,87 @@ export const getServiceEditInfo = async (serviceId: string): Promise<ServiceEdit
         student_list: [],
         all_dormitory: [],
       },
+    };
+  }
+};
+
+// 添加学生到服务参数接口
+export interface AddStudentToServiceParams {
+  student_id: number;
+  record_id: number;
+}
+
+// 移动学生参数接口
+export interface MoveStudentToServiceParams {
+  student_id: number;
+  dormitory_id: number;
+  new_dormitory: number;
+}
+
+// 添加学生到服务
+export const addStudentToService = async (params: AddStudentToServiceParams): Promise<ApiResponse> => {
+  try {
+    const response = await fetch('/api/service/add_student', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('添加学生到服务响应:', data);
+
+    return {
+      code: data.code || 0,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('添加学生到服务失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '添加学生到服务失败',
+      data: null,
+    };
+  }
+};
+
+// 移动学生到其他服务
+export const moveStudentToService = async (params: MoveStudentToServiceParams): Promise<ApiResponse> => {
+  try {
+    const response = await fetch('/api/service/move_student', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('移动学生响应:', data);
+
+    return {
+      code: data.code || 0,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('移动学生失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '移动学生失败',
+      data: null,
     };
   }
 };

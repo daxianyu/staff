@@ -21,6 +21,8 @@ import {
   editService,
   deleteService,
   getServiceEditInfo,
+  addStudentToService,
+  moveStudentToService,
   type ServiceItem,
   type AddServiceParams,
   type EditServiceParams,
@@ -201,6 +203,16 @@ export default function ServicePage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
+  
+  // 编辑相关状态
+  const [editServiceInfo, setEditServiceInfo] = useState<any>(null);
+  const [bookedStudents, setBookedStudents] = useState<any[]>([]);
+  const [allStudents, setAllStudents] = useState<Array<{ id: number; name: string }>>([]);
+  const [allDormitories, setAllDormitories] = useState<Array<{ id: number; name: string }>>([]);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [showMoveStudentModal, setShowMoveStudentModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'edit' | 'students'>('edit');
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -319,24 +331,47 @@ export default function ServicePage() {
   }, [campusList]);
 
   // 处理编辑Service
-  const handleEditService = useCallback((service: ServiceItem) => {
-    setSelectedService(service);
-    setFormData({
-      name: service.name,
-      gender: service.gender,
-      size: service.size,
-      price: service.price || 0,
-      campus: service.campus,
-      mentor_id: service.mentor_id || -1,
-      is_dormitory: service.dormitory_type || 1,
-      toilets: service.toilets || 0,
-      start_time: service.start_time || Math.floor(Date.now() / 1000),
-      end_time: service.end_time || Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60,
-      booked: service.booked,
-      locked: service.locked,
-      graduate_year: service.graduate_year,
-    });
-    setShowEditModal(true);
+  const handleEditService = useCallback(async (service: ServiceItem) => {
+    try {
+      setSelectedService(service);
+      setLoading(true);
+      
+      // 获取编辑信息
+      const response = await getServiceEditInfo(service.id.toString());
+      if (response.code === 0) {
+        const { service_info, booked_info, campus_list, staff_list, student_list, all_dormitory } = response.data;
+        
+        setEditServiceInfo(service_info);
+        setBookedStudents(booked_info || []);
+        setAllStudents(student_list || []);
+        setAllDormitories(all_dormitory || []);
+        
+        setFormData({
+          name: service_info.name,
+          gender: service_info.gender,
+          size: service_info.size,
+          price: service_info.price || 0,
+          campus: service_info.campus,
+          mentor_id: service_info.mentor_id || -1,
+          is_dormitory: service_info.dormitory_type || 1,
+          toilets: service_info.toilets || 0,
+          start_time: service_info.start_time || Math.floor(Date.now() / 1000),
+          end_time: service_info.end_time || Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60,
+          booked: service_info.booked,
+          locked: service_info.locked,
+          graduate_year: service_info.graduate_year,
+        });
+        
+        setShowEditModal(true);
+      } else {
+        alert(`获取编辑信息失败: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('获取编辑信息异常:', error);
+      alert('获取编辑信息异常，请重试');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // 处理删除Service
@@ -356,6 +391,8 @@ export default function ServicePage() {
         campus: formData.campus,
         mentor_id: formData.mentor_id === -1 ? undefined : formData.mentor_id,
         is_dormitory: formData.is_dormitory,
+        start_time: formData.start_time,
+        end_time: formData.end_time,
       };
 
       const response = await addService(params);
@@ -399,6 +436,7 @@ export default function ServicePage() {
       if (response.code === 0) {
         alert('编辑成功');
         setShowEditModal(false);
+        setActiveTab('edit'); // 重置到基本信息标签页
         fetchServices(); // 重新获取列表
       } else {
         alert(`编辑失败: ${response.message}`);
@@ -408,6 +446,69 @@ export default function ServicePage() {
       alert('编辑异常，请重试');
     }
   }, [selectedService, formData, fetchServices]);
+
+  // 添加学生到服务
+  const handleAddStudent = useCallback(async (studentId: number) => {
+    if (!selectedService) return;
+    
+    try {
+      const response = await addStudentToService({
+        student_id: studentId,
+        record_id: selectedService.id
+      });
+      
+      if (response.code === 0) {
+        alert('添加学生成功');
+        // 重新获取编辑信息
+        const editResponse = await getServiceEditInfo(selectedService.id.toString());
+        if (editResponse.code === 0) {
+          setBookedStudents(editResponse.data.booked_info || []);
+        }
+        // 关闭添加学生模态框
+        setShowAddStudentModal(false);
+      } else {
+        alert(`添加学生失败: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('添加学生异常:', error);
+      alert('添加学生异常，请重试');
+    }
+  }, [selectedService]);
+
+  // 移动学生到其他服务或移除学生
+  const handleMoveStudent = useCallback(async (studentId: number, newDormitoryId: number) => {
+    if (!selectedService) return;
+    
+    try {
+      const response = await moveStudentToService({
+        student_id: studentId,
+        dormitory_id: selectedService.id,
+        new_dormitory: newDormitoryId
+      });
+      
+      if (response.code === 0) {
+        if (newDormitoryId === 0) {
+          alert('移除学生成功');
+        } else {
+          alert('移动学生成功');
+        }
+        // 重新获取编辑信息
+        const editResponse = await getServiceEditInfo(selectedService.id.toString());
+        if (editResponse.code === 0) {
+          setBookedStudents(editResponse.data.booked_info || []);
+        }
+      } else {
+        if (newDormitoryId === 0) {
+          alert(`移除学生失败: ${response.message}`);
+        } else {
+          alert(`移动学生失败: ${response.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('移动/移除学生异常:', error);
+      alert('操作异常，请重试');
+    }
+  }, [selectedService]);
 
   // 确认删除
   const handleConfirmDelete = useCallback(async () => {
@@ -780,6 +881,38 @@ export default function ServicePage() {
                       </select>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={new Date(formData.start_time * 1000).toISOString().split('T')[0]}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          start_time: Math.floor(new Date(e.target.value).getTime() / 1000) 
+                        }))}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={new Date(formData.end_time * 1000).toISOString().split('T')[0]}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          end_time: Math.floor(new Date(e.target.value).getTime() / 1000) 
+                        }))}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-6">
@@ -806,205 +939,507 @@ export default function ServicePage() {
 
       {/* 编辑模态框 */}
       {showEditModal && selectedService && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-900">编辑宿舍服务</h2>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => {
+              setShowEditModal(false);
+              setActiveTab('edit'); // 重置到基本信息标签页
+            }}></div>
+            <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-4xl">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
                 <button
-                  onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setActiveTab('edit'); // 重置到基本信息标签页
+                  }}
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <PencilIcon className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    编辑服务: {selectedService.name}
+                  </h3>
+                </div>
+
+                {/* 标签页切换 */}
+                <div className="border-b border-gray-200 mb-6">
+                  <nav className="-mb-px flex space-x-8">
+                    <button
+                      onClick={() => setActiveTab('edit')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'edit'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      基本信息
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('students')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'students'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      学生管理 ({bookedStudents.length}/{selectedService.size})
+                    </button>
+                  </nav>
+                </div>
+
+                {/* 基本信息标签页 */}
+                {activeTab === 'edit' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        服务名称 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="输入服务名称"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          容量 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="学生数量"
+                          value={formData.size}
+                          onChange={(e) => setFormData(prev => ({ ...prev, size: parseInt(e.target.value) || 1 }))}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          性别 <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={formData.gender}
+                          onChange={(e) => setFormData(prev => ({ ...prev, gender: parseInt(e.target.value) }))}
+                        >
+                          <option value={0}>男</option>
+                          <option value={1}>女</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          价格
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0.00"
+                          value={formData.price}
+                          onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          校区 <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={formData.campus}
+                          onChange={(e) => setFormData(prev => ({ ...prev, campus: parseInt(e.target.value) }))}
+                        >
+                          {campusList.map(campus => (
+                            <option key={campus.id} value={campus.id}>
+                              {campus.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          导师
+                        </label>
+                        <select
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={formData.mentor_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, mentor_id: parseInt(e.target.value) }))}
+                        >
+                          <option value={-1}>未分配</option>
+                          {staffList.map(staff => (
+                            <option key={staff.id} value={staff.id}>
+                              {staff.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          服务类型 <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={formData.is_dormitory}
+                          onChange={(e) => setFormData(prev => ({ ...prev, is_dormitory: parseInt(e.target.value) }))}
+                        >
+                          <option value={1}>宿舍</option>
+                          <option value={0}>餐包</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          卫生间数量
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0"
+                          value={formData.toilets}
+                          onChange={(e) => setFormData(prev => ({ ...prev, toilets: parseInt(e.target.value) || 0 }))}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          毕业年份
+                        </label>
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder={new Date().getFullYear().toString()}
+                          value={formData.graduate_year}
+                          onChange={(e) => setFormData(prev => ({ ...prev, graduate_year: parseInt(e.target.value) || new Date().getFullYear() }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          预订状态
+                        </label>
+                        <select
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={formData.booked}
+                          onChange={(e) => setFormData(prev => ({ ...prev, booked: parseInt(e.target.value) }))}
+                        >
+                          <option value={0}>可用</option>
+                          <option value={1}>已预订</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          锁定状态
+                        </label>
+                        <select
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={formData.locked}
+                          onChange={(e) => setFormData(prev => ({ ...prev, locked: parseInt(e.target.value) }))}
+                        >
+                          <option value={0}>正常</option>
+                          <option value={1}>锁定</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          开始日期
+                        </label>
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={new Date(formData.start_time * 1000).toISOString().split('T')[0]}
+                          onChange={(e) => setFormData(prev => ({ 
+                            ...prev, 
+                            start_time: Math.floor(new Date(e.target.value).getTime() / 1000) 
+                          }))}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          结束日期
+                        </label>
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={new Date(formData.end_time * 1000).toISOString().split('T')[0]}
+                          onChange={(e) => setFormData(prev => ({ 
+                            ...prev, 
+                            end_time: Math.floor(new Date(e.target.value).getTime() / 1000) 
+                          }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-6">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditModal(false);
+                          setActiveTab('edit'); // 重置到基本信息标签页
+                        }}
+                        className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                      >
+                        取消
+                      </button>
+                      <button
+                        onClick={handleSubmitEdit}
+                        disabled={!formData.name.trim()}
+                        className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        保存更改
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 学生管理标签页 */}
+                {activeTab === 'students' && (
+                  <div className="space-y-4">
+                    {/* 当前学生列表 */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-gray-900">当前学生 ({bookedStudents.length}/{selectedService.size})</h4>
+                        {bookedStudents.length < selectedService.size && (
+                          <button
+                            onClick={() => setShowAddStudentModal(true)}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <PlusIcon className="h-3 w-3 mr-1" />
+                            添加学生
+                          </button>
+                        )}
+                      </div>
+                      
+                      {bookedStudents.length === 0 ? (
+                        <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                          <UserGroupIcon className="mx-auto h-8 w-8 text-gray-400" />
+                          <p className="mt-2 text-sm text-gray-500">暂无学生</p>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {bookedStudents.map((student) => (
+                              <div key={student.id} className="flex items-center justify-between bg-white p-2 rounded border">
+                                <span className="text-sm text-gray-900">{student.name}</span>
+                                <div className="flex items-center space-x-1">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedStudent(student);
+                                      setShowMoveStudentModal(true);
+                                    }}
+                                    className="text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                                    title="移动学生"
+                                  >
+                                    移动
+                                  </button>
+                                  <button
+                                    onClick={() => handleMoveStudent(student.id, 0)} // 0表示移除
+                                    className="text-xs text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                    title="移除学生"
+                                  >
+                                    移除
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 容量信息 */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <UserGroupIcon className="h-4 w-4 text-blue-600 mr-2" />
+                          <span className="text-sm font-medium text-blue-900">容量信息</span>
+                        </div>
+                        <span className="text-sm text-blue-700">
+                          {bookedStudents.length} / {selectedService.size}
+                        </span>
+                      </div>
+                      <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(bookedStudents.length / selectedService.size) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="mt-1 text-xs text-blue-600">
+                        {selectedService.size - bookedStudents.length} 个空位可用
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="px-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    宿舍名称 *
-                  </label>
-                  <input
-                    type="text"
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    容量 *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.size}
-                    onChange={(e) => setFormData(prev => ({ ...prev, size: parseInt(e.target.value) || 1 }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    卫生间数量
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.toilets}
-                    onChange={(e) => setFormData(prev => ({ ...prev, toilets: parseInt(e.target.value) || 0 }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    性别 *
-                  </label>
-                  <select
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.gender}
-                    onChange={(e) => setFormData(prev => ({ ...prev, gender: parseInt(e.target.value) }))}
-                  >
-                    <option value={0}>男</option>
-                    <option value={1}>女</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    价格
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.price}
-                    onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    毕业年份
-                  </label>
-                  <input
-                    type="number"
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.graduate_year}
-                    onChange={(e) => setFormData(prev => ({ ...prev, graduate_year: parseInt(e.target.value) || new Date().getFullYear() }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    校区 *
-                  </label>
-                  <select
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.campus}
-                    onChange={(e) => setFormData(prev => ({ ...prev, campus: parseInt(e.target.value) }))}
-                  >
-                    {campusList.map(campus => (
-                      <option key={campus.id} value={campus.id}>
-                        {campus.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      导师
-                    </label>
-                    <select
-                      className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      value={formData.mentor_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, mentor_id: parseInt(e.target.value) }))}
-                    >
-                      <option value={-1}>未分配</option>
-                      {staffList.map(staff => (
-                        <option key={staff.id} value={staff.id}>
-                          {staff.name}
-                        </option>
-                      ))}
-                    </select>
+          </div>
+        </div>
+      )}
+
+      {/* 添加学生模态框 */}
+      {showAddStudentModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowAddStudentModal(false)}></div>
+            <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-md">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  onClick={() => setShowAddStudentModal(false)}
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <PlusIcon className="h-5 w-5 text-green-600" />
                   </div>
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    添加学生到 {selectedService?.name}
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      服务类型 *
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      选择学生
                     </label>
-                    <select
-                      className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      value={formData.is_dormitory}
-                      onChange={(e) => setFormData(prev => ({ ...prev, is_dormitory: parseInt(e.target.value) }))}
-                    >
-                      <option value={1}>宿舍</option>
-                      <option value={0}>餐包</option>
-                    </select>
+                    <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-md">
+                      {allStudents
+                        .filter(student => !bookedStudents.some(booked => booked.id === student.id))
+                        .map((student) => (
+                          <button
+                            key={student.id}
+                            onClick={() => handleAddStudent(student.id)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-200 last:border-b-0 transition-colors"
+                          >
+                            {student.name}
+                          </button>
+                        ))}
+                    </div>
+                    {allStudents.filter(student => !bookedStudents.some(booked => booked.id === student.id)).length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">没有可添加的学生</p>
+                    )}
                   </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    预定状态
-                  </label>
-                  <select
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.booked}
-                    onChange={(e) => setFormData(prev => ({ ...prev, booked: parseInt(e.target.value) }))}
+                </div>
+
+                <div className="flex gap-3 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddStudentModal(false)}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                   >
-                    <option value={0}>可预定</option>
-                    <option value={1}>已预定</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    锁定状态
-                  </label>
-                  <select
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={formData.locked}
-                    onChange={(e) => setFormData(prev => ({ ...prev, locked: parseInt(e.target.value) }))}
-                  >
-                    <option value={0}>正常</option>
-                    <option value={1}>已锁定</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    开始时间
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={new Date(formData.start_time * 1000).toISOString().slice(0, 16)}
-                    onChange={(e) => setFormData(prev => ({ ...prev, start_time: Math.floor(new Date(e.target.value).getTime() / 1000) }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    结束时间
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    value={new Date(formData.end_time * 1000).toISOString().slice(0, 16)}
-                    onChange={(e) => setFormData(prev => ({ ...prev, end_time: Math.floor(new Date(e.target.value).getTime() / 1000) }))}
-                  />
+                    关闭
+                  </button>
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitEdit}
-                disabled={!formData.name.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                保存
-              </button>
+          </div>
+        </div>
+      )}
+
+      {/* 移动学生模态框 */}
+      {showMoveStudentModal && selectedStudent && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowMoveStudentModal(false)}></div>
+            <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-md">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  onClick={() => setShowMoveStudentModal(false)}
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <PencilIcon className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    移动学生: {selectedStudent.name}
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      选择目标宿舍
+                    </label>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          handleMoveStudent(selectedStudent.id, 0);
+                          setShowMoveStudentModal(false);
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-red-50 border border-red-200 rounded-md transition-colors text-red-700"
+                      >
+                        🚫 从宿舍移除（不分配新宿舍）
+                      </button>
+                      
+                                             {allDormitories
+                         .filter(dorm => dorm.id !== selectedService?.id)
+                         .map((dorm) => (
+                           <button
+                             key={dorm.id}
+                             onClick={() => {
+                               handleMoveStudent(selectedStudent.id, dorm.id);
+                               setShowMoveStudentModal(false);
+                             }}
+                             className="w-full text-left px-3 py-2 hover:bg-blue-50 border border-blue-200 rounded-md transition-colors text-blue-700"
+                           >
+                             🏠 {dorm.name}
+                           </button>
+                         ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowMoveStudentModal(false)}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
