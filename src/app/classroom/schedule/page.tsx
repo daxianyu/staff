@@ -11,7 +11,7 @@ import {
   getClassroomSchedule,
   type ClassroomLessonInfo,
 } from '@/services/auth';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { type ScheduleEvent } from './hooks/useScheduleData';
@@ -30,6 +30,7 @@ export default function SchedulePage() {
     return '';
   };
   const roomId = getCurrentRoomId();
+  const router = useRouter();
   
   const [view, setView] = useState<View>(Views.WEEK);
   const [date, setDate] = useState(new Date());
@@ -333,14 +334,13 @@ export default function SchedulePage() {
                       </label>
                       <div className="text-sm">
                         {hasPermission(PERMISSIONS.EDIT_CLASSES) && selectedEvent.class_id ? (
-                          <a
-                            href={`/class/edit?id=${selectedEvent.class_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                          <button
+                            type="button"
+                            className="text-blue-600 hover:text-blue-800 underline cursor-pointer bg-transparent border-0 p-0"
+                            onClick={() => router.push(`/class/edit?id=${selectedEvent.class_id}`)}
                           >
                             {(selectedEvent as any).class_name}
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-gray-900">
                             {(selectedEvent as any).class_name}

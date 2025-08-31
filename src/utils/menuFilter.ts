@@ -215,6 +215,21 @@ export const defaultMenuConfig: MenuItem[] = [
     ],
   },
   {
+    key: 'services',
+    label: 'Service Management',
+    icon: 'home',
+    requiredPermissions: ['view_dormitory'],
+    children: [
+      {
+        key: 'services-list',
+        label: 'Dormitory Services',
+        path: '/service',
+        icon: 'home',
+        requiredPermissions: ['view_dormitory'],
+      },
+    ],
+  },
+  {
     key: 'finance',
     label: 'Finance Management',
     icon: 'dollar-sign',

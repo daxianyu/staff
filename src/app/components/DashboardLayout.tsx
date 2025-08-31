@@ -25,6 +25,7 @@ import {
   PlusCircleIcon,
   CalculatorIcon,
   MapPinIcon,
+  HomeModernIcon,
 } from '@heroicons/react/24/outline';
 
 // 图标映射表
@@ -37,6 +38,7 @@ const iconMap: Record<string, React.ElementType> = {
   'book': BookOpenIcon,
   'building': BuildingOffice2Icon,
   'building-office': BuildingOffice2Icon,
+  'home': HomeModernIcon,
   'dollar-sign': CurrencyDollarIcon,
   'settings': Cog6ToothIcon,
   'table': TableCellsIcon,
