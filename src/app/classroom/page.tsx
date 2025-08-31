@@ -309,6 +309,17 @@ export default function ClassroomPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
+                          {/* 查看课表按钮 */}
+                          <button
+                            onClick={() => window.open(`/classroom/schedule?room_id=${classroom.id}`, '_blank')}
+                            className="flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-full transition-colors"
+                            title="查看课表"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                          
                           {canEdit && (
                             <button
                               onClick={() => handleEditClassroom(classroom)}
