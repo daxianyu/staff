@@ -208,16 +208,9 @@ export const defaultMenuConfig: MenuItem[] = [
       {
         key: 'classrooms-list',
         label: 'Classroom List',
-        path: '/classrooms',
+        path: '/classroom',
         icon: 'building-office',
         requiredPermissions: ['view_classrooms'],
-      },
-      {
-        key: 'classrooms-create',
-        label: 'Add Classroom',
-        path: '/classrooms/create',
-        icon: 'plus-circle',
-        requiredPermissions: ['edit_classrooms'],
       },
     ],
   },
