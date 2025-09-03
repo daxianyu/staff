@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import SearchableSelect from '@/components/SearchableSelect';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { 
-  PlusIcon, 
-  MagnifyingGlassIcon, 
-  PencilIcon, 
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
   TrashIcon,
   BuildingOfficeIcon,
   UserGroupIcon,
@@ -26,6 +27,7 @@ import {
   type ServiceItem,
   type AddServiceParams,
   type EditServiceParams,
+  BookedInfo,
 } from '@/services/auth';
 
 // 将大列表表格定义在组件外部，保证组件类型稳定，避免父组件重渲染时跟着重绘
@@ -76,11 +78,10 @@ const ServiceTable = memo(function ServiceTable({
                 </td>
                 <td className="px-2 py-4 whitespace-nowrap">
                   <span
-                    className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${
-                      service.gender === 0
+                    className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${service.gender === 0
                         ? 'bg-blue-50 text-blue-700 border border-blue-200'
                         : 'bg-pink-50 text-pink-700 border border-pink-200'
-                    }`}
+                      }`}
                   >
                     {service.gender === 0 ? 'Male' : 'Female'}
                   </span>
@@ -94,11 +95,10 @@ const ServiceTable = memo(function ServiceTable({
                 <td className="px-2 py-4 whitespace-nowrap">
                   <div className="flex flex-col space-y-1">
                     <span
-                      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${
-                        service.booked === 1
+                      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${service.booked === 1
                           ? 'bg-green-50 text-green-700 border border-green-200'
                           : 'bg-gray-50 text-gray-700 border border-gray-200'
-                      }`}
+                        }`}
                     >
                       {service.booked === 1 ? 'Booked' : 'Free'}
                     </span>
@@ -117,11 +117,10 @@ const ServiceTable = memo(function ServiceTable({
                 <td className="px-2 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     <span
-                      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${
-                        service.dormitory_type === 1
+                      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${service.dormitory_type === 1
                           ? 'bg-blue-50 text-blue-700 border border-blue-200'
                           : 'bg-green-50 text-green-700 border border-green-200'
-                      }`}
+                        }`}
                     >
                       {service.dormitory_type === 1 ? '宿舍' : '餐包'}
                     </span>
@@ -193,7 +192,7 @@ export default function ServicePage() {
   const [campusList, setCampusList] = useState<Array<{ id: number; name: string }>>([]);
   const [staffList, setStaffList] = useState<Array<{ id: number; name: string }>>([]);
   const [dormitoryStudents, setDormitoryStudents] = useState<Record<number, string[]>>({});
-  
+
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10); // 改为5，更容易触发分页
@@ -203,15 +202,15 @@ export default function ServicePage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
-  
+
   // 编辑相关状态
   const [editServiceInfo, setEditServiceInfo] = useState<any>(null);
-  const [bookedStudents, setBookedStudents] = useState<any[]>([]);
+  const [bookedStudents, setBookedStudents] = useState<BookedInfo[]>([]);
   const [allStudents, setAllStudents] = useState<Array<{ id: number; name: string }>>([]);
   const [allDormitories, setAllDormitories] = useState<Array<{ id: number; name: string }>>([]);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showMoveStudentModal, setShowMoveStudentModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<BookedInfo | null>(null);
   const [activeTab, setActiveTab] = useState<'edit' | 'students'>('edit');
 
   // 表单状态
@@ -249,7 +248,7 @@ export default function ServicePage() {
     try {
       setLoading(true);
       const response = await getServiceList();
-      
+
       if (response.code === 0) {
         setServices(response.data.all_list);
         setCampusList(response.data.campus_dict);
@@ -268,9 +267,9 @@ export default function ServicePage() {
   // 搜索过滤
   const filteredServicesList = useMemo(() => {
     if (!searchTerm.trim()) return services;
-    
+
     const term = searchTerm.toLowerCase();
-    return services.filter(service => 
+    return services.filter(service =>
       service.name.toLowerCase().includes(term) ||
       service.campus_name?.toLowerCase().includes(term) ||
       service.mentor_name?.toLowerCase().includes(term)
@@ -335,17 +334,17 @@ export default function ServicePage() {
     try {
       setSelectedService(service);
       setLoading(true);
-      
+
       // 获取编辑信息
       const response = await getServiceEditInfo(service.id.toString());
       if (response.code === 0) {
         const { service_info, booked_info, campus_list, staff_list, student_list, all_dormitory } = response.data;
-        
+
         setEditServiceInfo(service_info);
         setBookedStudents(booked_info || []);
         setAllStudents(student_list || []);
         setAllDormitories(all_dormitory || []);
-        
+
         setFormData({
           name: service_info.name,
           gender: service_info.gender,
@@ -361,7 +360,7 @@ export default function ServicePage() {
           locked: service_info.locked,
           graduate_year: service_info.graduate_year,
         });
-        
+
         setShowEditModal(true);
       } else {
         alert(`获取编辑信息失败: ${response.message}`);
@@ -396,7 +395,7 @@ export default function ServicePage() {
       };
 
       const response = await addService(params);
-      
+
       if (response.code === 0) {
         alert('添加成功');
         setShowAddModal(false);
@@ -426,13 +425,14 @@ export default function ServicePage() {
         end_time: formData.end_time,
         booked: formData.booked,
         campus: formData.campus,
-        mentor_id: formData.mentor_id === -1 ? undefined : formData.mentor_id,
+        // 始终传 mentor_id，未分配则为 -1
+        mentor_id: (formData.mentor_id ?? -1),
         locked: formData.locked,
         graduate_year: formData.graduate_year,
       };
 
       const response = await editService(params);
-      
+
       if (response.code === 0) {
         alert('编辑成功');
         setShowEditModal(false);
@@ -450,13 +450,13 @@ export default function ServicePage() {
   // 添加学生到服务
   const handleAddStudent = useCallback(async (studentId: number) => {
     if (!selectedService) return;
-    
+
     try {
       const response = await addStudentToService({
         student_id: studentId,
         record_id: selectedService.id
       });
-      
+
       if (response.code === 0) {
         alert('添加学生成功');
         // 重新获取编辑信息
@@ -478,14 +478,14 @@ export default function ServicePage() {
   // 移动学生到其他服务或移除学生
   const handleMoveStudent = useCallback(async (studentId: number, newDormitoryId: number) => {
     if (!selectedService) return;
-    
+
     try {
       const response = await moveStudentToService({
         student_id: studentId,
         dormitory_id: selectedService.id,
         new_dormitory: newDormitoryId
       });
-      
+
       if (response.code === 0) {
         if (newDormitoryId === 0) {
           alert('移除学生成功');
@@ -516,7 +516,7 @@ export default function ServicePage() {
 
     try {
       const response = await deleteService({ record_id: selectedService.id });
-      
+
       if (response.code === 0) {
         alert('删除成功');
         setShowDeleteModal(false);
@@ -696,11 +696,11 @@ export default function ServicePage() {
                   {/* 页码按钮 */}
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
                     // 显示当前页附近的页码和首尾页
-                    const shouldShow = 
-                      page === 1 || 
-                      page === totalPages || 
+                    const shouldShow =
+                      page === 1 ||
+                      page === totalPages ||
                       Math.abs(page - currentPage) <= 1;
-                    
+
                     if (!shouldShow) {
                       if (page === currentPage - 2 || page === currentPage + 2) {
                         return <span key={page} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>;
@@ -712,11 +712,10 @@ export default function ServicePage() {
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          page === currentPage
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
                             ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                             : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>
@@ -746,7 +745,7 @@ export default function ServicePage() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={() => setShowAddModal(false)}></div>
-            <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg">
+            <div className="relative bg-white rounded-xl p-8 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-xl">
               <div className="absolute top-0 right-0 pt-4 pr-4">
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -847,7 +846,7 @@ export default function ServicePage() {
                     </div>
                   </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Mentor
@@ -891,9 +890,9 @@ export default function ServicePage() {
                         type="date"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         value={new Date(formData.start_time * 1000).toISOString().split('T')[0]}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          start_time: Math.floor(new Date(e.target.value).getTime() / 1000) 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          start_time: Math.floor(new Date(e.target.value).getTime() / 1000)
                         }))}
                       />
                     </div>
@@ -906,9 +905,9 @@ export default function ServicePage() {
                         type="date"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         value={new Date(formData.end_time * 1000).toISOString().split('T')[0]}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          end_time: Math.floor(new Date(e.target.value).getTime() / 1000) 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          end_time: Math.floor(new Date(e.target.value).getTime() / 1000)
                         }))}
                       />
                     </div>
@@ -945,7 +944,7 @@ export default function ServicePage() {
               setShowEditModal(false);
               setActiveTab('edit'); // 重置到基本信息标签页
             }}></div>
-            <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-4xl">
+            <div className="relative bg-white rounded-xl p-10 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-4xl">
               <div className="absolute top-0 right-0 pt-4 pr-4">
                 <button
                   onClick={() => {
@@ -972,21 +971,19 @@ export default function ServicePage() {
                   <nav className="-mb-px flex space-x-8">
                     <button
                       onClick={() => setActiveTab('edit')}
-                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                        activeTab === 'edit'
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'edit'
                           ? 'border-blue-500 text-blue-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       基本信息
                     </button>
                     <button
                       onClick={() => setActiveTab('students')}
-                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                        activeTab === 'students'
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'students'
                           ? 'border-blue-500 text-blue-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       学生管理 ({bookedStudents.length}/{selectedService.size})
                     </button>
@@ -1133,6 +1130,7 @@ export default function ServicePage() {
                         </label>
                         <input
                           type="number"
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder={new Date().getFullYear().toString()}
                           value={formData.graduate_year}
@@ -1180,9 +1178,9 @@ export default function ServicePage() {
                           type="date"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           value={new Date(formData.start_time * 1000).toISOString().split('T')[0]}
-                          onChange={(e) => setFormData(prev => ({ 
-                            ...prev, 
-                            start_time: Math.floor(new Date(e.target.value).getTime() / 1000) 
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            start_time: Math.floor(new Date(e.target.value).getTime() / 1000)
                           }))}
                         />
                       </div>
@@ -1195,9 +1193,9 @@ export default function ServicePage() {
                           type="date"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           value={new Date(formData.end_time * 1000).toISOString().split('T')[0]}
-                          onChange={(e) => setFormData(prev => ({ 
-                            ...prev, 
-                            end_time: Math.floor(new Date(e.target.value).getTime() / 1000) 
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            end_time: Math.floor(new Date(e.target.value).getTime() / 1000)
                           }))}
                         />
                       </div>
@@ -1231,7 +1229,7 @@ export default function ServicePage() {
                     {/* 当前学生列表 */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-medium text-gray-900">当前学生 ({bookedStudents.length}/{selectedService.size})</h4>
+                        <h4 className="text-sm font-medium text-gray-900">当前学生: {bookedStudents.map(student => student.student_name).join(', ')} ({bookedStudents.length}/{selectedService.size})</h4>
                         {bookedStudents.length < selectedService.size && (
                           <button
                             onClick={() => setShowAddStudentModal(true)}
@@ -1242,7 +1240,7 @@ export default function ServicePage() {
                           </button>
                         )}
                       </div>
-                      
+
                       {bookedStudents.length === 0 ? (
                         <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                           <UserGroupIcon className="mx-auto h-8 w-8 text-gray-400" />
@@ -1252,8 +1250,8 @@ export default function ServicePage() {
                         <div className="bg-gray-50 rounded-lg p-3">
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                             {bookedStudents.map((student) => (
-                              <div key={student.id} className="flex items-center justify-between bg-white p-2 rounded border">
-                                <span className="text-sm text-gray-900">{student.name}</span>
+                              <div key={student.student_id} className="flex items-center justify-between bg-white p-2 rounded border">
+                                <span className="text-sm text-gray-900">{student.student_name}</span>
                                 <div className="flex items-center space-x-1">
                                   <button
                                     onClick={() => {
@@ -1266,7 +1264,11 @@ export default function ServicePage() {
                                     移动
                                   </button>
                                   <button
-                                    onClick={() => handleMoveStudent(student.id, 0)} // 0表示移除
+                                    onClick={() => {
+                                      if (confirm(`确认将 ${student.student_name} 从宿舍移除吗？`)) {
+                                        handleMoveStudent(student.student_id, -1); // -1表示移除
+                                      }
+                                    }}
                                     className="text-xs text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded transition-colors"
                                     title="移除学生"
                                   >
@@ -1292,7 +1294,7 @@ export default function ServicePage() {
                         </span>
                       </div>
                       <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
-                        <div 
+                        <div
                           className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${(bookedStudents.length / selectedService.size) * 100}%` }}
                         ></div>
@@ -1338,20 +1340,21 @@ export default function ServicePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       选择学生
                     </label>
-                    <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-md">
-                      {allStudents
-                        .filter(student => !bookedStudents.some(booked => booked.id === student.id))
-                        .map((student) => (
-                          <button
-                            key={student.id}
-                            onClick={() => handleAddStudent(student.id)}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-200 last:border-b-0 transition-colors"
-                          >
-                            {student.name}
-                          </button>
-                        ))}
-                    </div>
-                    {allStudents.filter(student => !bookedStudents.some(booked => booked.id === student.id)).length === 0 && (
+                    <SearchableSelect
+                      className='w-full'
+                      options={allStudents
+                        .filter(student => !bookedStudents.some(booked => booked.student_id === student.id))
+                        .map(s => ({ id: s.id, name: s.name }))}
+                      value={0}
+                      onValueChange={(val) => {
+                        if (typeof val === 'number' && val > 0) {
+                          handleAddStudent(val);
+                        }
+                      }}
+                      placeholder="搜索并选择学生..."
+                      searchPlaceholder="输入姓名进行搜索..."
+                    />
+                    {allStudents.filter(student => !bookedStudents.some(booked => booked.student_id === student.id)).length === 0 && (
                       <p className="text-sm text-gray-500 text-center py-4">没有可添加的学生</p>
                     )}
                   </div>
@@ -1392,7 +1395,7 @@ export default function ServicePage() {
                     <PencilIcon className="h-5 w-5 text-yellow-600" />
                   </div>
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    移动学生: {selectedStudent.name}
+                    移动学生: {selectedStudent.student_name}
                   </h3>
                 </div>
 
@@ -1401,31 +1404,36 @@ export default function ServicePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       选择目标宿舍
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <button
                         onClick={() => {
-                          handleMoveStudent(selectedStudent.id, 0);
-                          setShowMoveStudentModal(false);
+                          if (confirm(`确认将 ${selectedStudent.student_name} 从宿舍移除吗？`)) {
+                            handleMoveStudent(selectedStudent.student_id, -1);
+                            setShowMoveStudentModal(false);
+                          }
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-red-50 border border-red-200 rounded-md transition-colors text-red-700"
                       >
                         🚫 从宿舍移除（不分配新宿舍）
                       </button>
-                      
-                                             {allDormitories
-                         .filter(dorm => dorm.id !== selectedService?.id)
-                         .map((dorm) => (
-                           <button
-                             key={dorm.id}
-                             onClick={() => {
-                               handleMoveStudent(selectedStudent.id, dorm.id);
-                               setShowMoveStudentModal(false);
-                             }}
-                             className="w-full text-left px-3 py-2 hover:bg-blue-50 border border-blue-200 rounded-md transition-colors text-blue-700"
-                           >
-                             🏠 {dorm.name}
-                           </button>
-                         ))}
+                      <SearchableSelect
+                        className='w-full'
+                        options={allDormitories
+                          .filter(dorm => dorm.id !== selectedService?.id)
+                          .map(d => ({ id: d.id, name: d.name }))}
+                        value={0}
+                        onValueChange={(val) => {
+                          if (typeof val === 'number' && val > 0) {
+                            const targetName = allDormitories.find(d => d.id === val)?.name || '目标宿舍';
+                            if (confirm(`确认将 ${selectedStudent.student_name} 移动到 ${targetName} 吗？`)) {
+                              handleMoveStudent(selectedStudent.student_id, val);
+                              setShowMoveStudentModal(false);
+                            }
+                          }
+                        }}
+                        placeholder="搜索并选择目标宿舍..."
+                        searchPlaceholder="输入宿舍名称搜索..."
+                      />
                     </div>
                   </div>
                 </div>

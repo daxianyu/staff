@@ -3769,13 +3769,23 @@ export interface DeleteServiceParams {
   record_id: number;
 }
 
+export interface BookedInfo {
+  end_time: number;
+  first_name: string;
+  last_name: string;
+  paid: number;
+  start_time: number;
+  student_id: number;
+  student_name: string;
+}
+
 // Service 编辑信息响应接口
 export interface ServiceEditInfoResponse {
   code: number;
   message: string;
   data: {
     service_info: ServiceItem;
-    booked_info: any[];
+    booked_info: BookedInfo[];
     campus_list: Array<{ id: number; name: string }>;
     staff_list: Array<{ id: number; name: string }>;
     student_list: Array<{ id: number; name: string }>;
@@ -3998,6 +4008,264 @@ export const addStudentToService = async (params: AddStudentToServiceParams): Pr
       code: 500,
       message: error instanceof Error ? error.message : '添加学生到服务失败',
       data: null,
+    };
+  }
+};
+
+// ==================== Locker 管理相关接口 ====================
+
+// Locker 信息接口
+export interface Locker {
+  locker_id: number;
+  locker_name: string;
+  location: string;
+  campus_id: number;
+  campus_name: string;
+  student_id: number;
+  student_name: string;
+  status: number; // 0 未占用 1 已占用 2 申请中 3 已禁用
+  status_name: string;
+  update_time: string;
+  create_time: string;
+}
+
+// Locker 列表响应接口
+export interface LockerListResponse {
+  status: number;
+  message: string;
+  data: Locker[];
+}
+
+// 新增 Locker 参数接口
+export interface AddLockerParams {
+  locker_name: string;
+  location: string;
+  campus_id: number;
+}
+
+// 编辑 Locker 参数接口
+export interface UpdateLockerParams {
+  record_id: number;
+  locker_name: string;
+  location: string;
+  campus_id: number;
+  status: number;
+  student_id: number;
+}
+
+// 删除 Locker 参数接口
+export interface DeleteLockerParams {
+  record_id: number;
+}
+
+// 解绑 Locker 参数接口
+export interface UnbindLockerParams {
+  record_id: number;
+}
+
+// 获取 Locker 列表
+export const getLockerList = async (): Promise<LockerListResponse> => {
+  try {
+    console.log('获取Locker列表请求URL:', '/api/locker/all-locker');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/locker/all-locker', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取Locker列表响应状态:', response.status);
+    console.log('获取Locker列表响应结果:', data);
+    
+    return {
+      status: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data || { list: [] },
+    };
+  } catch (error) {
+    console.error('获取Locker列表失败:', error);
+    return {
+      status: 500,
+      message: error instanceof Error ? error.message : '获取Locker列表失败',
+      data: []
+    };
+  }
+};
+
+// 新增 Locker
+export const addLocker = async (params: AddLockerParams): Promise<ApiResponse> => {
+  try {
+    console.log('新增Locker请求参数:', params);
+    console.log('新增Locker请求URL:', '/api/locker/add_locker');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/locker/add_locker', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('新增Locker响应状态:', response.status);
+    console.log('新增Locker响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('新增Locker失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '新增Locker失败',
+    };
+  }
+};
+
+// 更新 Locker 信息
+export const updateLocker = async (params: UpdateLockerParams): Promise<ApiResponse> => {
+  try {
+    console.log('更新Locker请求参数:', params);
+    console.log('更新Locker请求URL:', '/api/locker/update_locker');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/locker/update_locker', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('更新Locker响应状态:', response.status);
+    console.log('更新Locker响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新Locker失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新Locker失败',
+    };
+  }
+};
+
+// 删除 Locker
+export const deleteLocker = async (params: DeleteLockerParams): Promise<ApiResponse> => {
+  try {
+    console.log('删除Locker请求参数:', params);
+    console.log('删除Locker请求URL:', '/api/locker/delete_locker');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/locker/delete_locker', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('删除Locker响应状态:', response.status);
+    console.log('删除Locker响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除Locker失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除Locker失败',
+    };
+  }
+};
+
+// 解绑 Locker
+export const unbindLocker = async (params: UnbindLockerParams): Promise<ApiResponse> => {
+  try {
+    console.log('解绑Locker请求参数:', params);
+    console.log('解绑Locker请求URL:', '/api/locker/unbind_locker');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/locker/unbind_locker', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    console.log('解绑Locker响应状态:', response.status);
+    console.log('解绑Locker响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('解绑Locker失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '解绑Locker失败',
+    };
+  }
+};
+
+// 获取 Locker 编辑信息
+export const getLockerEditInfo = async (lockerId: number): Promise<ApiResponse> => {
+  try {
+    console.log('获取Locker编辑信息请求URL:', `/api/locker/edit_locker_info/${lockerId}`);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch(`/api/locker/edit_locker_info/${lockerId}`, {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取Locker编辑信息响应状态:', response.status);
+    console.log('获取Locker编辑信息响应结果:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取Locker编辑信息失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取Locker编辑信息失败',
     };
   }
 };

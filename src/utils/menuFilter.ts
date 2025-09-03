@@ -227,6 +227,13 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'home',
         requiredPermissions: ['view_dormitory'],
       },
+      {
+        key: 'lockers',
+        label: 'Locker Management',
+        path: '/locker',
+        icon: 'building-office',
+        requiredPermissions: ['view_locker'],
+      },
     ],
   },
   {
