@@ -189,3 +189,6 @@ src/
 ### 生产环境
 - **源码映射**: 启用 `productionBrowserSourceMaps`
 - **错误处理**: 统一的错误边界和提示
+
+
+如果需要前端导出下载Excel，请使用/src/components/ExcelExporter组件

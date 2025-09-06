@@ -101,7 +101,9 @@ export const PERMISSIONS = {
   SMS: 'sms',
   VIEW_LOCKER: 'view_locker',
   EDIT_LOCKER: 'edit_locker',
-  
+  VIEW_RETURN_LOCKER: 'view_locker',
+  APPROVE_RETURN_LOCKER: 'edit_locker',
+
   // 承诺书管理
   VIEW_COMMITMENT: 'view_commitment',
   EDIT_COMMITMENT: 'edit_commitment',

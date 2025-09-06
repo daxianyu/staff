@@ -4270,6 +4270,100 @@ export const getLockerEditInfo = async (lockerId: number): Promise<ApiResponse> 
   }
 };
 
+// 退柜相关接口定义
+export interface ReturnLockerRecord {
+  id: number;
+  student_id: number;
+  student_name: string;
+  locker_id: number;
+  locker_name: string;
+  campus_id: number;
+  campus_name: string;
+  alipay_account: string;
+  alipay_name: string;
+  status: number;
+  status_name: string;
+  create_time: string;
+}
+
+export interface ReturnLockerListResponse {
+  list: ReturnLockerRecord[];
+  return_locker_status: Record<number, string>;
+}
+
+export interface UpdateReturnLockerStatusParams {
+  record_id: number;
+  status: number; // 1: 完成, 其他: 拒绝
+}
+
+// 获取退柜记录列表
+export const getReturnLockerList = async (): Promise<ApiResponse<ReturnLockerListResponse>> => {
+  try {
+    console.log('获取退柜记录列表请求URL:', '/api/locker/staff_return_lockers');
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/locker/staff_return_lockers', {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+    console.log('获取退柜记录列表响应状态:', response.status);
+    console.log('获取退柜记录列表响应结果:', data);
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取退柜记录列表失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取退柜记录列表失败',
+    };
+  }
+};
+
+// 更新退柜记录状态
+export const updateReturnLockerStatus = async (params: UpdateReturnLockerStatusParams): Promise<ApiResponse> => {
+  try {
+    console.log('更新退柜记录状态请求URL:', '/api/locker/update_return_locker_status');
+    console.log('更新退柜记录状态请求参数:', params);
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/locker/update_return_locker_status', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+
+    const data = await response.json();
+    console.log('更新退柜记录状态响应状态:', response.status);
+    console.log('更新退柜记录状态响应结果:', data);
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新退柜记录状态失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新退柜记录状态失败',
+    };
+  }
+};
+
 // 移动学生到其他服务
 export const moveStudentToService = async (params: MoveStudentToServiceParams): Promise<ApiResponse> => {
   try {
@@ -4454,6 +4548,270 @@ export const addCommitmentRecord = async (params: NewCommitmentParams): Promise<
     return {
       code: 500,
       message: error instanceof Error ? error.message : '新增承诺书记录失败',
+    };
+  }
+};
+
+// 教材管理相关接口定义
+export interface TextbookInventory {
+  campus_id: number;
+  campus_name: string;
+  inventory: number;
+}
+
+export interface Textbook {
+  textbook_id: number;
+  name: string;
+  type: string;
+  price: number;
+  paid_count: number;
+  inventory_info: TextbookInventory[];
+}
+
+export interface TextbookFormData {
+  name: string;
+  type: string;
+  price: number;
+  inventory_info: { [campusId: number]: number };
+}
+
+export interface TextbookEditInfo {
+  name: string;
+  type: string;
+  price: number;
+  inventory_info: { [campusId: string]: number };
+  campus_info: { [campusId: string]: string };
+}
+
+// 获取教师的教材列表
+export const getStaffTextbookList = async (): Promise<ApiResponse<Textbook[]>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/textbook/get_staff_list', {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取教材列表失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取教材列表失败',
+    };
+  }
+};
+
+// 新增教材
+export const addTextbook = async (params: TextbookFormData): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    // 转换库存信息为API期望的格式
+    const formData: any = {
+      name: params.name,
+      type: params.type,
+      price: params.price,
+    };
+
+    // 添加每个校区的库存信息
+    Object.entries(params.inventory_info).forEach(([campusId, inventory]) => {
+      formData[`inventory_${campusId}`] = inventory;
+    });
+
+    const response = await fetch('/api/textbook/add_textbook', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(formData),
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('新增教材失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '新增教材失败',
+    };
+  }
+};
+
+// 删除教材
+export const deleteTextbook = async (recordId: number): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/textbook/delete_textbook', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ record_id: recordId }),
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除教材失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除教材失败',
+    };
+  }
+};
+
+// 获取编辑教材信息
+export const getTextbookEditInfo = async (recordId: number): Promise<ApiResponse<TextbookEditInfo>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch(`/api/textbook/get_textbook_edit_info/${recordId}`, {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取教材编辑信息失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取教材编辑信息失败',
+    };
+  }
+};
+
+// 更新教材信息
+export const editTextbook = async (recordId: number, params: TextbookFormData): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    // 转换库存信息为API期望的格式
+    const formData: any = {
+      record_id: recordId,
+      name: params.name,
+      type: params.type,
+      price: params.price,
+    };
+
+    // 添加每个校区的库存信息
+    Object.entries(params.inventory_info).forEach(([campusId, inventory]) => {
+      formData[`inventory_${campusId}`] = inventory;
+    });
+
+    const response = await fetch('/api/textbook/edit_textbook', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(formData),
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新教材失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新教材失败',
+    };
+  }
+};
+
+// 获取教师购买教材列表
+export const getBuyTextbookList = async (): Promise<ApiResponse<Textbook[]>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/textbook/buy_textbook_list', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({}),
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取购买教材列表失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取购买教材列表失败',
+    };
+  }
+};
+
+// 教师预订教材
+export const bookTextbook = async (recordId: number): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/textbook/book_textbook', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ record_id: recordId }),
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('预订教材失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '预订教材失败',
     };
   }
 };
