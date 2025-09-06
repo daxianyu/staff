@@ -1,3 +1,4 @@
+import { PERMISSIONS } from '@/types/auth';
 import { MenuItem, UserInfo } from '@/types/permission';
 
 /**
@@ -84,7 +85,7 @@ export function createMenuFilter(user: UserInfo | null): MenuFilter {
   // 确保 rights 和 operation_right 是数组
   const rights = Array.isArray(user?.rights) ? user.rights : [];
   const operationRight = Array.isArray(user?.operation_right) ? user.operation_right : [];
-  const userRights = [...rights, ...operationRight];
+  const userRights = [...rights, ...operationRight, ...(user?.tool_user ? [PERMISSIONS.VIEW_COMMITMENT, PERMISSIONS.EDIT_COMMITMENT] : [])];
   return new MenuFilter(userRights);
 }
 
@@ -233,6 +234,13 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/locker',
         icon: 'building-office',
         requiredPermissions: ['view_locker'],
+      },
+      {
+        key: 'commitment-management',
+        label: 'Commitment Manage',
+        path: '/commitment',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_COMMITMENT],
       },
     ],
   },

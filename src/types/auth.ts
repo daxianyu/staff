@@ -101,6 +101,10 @@ export const PERMISSIONS = {
   SMS: 'sms',
   VIEW_LOCKER: 'view_locker',
   EDIT_LOCKER: 'edit_locker',
+  
+  // 承诺书管理
+  VIEW_COMMITMENT: 'view_commitment',
+  EDIT_COMMITMENT: 'edit_commitment',
 } as const;
 
 // 预定义角色常量（向后兼容）

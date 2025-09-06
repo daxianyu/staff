@@ -13,6 +13,7 @@ export interface UserInfo {
   campus_id: number;
   company_email: string;
   type: number;
+  tool_user: boolean;
   rights: string[];           // 核心权限数组
   operation_right: string[];  // 操作权限数组
   topics: Record<string, string>;

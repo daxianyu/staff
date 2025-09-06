@@ -4304,3 +4304,157 @@ export const moveStudentToService = async (params: MoveStudentToServiceParams): 
   }
 };
 
+// 承诺书管理相关接口
+export interface CommitmentStudent {
+  id: number;
+  name: string;
+  done: number;
+  student_id?: number;
+}
+
+export interface CommitmentFile {
+  id: number;
+  file_path: string;
+  file_type: number;
+  file_desc: string;
+}
+
+export interface CommitmentTypeDesc {
+  [key: string]: string;
+}
+
+export interface CommitmentListResponse {
+  list: CommitmentFile[];
+  type_desc: CommitmentTypeDesc;
+}
+
+export interface UploadFileResponse {
+  file_path: string;
+}
+
+export interface NewCommitmentParams {
+  file_path: string;
+  file_type: number;
+  file_desc?: string;
+}
+
+// 获取承诺书统计信息
+export const getCommitmentStudentCount = async (): Promise<ApiResponse<CommitmentStudent[]>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/commitment/student_count', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取承诺书统计信息失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取承诺书统计信息失败',
+    };
+  }
+};
+
+// 获取承诺书清单
+export const getCommitmentList = async (): Promise<ApiResponse<CommitmentListResponse>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/commitment/list_file', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取承诺书清单失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取承诺书清单失败',
+    };
+  }
+};
+
+// 上传承诺书文件
+export const uploadCommitmentFile = async (file: File): Promise<ApiResponse<UploadFileResponse>> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const headers: HeadersInit = {
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/commitment/upload_file', {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data || null,
+    };
+  } catch (error) {
+    console.error('上传承诺书文件失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '上传承诺书文件失败',
+    };
+  }
+};
+
+// 新增承诺书记录
+export const addCommitmentRecord = async (params: NewCommitmentParams): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/commitment/add_record', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('新增承诺书记录失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '新增承诺书记录失败',
+    };
+  }
+};
+

@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { UserInfo, AuthContextType } from '@/types/permission';
 import { authService } from '@/services/authService';
 import { handleUserRedirect } from '@/services/auth';
+import { PERMISSIONS } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -17,7 +18,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const baseRights = useMemo(() => {
     return user ? [
       ...(Array.isArray(user.rights) ? user.rights : []), 
-      ...(Array.isArray(user.operation_right) ? user.operation_right : [])
+      ...(Array.isArray(user.operation_right) ? user.operation_right : []),
+      ...(user.tool_user ? [PERMISSIONS.VIEW_COMMITMENT, PERMISSIONS.EDIT_COMMITMENT] : [])
     ] : [];
   }, [user]);
   

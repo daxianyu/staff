@@ -1,45 +1,191 @@
 ---
-description: 
+description: 项目基础架构和开发规范
 globs: 
 alwaysApply: true
 ---
-页面中使用原生HTML和Tailwind CSS + 自定义CSS
 
-新写代码时，如果有模态框，后面遮罩层的背景用： bg-black/50
+# 项目基础架构
 
-API具体请求都放在services/auth.ts 文件中，用统一的验证逻辑。不要写在每个分页逻辑中
+## 技术栈
 
-每个页面的样式和功能需要兼容手机端
+### 核心框架
+- **Next.js 15.2.4** - React 全栈框架
+- **React 19.0.0** - 前端UI库
+- **TypeScript 5** - 类型安全
+- **Tailwind CSS 4.0.17** - 样式框架
 
-## 权限与菜单规范（简化版）
+### 主要依赖
+- **@heroicons/react** - 图标库
+- **@radix-ui/react-*** - 无障碍UI组件
+- **react-hook-form** - 表单处理
+- **react-big-calendar** - 日历组件
+- **date-fns** - 日期处理
+- **moment** - 日期时间库
+- **xlsx** - Excel文件处理
 
-- 当前项目专注于课程安排核心功能，采用简化的权限体系
-- 页面中使用原生HTML和Tailwind CSS，避免使用重型UI库
-- 新增页面必须先在`types/auth.ts`中定义权限常量
-- 菜单采用扁平化结构，配置在`DashboardLayout.tsx`中
-- 权限检查统一使用`useAuth()`钩子的`hasPermission`方法
-- 用户登录状态检查统一在AuthContext中处理
+## 样式系统
 
-## 当前功能状态
+### 全局样式
+- **文件位置**: `src/app/globals.css`
+- **CSS变量**: 定义主题色彩
+  ```css
+  :root {
+    --header-bg: #3b7bc0;
+    --header-text: #fff;
+    --sidebar-bg: linear-gradient(180deg, #4a90e2, #357abd);
+    --sidebar-text: #fff;
+  }
+  ```
 
-### 已实现页面
-- `/schedule` - 课程安排（主要功能）
-- `/login` - 登录页面  
-- `/403` - 无权限访问页面
+### 样式规范
+- **主要样式**: 原生HTML + Tailwind CSS
+- **避免使用**: 重型UI库（如Ant Design）
+- **模态框遮罩**: `bg-black/50`
+- **响应式**: 所有页面必须兼容手机端
 
-### 预留功能页面
-- `/my-profile` - 个人资料
-- `/notifications` - 通知
+### Tailwind配置
+- **文件**: `tailwind.config.js`
+- **模式**: AOT模式
+- **插件**: tailwind-scrollbar
+- **目标浏览器**: iOS >= 16, Android >= 7
 
-## 新建页面检查清单
-- [ ] 在 `types/auth.ts` 中定义权限常量
-- [ ] 在 `contexts/AuthContext.tsx` 中为相应角色添加权限
-- [ ] 在 `DashboardLayout.tsx` 中添加菜单项（如需要）
-- [ ] 创建页面文件 `app/页面名/page.tsx`
-- [ ] 在页面中添加权限检查（推荐）
-- [ ] 添加相关API服务（如需要）
-- [ ] 测试权限过滤和页面访问
+## API接口系统
 
+### 接口文件结构
+- **主文件**: `src/services/auth.ts` (4300+ 行)
+- **服务文件**: `src/services/authService.ts`
+- **环境配置**: `src/config/env.ts`
 
+### 新增API接口规范
 
-详细文档请参考：`/docs/permission-system.md` 和 `/docs/new-page-guide.md`
+#### 1. 接口定义
+```typescript
+// 在 auth.ts 文件顶部定义接口类型
+export interface NewApiParams {
+  param1: string;
+  param2: number;
+}
+
+export interface NewApiResponse {
+  code: number;
+  message: string;
+  data?: any;
+}
+```
+
+#### 2. 接口实现
+```typescript
+// 在 auth.ts 文件末尾添加接口函数
+export const newApiFunction = async (params: NewApiParams): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/new-endpoint', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('新功能API调用失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '新功能API调用失败',
+    };
+  }
+};
+```
+
+#### 3. 接口使用
+```typescript
+// 在组件中使用
+import { newApiFunction } from '@/services/auth';
+
+const handleApiCall = async () => {
+  const result = await newApiFunction({ param1: 'value', param2: 123 });
+  if (result.code === 200) {
+    // 处理成功响应
+  }
+};
+```
+
+### API统一规范
+- **认证**: 自动添加Bearer token
+- **错误处理**: 统一的try-catch结构
+- **响应格式**: 统一的ApiResponse接口
+- **日志**: 开发环境自动打印请求/响应
+
+## 项目结构
+
+### 目录组织
+```
+src/
+├── app/                    # Next.js App Router页面
+├── components/             # 可复用组件
+├── contexts/              # React Context
+├── services/              # API接口服务
+├── types/                 # TypeScript类型定义
+├── utils/                 # 工具函数
+└── config/                # 配置文件
+```
+
+### 路由系统
+- **框架**: Next.js App Router
+- **页面文件**: `app/页面名/page.tsx`
+- **布局文件**: `app/layout.tsx`
+- **API代理**: 开发环境代理到 `https://www.huayaopudong.com/api/`
+
+## 开发规范
+
+### 页面开发
+1. **权限检查**: 使用 `useAuth().hasPermission()`
+2. **样式**: 优先使用Tailwind CSS类
+3. **响应式**: 使用 `md:` 等断点前缀
+4. **类型安全**: 所有组件使用TypeScript
+
+### 组件开发
+- **位置**: `src/components/` 或页面内 `components/` 文件夹
+- **命名**: PascalCase
+- **导出**: 默认导出或命名导出
+- **Props**: 使用TypeScript接口定义
+
+### 状态管理
+- **全局状态**: React Context (AuthContext)
+- **本地状态**: useState, useReducer
+- **表单状态**: react-hook-form
+- **权限状态**: AuthContext统一管理
+
+## 构建配置
+
+### Next.js配置
+- **开发模式**: 使用Turbopack (`--turbopack`)
+- **生产模式**: 静态导出 (`output: 'export'`)
+- **基础路径**: `/staff`
+- **API重写**: 开发环境代理到远程API
+
+### 浏览器支持
+- **目标**: iOS >= 16, Android >= 7
+- **覆盖率**: > 0.2%, not dead
+- **现代浏览器**: 支持ES2017+
+
+## 调试工具
+
+### 开发环境
+- **API调试器**: `ApiDebugger` 组件
+- **权限调试器**: `PermissionDebugger` 组件  
+- **菜单调试器**: `MenuDebugger` 组件
+- **控制台日志**: 自动打印API请求/响应
+
+### 生产环境
+- **源码映射**: 启用 `productionBrowserSourceMaps`
+- **错误处理**: 统一的错误边界和提示

@@ -1,5 +1,54 @@
 ---
-description: 
+description: 新增菜单项时必须遵循的规范
 globs: 
 alwaysApply: true
 ---
+
+# 新增菜单项规范
+
+## 必须完成的步骤
+
+### 1. 在 `src/utils/menuFilter.ts` 中添加菜单配置
+```typescript
+{
+  key: 'unique-key',           // 唯一标识，英文
+  label: '菜单名称',            // 显示名称，中文
+  path: '/page-path',          // 页面路径
+  icon: 'icon-name',           // 图标名称（见下方图标列表）
+  requiredPermissions: ['permission_code'], // 权限要求
+  children?: [...]             // 子菜单（可选）
+}
+```
+
+### 2. 在 `src/types/auth.ts` 中定义权限常量
+```typescript
+export const PERMISSIONS = {
+  // 添加新权限
+  VIEW_NEW_FEATURE: 'view_new_feature',
+  // ...
+}
+```
+
+### 3. 创建对应的页面文件
+- 路径：`src/app/页面名/page.tsx`
+- 使用原生HTML + Tailwind CSS
+- 添加权限检查：`useAuth().hasPermission(PERMISSIONS.VIEW_NEW_FEATURE)`
+
+## 可用图标列表
+```typescript
+'dashboard', 'calendar', 'users', 'user-group', 'graduation-cap', 
+'book', 'building', 'building-office', 'home', 'dollar-sign', 
+'settings', 'table', 'user', 'chart', 'clipboard-document-list', 
+'plus-circle', 'calculator', 'map-pin'
+```
+
+## 权限检查规则
+- `requiredPermissions`: 用户需要其中任一权限
+- `requiredAllPermissions`: 用户需要所有权限
+- 无权限要求：所有用户可访问
+
+## 重要提醒
+- 菜单配置在 `src/utils/menuFilter.ts` 的 `defaultMenuConfig` 数组中
+- 权限常量在 `src/types/auth.ts` 的 `PERMISSIONS` 对象中
+- 页面必须兼容手机端
+- 模态框遮罩层背景使用 `bg-black/50`
