@@ -35,6 +35,7 @@ export default function CommitmentPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
   
   // 承诺书文件相关状态
   const [commitmentFiles, setCommitmentFiles] = useState<CommitmentFile[]>([]);
@@ -84,18 +85,41 @@ export default function CommitmentPage() {
     }
   };
 
+  // 搜索和过滤学生
+  const filterStudents = (statusFilterValue?: 'all' | 'completed' | 'incomplete', searchValue?: string) => {
+    const currentStatusFilter = statusFilterValue !== undefined ? statusFilterValue : statusFilter;
+    const currentSearchTerm = searchValue !== undefined ? searchValue : searchTerm;
+
+    let filtered = students;
+
+    // 按完成状态过滤
+    if (currentStatusFilter === 'completed') {
+      filtered = filtered.filter(student => student.done === 1);
+    } else if (currentStatusFilter === 'incomplete') {
+      filtered = filtered.filter(student => student.done === 0);
+    }
+
+    // 按搜索词过滤
+    if (currentSearchTerm.trim()) {
+      filtered = filtered.filter(student =>
+        student.name.toLowerCase().includes(currentSearchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredStudents(filtered);
+    setCurrentPage(1); // 重置到第一页
+  };
+
   // 搜索学生
   const handleSearchStudents = (term: string) => {
     setSearchTerm(term);
-    setCurrentPage(1); // 重置到第一页
-    if (!term.trim()) {
-      setFilteredStudents(students);
-    } else {
-      const filtered = students.filter(student => 
-        student.name.toLowerCase().includes(term.toLowerCase())
-      );
-      setFilteredStudents(filtered);
-    }
+    filterStudents(undefined, term);
+  };
+
+  // 状态过滤处理
+  const handleStatusFilter = (status: 'all' | 'completed' | 'incomplete') => {
+    setStatusFilter(status);
+    filterStudents(status);
   };
 
   // 分页处理
@@ -193,6 +217,13 @@ export default function CommitmentPage() {
     }
   }, [canView, activeTab]);
 
+  // 当学生数据变化时重新过滤
+  useEffect(() => {
+    if (students.length > 0) {
+      filterStudents();
+    }
+  }, [students]);
+
   // 更新总页数
   useEffect(() => {
     setTotalPages(calculateTotalPages());
@@ -251,36 +282,100 @@ export default function CommitmentPage() {
         {/* 学生列表标签页 */}
         {activeTab === 'students' && (
           <div className="bg-white rounded-lg shadow">
-            {/* 搜索栏 */}
+            {/* 搜索和过滤栏 */}
             <div className="p-6 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="relative flex-1 max-w-md">
-                  <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="搜索学生姓名..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearchStudents(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+              <div className="flex flex-col gap-4">
+                {/* 第一行：搜索框和统计信息 */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                  <div className="relative flex-1 max-w-md">
+                    <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="搜索学生姓名..."
+                      value={searchTerm}
+                      onChange={(e) => handleSearchStudents(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-600">
+                      共 {filteredStudents.length} 名学生
+                      {statusFilter !== 'all' && (
+                        <span className="ml-2 text-xs text-gray-500">
+                          (全部 {students.length} 名)
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">每页显示:</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                        className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-sm text-gray-600">
-                    共 {filteredStudents.length} 名学生
+
+                {/* 第二行：状态过滤 */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-gray-700">完成状态:</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleStatusFilter('all')}
+                        className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                          statusFilter === 'all'
+                            ? 'bg-blue-100 text-blue-700 border-blue-300'
+                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        全部
+                      </button>
+                      <button
+                        onClick={() => handleStatusFilter('completed')}
+                        className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                          statusFilter === 'completed'
+                            ? 'bg-green-100 text-green-700 border-green-300'
+                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <CheckCircleIcon className="h-4 w-4 inline mr-1" />
+                        已完成
+                      </button>
+                      <button
+                        onClick={() => handleStatusFilter('incomplete')}
+                        className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                          statusFilter === 'incomplete'
+                            ? 'bg-red-100 text-red-700 border-red-300'
+                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <XCircleIcon className="h-4 w-4 inline mr-1" />
+                        未完成
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">每页显示:</span>
-                    <select
-                      value={pageSize}
-                      onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
-                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+
+                  {/* 清除过滤条件 */}
+                  {(statusFilter !== 'all' || searchTerm.trim()) && (
+                    <button
+                      onClick={() => {
+                        setStatusFilter('all');
+                        setSearchTerm('');
+                        filterStudents('all', '');
+                      }}
+                      className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
                     >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
-                  </div>
+                      <XMarkIcon className="h-4 w-4" />
+                      清除过滤
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -290,6 +385,29 @@ export default function CommitmentPage() {
               {loading ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : filteredStudents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                  <DocumentIcon className="h-12 w-12 mb-4 text-gray-300" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">没有找到学生</h3>
+                  <p className="text-sm text-gray-500">
+                    {statusFilter !== 'all' || searchTerm.trim()
+                      ? '请尝试调整搜索条件或过滤条件'
+                      : '暂无学生数据'
+                    }
+                  </p>
+                  {(statusFilter !== 'all' || searchTerm.trim()) && (
+                    <button
+                      onClick={() => {
+                        setStatusFilter('all');
+                        setSearchTerm('');
+                        filterStudents('all', '');
+                      }}
+                      className="mt-4 text-sm text-blue-600 hover:text-blue-700"
+                    >
+                      清除所有过滤条件
+                    </button>
+                  )}
                 </div>
               ) : (
                 <table className="min-w-full divide-y divide-gray-200">
