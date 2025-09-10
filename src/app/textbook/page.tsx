@@ -9,8 +9,7 @@ import {
   deleteTextbook,
   getTextbookEditInfo,
   editTextbook,
-  bookTextbook,
-  getCampusList,
+  getAllCampus,
   Textbook,
   TextbookFormData,
   TextbookEditInfo,
@@ -70,7 +69,7 @@ export default function TextbookPage() {
   // 加载校区信息
   const loadCampusInfo = async () => {
     try {
-      const result = await getCampusList();
+      const result = await getAllCampus();
       if (result.status === 200 && result.data) {
         setCampusList(result.data);
         // 转换为对象格式用于编辑时显示
@@ -241,18 +240,6 @@ export default function TextbookPage() {
     }
   };
 
-  // 处理购买教材
-  const handleBuyTextbook = async (textbook: Textbook) => {
-    try {
-      const result = await bookTextbook(textbook.textbook_id);
-      if (result.code === 200) {
-        await loadTextbooks(); // 重新加载数据以更新库存
-      }
-    } catch (error) {
-      console.error('购买教材失败:', error);
-    }
-  };
-
   // 初始化加载数据
   useEffect(() => {
     if (canView) {
@@ -392,13 +379,6 @@ export default function TextbookPage() {
                               <TrashIcon className="h-4 w-4" />
                             </button>
                           )}
-                          <button
-                            onClick={() => handleBuyTextbook(textbook)}
-                            className="w-8 h-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center"
-                            title="Purchase"
-                          >
-                            <ShoppingCartIcon className="h-4 w-4" />
-                          </button>
                         </div>
                       </td>
                     </tr>

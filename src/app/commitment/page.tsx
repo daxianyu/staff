@@ -145,26 +145,28 @@ export default function CommitmentPage() {
   };
 
   // 文件上传处理
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      // 选择文件后直接上传
+      await handleUploadFile(file);
     }
   };
 
   // 上传承诺书文件
-  const handleUploadFile = async () => {
-    if (!selectedFile) return;
+  const handleUploadFile = async (file?: File) => {
+    const fileToUpload = file || selectedFile;
+    if (!fileToUpload) return;
     
     setUploading(true);
     try {
-      const result = await uploadCommitmentFile(selectedFile);
+      const result = await uploadCommitmentFile(fileToUpload);
       if (result.code === 200 && result.data) {
         // 确保获取到正确的文件路径
         const filePath = result.data.file_path;
         console.log('文件上传成功，路径:', filePath);
         setFormData(prev => ({ ...prev, file_path: filePath }));
-        alert('文件上传成功！');
       } else {
         console.error('上传失败:', result);
         alert(`上传失败: ${result.message}`);
@@ -681,8 +683,14 @@ export default function CommitmentPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {file.file_desc}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {file.file_path}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => window.open("/" + file.file_path, '_blank')}
+                            className="text-blue-600 hover:text-blue-700 transition-colors"
+                            title="点击查看文件"
+                          >
+                            <DocumentIcon className="h-6 w-6" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -723,22 +731,22 @@ export default function CommitmentPage() {
                     <div className="mt-2 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">{selectedFile.name}</span>
-                        <button
-                          onClick={handleUploadFile}
-                          disabled={uploading}
-                          className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          {uploading ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                          ) : (
-                            <CloudArrowUpIcon className="h-4 w-4 mr-1" />
-                          )}
-                          {uploading ? '上传中...' : '上传'}
-                        </button>
+                        {uploading && (
+                          <div className="inline-flex items-center px-3 py-1 text-blue-600 text-sm">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-1"></div>
+                            上传中...
+                          </div>
+                        )}
                       </div>
                       {formData.file_path && (
-                        <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
-                          ✓ 文件已上传: {formData.file_path}
+                        <div className="flex items-center justify-center">
+                          <button
+                            onClick={() => window.open(formData.file_path, '_blank')}
+                            className="text-green-600 hover:text-green-700 transition-colors"
+                            title="点击查看文件"
+                          >
+                            <DocumentIcon className="h-8 w-8" />
+                          </button>
                         </div>
                       )}
                     </div>

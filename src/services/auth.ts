@@ -98,6 +98,38 @@ export interface TeacherSchedule {
   schedule_data: any[];
 }
 
+// 财务学生数据接口
+export interface FinanceStudentsParams {
+  start_day?: string;
+  end_day?: string;
+  campus?: number;
+}
+
+export interface FinanceStudentData {
+  student_id: number;
+  student_name: string;
+  enrolment_date: string;
+  graduation_date: string;
+  campus_name: string;
+  total_hours: number;
+  class_hours: number;
+  attendance_hours: number;
+  year_fee: number;
+  stop_reason: string;
+}
+
+// 禁用学生数据接口
+export interface DisabledStudentData {
+  student_name: string;
+  active: string;
+  inactive_since: string;
+  enrolment_date: string;
+  graduation_date: string;
+  campus_id: number;
+  campus_name: string;
+  stop_reason: string;
+}
+
 // 获取存储的token
 export const getAuthHeader = (): HeadersInit => {
   if (typeof window !== 'undefined') {
@@ -4782,6 +4814,77 @@ export const getBuyTextbookList = async (): Promise<ApiResponse<Textbook[]>> => 
     return {
       code: 500,
       message: error instanceof Error ? error.message : '获取购买教材列表失败',
+    };
+  }
+};
+
+// 获取财务学生数据
+export const getFinanceStudents = async (params: FinanceStudentsParams = {}): Promise<ApiResponse> => {
+  try {
+    console.log('获取财务学生数据请求参数:', params);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const queryParams = new URLSearchParams();
+    if (params.start_day) queryParams.append('start_day', params.start_day);
+    if (params.end_day) queryParams.append('end_day', params.end_day);
+    if (params.campus !== undefined) queryParams.append('campus', params.campus.toString());
+
+    const url = `/api/accounting/get_finance_students${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取财务学生数据响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取财务学生数据失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取财务学生数据失败',
+    };
+  }
+};
+
+// 获取禁用学生数据
+export const getDisabledStudents = async (): Promise<ApiResponse> => {
+  try {
+    console.log('获取禁用学生数据请求');
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/accounting/get_disable_students', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取禁用学生数据响应:', data);
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取禁用学生数据失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取禁用学生数据失败',
     };
   }
 };
