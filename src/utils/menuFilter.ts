@@ -1,4 +1,4 @@
-import { PERMISSIONS } from '@/types/auth';
+import { PERMISSIONS, OPERATION_RIGHTS } from '@/types/auth';
 import { MenuItem, UserInfo } from '@/types/permission';
 
 /**
@@ -6,9 +6,11 @@ import { MenuItem, UserInfo } from '@/types/permission';
  */
 export class MenuFilter {
   private userRights: string[];
+  private user: UserInfo | null;
   
-  constructor(userRights: string[]) {
+  constructor(userRights: string[], user: UserInfo | null) {
     this.userRights = userRights;
+    this.user = user;
   }
   
   /**
@@ -27,7 +29,7 @@ export class MenuFilter {
     // 检查 requiredPermissions (任意一个满足)
     if (requiredPermissions && requiredPermissions.length > 0) {
       const hasAnyPermission = requiredPermissions.some(permission => 
-        this.userRights.includes(permission)
+        this.checkPermission(permission)
       );
       if (!hasAnyPermission) {
         return false;
@@ -37,7 +39,7 @@ export class MenuFilter {
     // 检查 requiredAllPermissions (全部满足)
     if (requiredAllPermissions && requiredAllPermissions.length > 0) {
       const hasAllPermissions = requiredAllPermissions.every(permission => 
-        this.userRights.includes(permission)
+        this.checkPermission(permission)
       );
       if (!hasAllPermissions) {
         return false;
@@ -45,6 +47,69 @@ export class MenuFilter {
     }
     
     return true;
+  }
+  
+  /**
+   * 检查单个权限（使用新的权限逻辑）
+   * @param permission 权限字符串
+   * @returns 是否有权限
+   */
+  private checkPermission(permission: string): boolean {
+    if (!this.user) return false;
+    
+    // 根据权限文档检查特殊权限
+    const isCoreUser = this.user.core_user === 1;
+    const operationRights = Array.isArray(this.user.operation_right) ? this.user.operation_right : [];
+    
+    // 核心用户拥有所有权限
+    if (isCoreUser) return true;
+    
+    // 检查基础权限（字符串权限）
+    if (this.userRights.includes(permission)) return true;
+    
+    // 需要 operation_right为11 或 core_user=1 的权限
+    const withdrawalPermissions = [
+      PERMISSIONS.VIEW_WITHDRAWAL_OVERVIEW,
+      PERMISSIONS.EDIT_WITHDRAWAL_OVERVIEW,
+      PERMISSIONS.VIEW_LATE_CASHIN_OVERVIEW,
+      PERMISSIONS.EDIT_LATE_CASHIN_OVERVIEW,
+      PERMISSIONS.VIEW_REMARK_OVERVIEW,
+      PERMISSIONS.EDIT_REMARK_OVERVIEW,
+    ];
+    if (withdrawalPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WITHDRAWAL_MANAGEMENT);
+    }
+    
+    // 需要 operation_right为13 或 core_user=1 的权限
+    const polishPermissions = [
+      PERMISSIONS.VIEW_PS_POLISH,
+      PERMISSIONS.EDIT_PS_POLISH,
+    ];
+    if (polishPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.PS_POLISH);
+    }
+    
+    // 基础权限 - 所有staff用户都可以访问
+    const basicPermissions = [
+      PERMISSIONS.VIEW_SUBJECT_EVALUATE,
+      PERMISSIONS.EDIT_SUBJECT_EVALUATE,
+      PERMISSIONS.VIEW_EXIT_PERMIT,
+      PERMISSIONS.EDIT_EXIT_PERMIT,
+      PERMISSIONS.VIEW_GRADUATION_WISHES,
+      PERMISSIONS.EDIT_GRADUATION_WISHES,
+      PERMISSIONS.VIEW_TRANSCRIPT_APPLY,
+      PERMISSIONS.EDIT_TRANSCRIPT_APPLY,
+      PERMISSIONS.VIEW_MY_CARD,
+      PERMISSIONS.EDIT_MY_CARD,
+      PERMISSIONS.VIEW_MY_SUBJECTS,
+      PERMISSIONS.EDIT_MY_SUBJECTS,
+      PERMISSIONS.EDIT_PROFILE,
+    ];
+    if (basicPermissions.includes(permission as any)) {
+      return true; // 所有staff用户都可以访问
+    }
+    
+    return false;
   }
   
   /**
@@ -84,9 +149,9 @@ export class MenuFilter {
 export function createMenuFilter(user: UserInfo | null): MenuFilter {
   // 确保 rights 和 operation_right 是数组
   const rights = Array.isArray(user?.rights) ? user.rights : [];
-  const operationRight = Array.isArray(user?.operation_right) ? user.operation_right : [];
+  const operationRight = Array.isArray(user?.operation_right) ? user.operation_right.map(String) : [];
   const userRights = [...rights, ...operationRight, ...(user?.tool_user ? [PERMISSIONS.VIEW_COMMITMENT, PERMISSIONS.EDIT_COMMITMENT] : [])];
-  return new MenuFilter(userRights);
+  return new MenuFilter(userRights, user);
 }
 
 /**
@@ -277,6 +342,111 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/accounting/disabled-students',
         icon: 'user-group',
         requiredPermissions: ['finance', 'sales_person'],
+      },
+    ],
+  },
+  {
+    key: 'users',
+    label: 'Users',
+    icon: 'user',
+    children: [
+      {
+        key: 'subject-evaluate',
+        label: 'My Subject Evaluate',
+        path: '/users/subject-evaluate',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_SUBJECT_EVALUATE],
+      },
+      {
+        key: 'exit-permit',
+        label: 'Exit Permit',
+        path: '/users/exit-permit',
+        icon: 'map-pin',
+        requiredPermissions: [PERMISSIONS.VIEW_EXIT_PERMIT],
+      },
+      {
+        key: 'ps-polish',
+        label: 'PS Polish',
+        path: '/users/ps-polish',
+        icon: 'book',
+        requiredPermissions: [PERMISSIONS.VIEW_PS_POLISH],
+      },
+      {
+        key: 'withdrawal-overview',
+        label: 'Withdrawal Overview',
+        path: '/users/withdrawal-overview',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_WITHDRAWAL_OVERVIEW],
+      },
+      {
+        key: 'remark-overview',
+        label: 'Remark Overview',
+        path: '/users/remark-overview',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_REMARK_OVERVIEW],
+      },
+      {
+        key: 'late-cashin-overview',
+        label: 'Late Cashin Overview',
+        path: '/users/late-cashin-overview',
+        icon: 'calculator',
+        requiredPermissions: [PERMISSIONS.VIEW_LATE_CASHIN_OVERVIEW],
+      },
+      {
+        key: 'graduation-wishes',
+        label: 'My Graduation Wishes',
+        path: '/users/graduation-wishes',
+        icon: 'graduation-cap',
+        requiredPermissions: [PERMISSIONS.VIEW_GRADUATION_WISHES],
+      },
+      {
+        key: 'transcript-apply',
+        label: 'Transcript Apply',
+        path: '/users/transcript-apply',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_TRANSCRIPT_APPLY],
+      },
+      {
+        key: 'promote-comment',
+        label: 'Promote Comment',
+        path: '/users/promote-comment',
+        icon: 'user-group',
+        requiredPermissions: [PERMISSIONS.VIEW_PROMOTE_COMMENT],
+      },
+      {
+        key: 'my-card',
+        label: 'My Card',
+        path: '/users/my-card',
+        icon: 'dollar-sign',
+        requiredPermissions: [PERMISSIONS.VIEW_MY_CARD],
+      },
+      {
+        key: 'my-subjects',
+        label: 'My Subjects',
+        path: '/users/my-subjects',
+        icon: 'book',
+        requiredPermissions: [PERMISSIONS.VIEW_MY_SUBJECTS],
+      },
+      {
+        key: 'schedule',
+        label: 'Schedule',
+        path: '/schedule',
+        icon: 'calendar',
+        requiredPermissions: [PERMISSIONS.VIEW_SCHEDULE],
+      },
+      {
+        key: 'edit-profile',
+        label: 'Edit Profile',
+        path: '/users/edit-profile',
+        icon: 'user',
+        requiredPermissions: [PERMISSIONS.VIEW_STAFF],
+      },
+      {
+        key: 'permission-test',
+        label: 'Permission Test',
+        path: '/users/permission-test',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_STAFF],
       },
     ],
   },

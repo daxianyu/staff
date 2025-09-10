@@ -10,12 +10,14 @@ export interface UserInfo {
   name: string;
   gender: number;
   mentor_leader_id: number;
+  mentor_leader: number;
   campus_id: number;
   company_email: string;
   type: number;
   tool_user: boolean;
+  core_user: number;          // 核心用户标识
   rights: string[];           // 核心权限数组
-  operation_right: string[];  // 操作权限数组
+  operation_right: number[];  // 操作权限数组（数字类型）
   topics: Record<string, string>;
   exp: number;
 }

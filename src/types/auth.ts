@@ -107,6 +107,50 @@ export const PERMISSIONS = {
   // 承诺书管理
   VIEW_COMMITMENT: 'view_commitment',
   EDIT_COMMITMENT: 'edit_commitment',
+
+  // Users 相关权限 - 基于 operation_right 数字权限
+  // 基础权限 - 所有staff用户都可以访问（不需要特定数字权限）
+  VIEW_SUBJECT_EVALUATE: 'view_subject_evaluate',
+  EDIT_SUBJECT_EVALUATE: 'edit_subject_evaluate',
+  VIEW_EXIT_PERMIT: 'view_exit_permit',
+  EDIT_EXIT_PERMIT: 'edit_exit_permit',
+  VIEW_GRADUATION_WISHES: 'view_graduation_wishes',
+  EDIT_GRADUATION_WISHES: 'edit_graduation_wishes',
+  VIEW_TRANSCRIPT_APPLY: 'view_transcript_apply',
+  EDIT_TRANSCRIPT_APPLY: 'edit_transcript_apply',
+  VIEW_MY_CARD: 'view_my_card',
+  EDIT_MY_CARD: 'edit_my_card',
+  VIEW_MY_SUBJECTS: 'view_my_subjects',
+  EDIT_MY_SUBJECTS: 'edit_my_subjects',
+  EDIT_PROFILE: 'edit_profile',
+  
+  // 需要 operation_right为11 或 core_user=1 的权限
+  VIEW_WITHDRAWAL_OVERVIEW: 'view_withdrawal_overview',
+  EDIT_WITHDRAWAL_OVERVIEW: 'edit_withdrawal_overview',
+  VIEW_LATE_CASHIN_OVERVIEW: 'view_late_cashin_overview',
+  EDIT_LATE_CASHIN_OVERVIEW: 'edit_late_cashin_overview',
+  VIEW_REMARK_OVERVIEW: 'view_remark_overview',
+  EDIT_REMARK_OVERVIEW: 'edit_remark_overview',
+  
+  // 需要 operation_right为13 或 core_user=1 的权限
+  VIEW_PS_POLISH: 'view_ps_polish',
+  EDIT_PS_POLISH: 'edit_ps_polish',
+  
+  // 其他权限
+  VIEW_PROMOTE_COMMENT: 'view_promote_comment',
+  EDIT_PROMOTE_COMMENT: 'edit_promote_comment',
+} as const;
+
+// 数字权限常量 - 基于 operation_right 数组
+export const OPERATION_RIGHTS = {
+  // 基础权限 - 所有staff用户都可以访问
+  BASIC_STAFF: 0,
+  
+  // 退考管理、成绩补合并、备注管理权限
+  WITHDRAWAL_MANAGEMENT: 11,
+  
+  // PS润色权限
+  PS_POLISH: 13,
 } as const;
 
 // 预定义角色常量（向后兼容）

@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { UserInfo, AuthContextType } from '@/types/permission';
 import { authService } from '@/services/authService';
 import { handleUserRedirect } from '@/services/auth';
-import { PERMISSIONS } from '@/types/auth';
+import { PERMISSIONS, OPERATION_RIGHTS } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const baseRights = useMemo(() => {
     return user ? [
       ...(Array.isArray(user.rights) ? user.rights : []), 
-      ...(Array.isArray(user.operation_right) ? user.operation_right : []),
+      ...(Array.isArray(user.operation_right) ? user.operation_right.map(String) : []),
       ...(user.tool_user ? [PERMISSIONS.VIEW_COMMITMENT, PERMISSIONS.EDIT_COMMITMENT] : [])
     ] : [];
   }, [user]);
@@ -127,7 +127,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 检查单个权限
   const hasPermission = useCallback((permission: string): boolean => {
     if (!user) return false;
-    return rights.includes(permission);
+    
+    // 根据权限文档检查特殊权限
+    const isCoreUser = user.core_user === 1;
+    const operationRights = Array.isArray(user.operation_right) ? user.operation_right : [];
+    
+    // 核心用户拥有所有权限
+    if (isCoreUser) return true;
+    
+    // 检查基础权限（字符串权限）
+    if (rights.includes(permission)) return true;
+    
+    // 需要 operation_right为11 或 core_user=1 的权限
+    const withdrawalPermissions = [
+      PERMISSIONS.VIEW_WITHDRAWAL_OVERVIEW,
+      PERMISSIONS.EDIT_WITHDRAWAL_OVERVIEW,
+      PERMISSIONS.VIEW_LATE_CASHIN_OVERVIEW,
+      PERMISSIONS.EDIT_LATE_CASHIN_OVERVIEW,
+      PERMISSIONS.VIEW_REMARK_OVERVIEW,
+      PERMISSIONS.EDIT_REMARK_OVERVIEW,
+    ];
+    if (withdrawalPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WITHDRAWAL_MANAGEMENT);
+    }
+    
+    // 需要 operation_right为13 或 core_user=1 的权限
+    const polishPermissions = [
+      PERMISSIONS.VIEW_PS_POLISH,
+      PERMISSIONS.EDIT_PS_POLISH,
+    ];
+    if (polishPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.PS_POLISH);
+    }
+    
+    // 基础权限 - 所有staff用户都可以访问
+    const basicPermissions = [
+      PERMISSIONS.VIEW_SUBJECT_EVALUATE,
+      PERMISSIONS.EDIT_SUBJECT_EVALUATE,
+      PERMISSIONS.VIEW_EXIT_PERMIT,
+      PERMISSIONS.EDIT_EXIT_PERMIT,
+      PERMISSIONS.VIEW_GRADUATION_WISHES,
+      PERMISSIONS.EDIT_GRADUATION_WISHES,
+      PERMISSIONS.VIEW_TRANSCRIPT_APPLY,
+      PERMISSIONS.EDIT_TRANSCRIPT_APPLY,
+      PERMISSIONS.VIEW_MY_CARD,
+      PERMISSIONS.EDIT_MY_CARD,
+      PERMISSIONS.VIEW_MY_SUBJECTS,
+      PERMISSIONS.EDIT_MY_SUBJECTS,
+      PERMISSIONS.EDIT_PROFILE,
+    ];
+    if (basicPermissions.includes(permission as any)) {
+      return true; // 所有staff用户都可以访问
+    }
+    
+    return false;
   }, [user, rights]);
 
   // 检查多个权限（任意一个满足）
