@@ -4,6 +4,7 @@ import DashboardLayout from './DashboardLayout';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
+import { setGlobalRouter } from '@/services/auth';
 
 // 定义SalesInfo接口已移动到SalesInfoContext中
 
@@ -11,6 +12,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  
+  // 设置全局router实例，供未认证处理使用
+  useEffect(() => {
+    setGlobalRouter(router);
+  }, [router]);
   
   // 不需要权限检查的路由
   const publicRoutes = ['/login', '/403'];

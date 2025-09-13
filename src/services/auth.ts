@@ -1,3 +1,57 @@
+// 全局router实例存储
+let globalRouter: any = null;
+
+// 设置全局router实例的函数
+export const setGlobalRouter = (router: any) => {
+  globalRouter = router;
+};
+
+// 全局未认证处理函数
+const handleUnauthorized = () => {
+  // 清除本地存储的认证信息
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // 优先使用全局router实例
+    if (globalRouter) {
+      globalRouter.push('/login');
+    } else {
+      // 回退到window.location
+      window.location.href = '/login';
+    }
+  }
+};
+
+// 重写全局fetch函数，添加未认证处理
+if (typeof window !== 'undefined') {
+  // 保存原始的fetch函数
+  const originalFetch = window.fetch;
+  
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const response = await originalFetch(input, init);
+    
+    // 只对API请求进行未认证检查，但排除user_info接口避免无限循环
+    const url = typeof input === 'string' ? input : input.toString();
+    if (url.includes('/api/') && !url.includes('/api/public/user_info')) {
+      try {
+        const clonedResponse = response.clone();
+        const data = await clonedResponse.json();
+        
+        // 检查是否为未认证错误
+        if (data.status === 400001 || data.message === 'Unauthorized') {
+          handleUnauthorized();
+        }
+      } catch (error) {
+        // 如果解析JSON失败，忽略错误
+        console.warn('无法解析API响应:', error);
+      }
+    }
+    
+    return response;
+  };
+}
+
 interface LoginParams {
   username: string;
   password: string;

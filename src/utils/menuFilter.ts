@@ -176,14 +176,6 @@ export const defaultMenuConfig: MenuItem[] = [
     icon: 'dashboard',
     // Dashboard doesn't require special permissions, all users can access
   },
- 
-  {
-    key: 'demo',
-    label: 'Demo Page',
-    path: '/demo',
-    icon: 'table',
-    requiredPermissions: ['view_demo'],
-  },
   {
     key: 'staff',
     label: 'Staff Management',
