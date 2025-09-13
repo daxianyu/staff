@@ -142,24 +142,6 @@ export default function CheckConsumePage() {
           <p className="mt-2 text-sm text-gray-600">上传每月卡消费数据文件进行核对验证</p>
         </div>
 
-        {/* 使用说明 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex">
-            <InformationCircleIcon className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">使用说明</h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <ul className="list-disc list-inside space-y-1">
-                  <li>支持上传Excel文件(.xlsx, .xls)或CSV文件</li>
-                  <li>系统将验证上传的消费数据与数据库中的记录是否匹配</li>
-                  <li>如果数据匹配，将显示验证成功信息</li>
-                  <li>如果数据不匹配，将显示具体的错误信息</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* 文件上传区域 */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6">
@@ -290,24 +272,6 @@ export default function CheckConsumePage() {
             </div>
           </div>
         )}
-
-        {/* 注意事项 */}
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex">
-            <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">注意事项</h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <ul className="list-disc list-inside space-y-1">
-                  <li>请确保上传的文件数据格式正确，包含必要的卡号、消费金额等字段</li>
-                  <li>系统将对数据进行严格验证，任何不匹配的记录都会被标记</li>
-                  <li>建议在非业务高峰期进行数据核对，以免影响系统性能</li>
-                  <li>如遇到问题，请联系系统管理员</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

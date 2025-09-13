@@ -4,14 +4,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import {
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
   PlusIcon,
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
-  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import SearchableSelect from '@/components/SearchableSelect';
 import {
@@ -347,10 +343,10 @@ export default function BindOverviewPage() {
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleViewCardList(record)}
-                            className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center"
+                            className="w-8 h-8 text-blue-600 flex items-center justify-center"
                             title="查看卡列表"
                           >
-                            <EyeIcon className="h-4 w-4" />
+                            查看
                           </button>
                           {canEdit && record.in_use === 1 && (
                             <button
@@ -358,10 +354,10 @@ export default function BindOverviewPage() {
                                 setSelectedRecord(record);
                                 setShowUnbindModal(true);
                               }}
-                              className="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center"
+                              className="w-8 h-8 text-red-600 flex items-center justify-center"
                               title="解绑"
                             >
-                              <TrashIcon className="h-4 w-4" />
+                              解绑
                             </button>
                           )}
                         </div>

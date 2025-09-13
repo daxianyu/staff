@@ -5,17 +5,15 @@ import * as Popover from '@radix-ui/react-popover';
 import { Command } from 'cmdk';
 import { ChevronDownIcon, CheckIcon } from '@radix-ui/react-icons';
 
-type Id = string | number;
-
 interface Option {
-  id: Id;
+  id: number; // 外部类型保持 number（运行时允许传入可转为数字的字符串）
   name: string;
 }
 
 interface SearchableSelectProps {
   options: Option[];
-  value: Id | Id[];
-  onValueChange: (value: Id | Id[]) => void;
+  value: number | number[];
+  onValueChange: (value: number | number[]) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
@@ -34,25 +32,26 @@ export default function SearchableSelect({
   multiple = false
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-
-  const toKey = (v: Id) => String(v);
+  
+  // 统一在运行时把可能的字符串 ID 转为 number
+  const toNum = (v: unknown): number => {
+    const n = Number(v as any);
+    return Number.isNaN(n) ? (v as number) : n;
+  };
 
   // 当前选中项
   const selectedOptions = multiple 
-    ? (() => {
-        const set = new Set((value as Id[]).map(toKey));
-        return options.filter(option => set.has(toKey(option.id)));
-      })()
-    : options.find(option => toKey(option.id) === toKey(value as Id));
+    ? options.filter(option => (value as number[]).includes(toNum(option.id)))
+    : options.find(option => toNum(option.id) === toNum(value as number));
 
   // 处理选择
-  const handleSelect = (selectedId: Id) => {
+  const handleSelect = (selectedValue: string) => {
+    const selectedId = toNum(selectedValue);
     if (multiple) {
-      const currentValues = (value as Id[]) || [];
-      const set = new Set(currentValues.map(toKey));
-      const key = toKey(selectedId);
-      const newValues = set.has(key)
-        ? currentValues.filter(v => toKey(v) !== key)
+      const currentValues = (value as number[]) || [];
+      const exists = currentValues.includes(selectedId);
+      const newValues = exists
+        ? currentValues.filter(id => id !== selectedId)
         : [...currentValues, selectedId];
       onValueChange(newValues);
     } else {
@@ -62,11 +61,10 @@ export default function SearchableSelect({
   };
 
   // 移除多选中的项目
-  const removeSelected = (idToRemove: Id) => {
+  const removeSelected = (idToRemove: number) => {
     if (multiple) {
-      const currentValues = value as Id[];
-      const key = toKey(idToRemove);
-      const newValues = currentValues.filter(id => toKey(id) !== key);
+      const currentValues = value as number[];
+      const newValues = currentValues.filter(id => id !== idToRemove);
       onValueChange(newValues);
     }
   };
@@ -102,7 +100,7 @@ export default function SearchableSelect({
               <div className="flex flex-wrap gap-1">
                 {(selectedOptions as Option[]).map(option => (
                   <span
-                    key={toKey(option.id)}
+                    key={toNum(option.id)}
                     className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
                   >
                     {option.name}
@@ -110,7 +108,7 @@ export default function SearchableSelect({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeSelected(option.id);
+                        removeSelected(toNum(option.id));
                       }}
                       className="ml-1 hover:text-blue-600"
                     >
@@ -153,14 +151,14 @@ export default function SearchableSelect({
               </Command.Empty>
               {options.map((option) => {
                 const isSelected = multiple 
-                  ? new Set((value as Id[]).map(toKey)).has(toKey(option.id))
-                  : toKey(option.id) === toKey(value as Id);
+                  ? (value as number[]).includes(toNum(option.id))
+                  : toNum(option.id) === toNum(value as number);
                 
                 return (
                   <Command.Item
-                    key={toKey(option.id)}
+                    key={toNum(option.id)}
                     value={`${option.id} ${option.name}`}
-                    onSelect={() => handleSelect(option.id)}
+                    onSelect={() => handleSelect(String(option.id))}
                     className="
                       relative flex items-center px-3 py-2 text-sm select-none cursor-pointer rounded
                       data-[selected]:bg-blue-50 data-[selected]:text-blue-900
