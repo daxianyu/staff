@@ -56,7 +56,7 @@ export default function TranscriptApplyPage() {
         setData(applyResult.data?.rows || []);
       }
       if (selectResult.code === 200) {
-        setSelectOptions(selectResult.data);
+        setSelectOptions(selectResult.data || null);
       }
     } catch (error) {
       console.error('加载数据失败:', error);

@@ -12,8 +12,6 @@ import {
   type WithdrawalExamResponse 
 } from '@/services/auth';
 import { 
-  TrashIcon, 
-  CheckIcon, 
   XMarkIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
@@ -29,6 +27,12 @@ export default function WithdrawalOverviewPage() {
     status: '',
     reject_reason: ''
   });
+  
+  // 分页相关状态
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const canView = hasPermission(PERMISSIONS.VIEW_WITHDRAWAL_OVERVIEW);
   const canEdit = hasPermission(PERMISSIONS.EDIT_WITHDRAWAL_OVERVIEW);
@@ -39,12 +43,23 @@ export default function WithdrawalOverviewPage() {
     }
   }, [canView]);
 
-  const loadData = async () => {
+  const loadData = async (page?: number, newPageSize?: number) => {
     setLoading(true);
     try {
       const result = await getWithdrawalExamTable();
       if (result.code === 200) {
-        setData(result.data?.rows || []);
+        const allData = result.data?.rows || [];
+        const total = result.data?.total || 0;
+        
+        setTotalItems(total);
+        setTotalPages(Math.ceil(total / (newPageSize || pageSize)));
+        
+        // 前端分页处理
+        const startIndex = ((page || currentPage) - 1) * (newPageSize || pageSize);
+        const endIndex = startIndex + (newPageSize || pageSize);
+        const paginatedData = allData.slice(startIndex, endIndex);
+        
+        setData(paginatedData);
       }
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -117,6 +132,17 @@ export default function WithdrawalOverviewPage() {
     }
   };
 
+  const handlePageChange = async (page: number) => {
+    setCurrentPage(page);
+    await loadData(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+    loadData(1, newPageSize);
+  };
+
   const getStatusColor = (status: number) => {
     switch (status) {
       case 0: return 'bg-yellow-100 text-yellow-800';
@@ -175,25 +201,37 @@ export default function WithdrawalOverviewPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      学生姓名
+                      学生
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      考试名称
+                      校区
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      导师
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       考试季
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      考试代码
+                      当前状态
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      状态
+                      考试名称
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      拒绝原因
+                      支付宝账号
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      创建时间
+                      账户名称
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      金额
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      记录提交时间
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      拒绝/驳回 原因
                     </th>
                     {canEdit && (
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -209,26 +247,38 @@ export default function WithdrawalOverviewPage() {
                         {item.student_name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.exam_name}
+                        {item.campus_name || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.exam_season}
+                        {item.mentor_name || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.exam_code}
+                        {item.season}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
                           {item.status_name}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.exam_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.pay_account || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.account_name || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.signup_price ? `¥${item.signup_price}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {item.create_time}
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
                         <div className="truncate" title={item.reject_reason}>
                           {item.reject_reason || '-'}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.create_time}
                       </td>
                       {canEdit && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -241,7 +291,6 @@ export default function WithdrawalOverviewPage() {
                               }}
                               className="text-green-600 hover:text-green-900 flex items-center gap-1"
                             >
-                              <CheckIcon className="h-4 w-4" />
                               通过
                             </button>
                             <button
@@ -252,7 +301,6 @@ export default function WithdrawalOverviewPage() {
                               }}
                               className="text-red-600 hover:text-red-900 flex items-center gap-1"
                             >
-                              <XMarkIcon className="h-4 w-4" />
                               拒绝
                             </button>
                             <button
@@ -262,7 +310,6 @@ export default function WithdrawalOverviewPage() {
                               }}
                               className="text-red-600 hover:text-red-900 flex items-center gap-1"
                             >
-                              <TrashIcon className="h-4 w-4" />
                               删除
                             </button>
                           </div>
@@ -281,6 +328,137 @@ export default function WithdrawalOverviewPage() {
             </div>
           )}
         </div>
+
+        {/* 分页组件 */}
+        {totalPages > 1 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600">
+                  显示第 {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalItems)} 条，共 {totalItems} 条记录
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">每页显示</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                    className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="text-sm text-gray-600">条</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  上一页
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {(() => {
+                    const maxVisiblePages = 7;
+                    const pages = [];
+                    
+                    if (totalPages <= maxVisiblePages) {
+                      // 显示所有页码
+                      for (let i = 1; i <= totalPages; i++) {
+                        pages.push(
+                          <button
+                            key={i}
+                            onClick={() => handlePageChange(i)}
+                            className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${
+                              currentPage === i
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {i}
+                          </button>
+                        );
+                      }
+                    } else {
+                      // 智能显示页码
+                      const startPage = Math.max(1, currentPage - 3);
+                      const endPage = Math.min(totalPages, currentPage + 3);
+                      
+                      if (startPage > 1) {
+                        pages.push(
+                          <button
+                            key={1}
+                            onClick={() => handlePageChange(1)}
+                            className="w-8 h-8 flex items-center justify-center text-sm font-medium border rounded bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                          >
+                            1
+                          </button>
+                        );
+                        if (startPage > 2) {
+                          pages.push(
+                            <span key="ellipsis1" className="w-8 h-8 flex items-center justify-center text-sm font-medium border rounded bg-white border-gray-300 text-gray-400 cursor-not-allowed">
+                              ...
+                            </span>
+                          );
+                        }
+                      }
+                      
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                          <button
+                            key={i}
+                            onClick={() => handlePageChange(i)}
+                            className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${
+                              currentPage === i
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {i}
+                          </button>
+                        );
+                      }
+                      
+                      if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                          pages.push(
+                            <span key="ellipsis2" className="w-8 h-8 flex items-center justify-center text-sm font-medium border rounded bg-white border-gray-300 text-gray-400 cursor-not-allowed">
+                              ...
+                            </span>
+                          );
+                        }
+                        pages.push(
+                          <button
+                            key={totalPages}
+                            onClick={() => handlePageChange(totalPages)}
+                            className="w-8 h-8 flex items-center justify-center text-sm font-medium border rounded bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                          >
+                            {totalPages}
+                          </button>
+                        );
+                      }
+                    }
+                    
+                    return pages;
+                  })()}
+                </div>
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  下一页
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 状态处理模态框 */}
         {showStatusModal && selectedRecord && (

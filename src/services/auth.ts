@@ -5216,6 +5216,40 @@ export const updateStudentOutInfo = async (params: UpdateStudentOutInfoParams): 
   }
 };
 
+export interface OpenDoorParams {
+  record_id: number;
+  open_door_status?: number;
+}
+
+export const openDoor = async (params: OpenDoorParams): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/user/update_door_flag', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('开门失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '开门失败',
+    };
+  }
+};
+
 // PS Polish 相关接口
 export interface PSPolishItem {
   record_id: number;
@@ -5417,14 +5451,18 @@ export const updatePolishStatus = async (params: UpdatePolishStatusParams): Prom
 export interface WithdrawalExamItem {
   record_id: number;
   student_name: string;
-  exam_name: string;
-  exam_season: string;
-  exam_code: string;
+  campus_name?: string;
+  mentor_name?: string;
+  season: string;
   status: number;
   status_name: string;
-  reject_reason: string;
+  exam_name: string;
+  pay_account?: string;
+  account_name?: string;
+  signup_price?: number;
   create_time: string;
-  update_time: string;
+  reject_reason: string;
+  student_id?: number;
 }
 
 export interface WithdrawalExamResponse {
@@ -6252,6 +6290,181 @@ export const changeMyPassword = async (params: ChangePasswordParams): Promise<Ap
     return {
       code: 500,
       message: error instanceof Error ? error.message : '修改密码失败',
+    };
+  }
+};
+
+// Remark相关接口类型定义
+export interface RemarkItem {
+  record_id: number;
+  student_id: number;
+  student_name: string;
+  mentor_name: string;
+  campus_name: string;
+  season: string;
+  price: number;
+  exam_center: string;
+  exam_id: number;
+  exam_name: string;
+  remark_type: string;
+  exam_code: string;
+  note: string;
+  alipay_account: string;
+  alipay_name: string;
+  reject_reason: string;
+  status: number;
+  create_time: string;
+  status_name: string;
+}
+
+export interface RemarkResponse {
+  rows: RemarkItem[];
+  total: number;
+}
+
+export interface RemarkUpdateParams {
+  record_id: number;
+  status: number;
+  reject_reason?: string;
+}
+
+export interface RemarkDeleteParams {
+  record_id: number;
+}
+
+// Remark API接口
+export const getStaffRemarkTable = async (): Promise<ApiResponse<RemarkResponse>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/remark/get_staff_remark_table', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取remark列表失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取remark列表失败',
+    };
+  }
+};
+
+export const updateRemarkStatus = async (params: RemarkUpdateParams): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/remark/update_remark_detail', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新remark状态失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新remark状态失败',
+    };
+  }
+};
+
+export const deleteRemarkRecord = async (params: RemarkDeleteParams): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/remark/delete_record', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除remark记录失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除remark记录失败',
+    };
+  }
+};
+
+// 获取外出申请学生选择列表
+export interface StaffOutSelectResponse {
+  status: number;
+  message: string;
+  data: {
+    all_students: Array<{
+      id: number;
+      name: string;
+    }>;
+    live_students: Array<{
+      id: number;
+      name: string;
+    }>;
+    out_student: Array<{
+      id: number;
+      name: string;
+    }>;
+    start_time: string;
+    end_time: string;
+  };
+}
+
+export const getStaffOutSelect = async (): Promise<ApiResponse<StaffOutSelectResponse['data']>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/user/get_staff_out_select', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取外出申请学生选择列表失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取外出申请学生选择列表失败',
     };
   }
 };

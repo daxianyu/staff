@@ -45,7 +45,7 @@ export default function EditProfilePage() {
     try {
       const result = await getMyProfile();
       if (result.code === 200) {
-        setProfile(result.data);
+        setProfile(result.data || null);
       }
     } catch (error) {
       console.error('加载资料失败:', error);
@@ -104,7 +104,7 @@ export default function EditProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
           <p className="text-gray-600 mt-1">个人资料管理</p>
         </div>
 
@@ -223,20 +223,6 @@ export default function EditProfilePage() {
             {/* 操作按钮 */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex flex-col sm:flex-row gap-4">
-                {canEdit ? (
-                  <button
-                    onClick={() => window.open(`/staff/edit?id=${profile.staff_id}`, '_blank')}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
-                  >
-                    <UserIcon className="h-4 w-4" />
-                    编辑资料
-                  </button>
-                ) : (
-                  <div className="text-sm text-gray-500">
-                    您没有编辑权限，只能查看资料
-                  </div>
-                )}
-                
                 <button
                   onClick={() => setShowPasswordModal(true)}
                   className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
