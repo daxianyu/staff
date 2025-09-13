@@ -139,6 +139,14 @@ export const PERMISSIONS = {
   // 其他权限
   VIEW_PROMOTE_COMMENT: 'view_promote_comment',
   EDIT_PROMOTE_COMMENT: 'edit_promote_comment',
+  
+  // 卡片管理权限
+  VIEW_CARD_BIND: 'view_card_bind',
+  EDIT_CARD_BIND: 'edit_card_bind',
+  VIEW_CARD_CONSUME: 'view_card_consume',
+  EDIT_CARD_CONSUME: 'edit_card_consume',
+  VIEW_CARD_INFO: 'view_card_info',
+  EDIT_CARD_INFO: 'edit_card_info',
 } as const;
 
 // 数字权限常量 - 基于 operation_right 数组
@@ -151,6 +159,9 @@ export const OPERATION_RIGHTS = {
   
   // PS润色权限
   PS_POLISH: 13,
+  
+  // 卡片管理权限
+  CARD_MANAGEMENT: 16,
 } as const;
 
 // 预定义角色常量（向后兼容）

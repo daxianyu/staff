@@ -58,7 +58,8 @@ export class MenuFilter {
     if (!this.user) return false;
     
     // 根据权限文档检查特殊权限
-    const isCoreUser = this.user.core_user === 1;
+    // 兼容后端返回 core_user 为字符串/数字/布尔
+    const isCoreUser = Number((this.user as any).core_user) === 1 || (this.user as any).core_user === true;
     const operationRights = Array.isArray(this.user.operation_right) ? this.user.operation_right : [];
     
     // 核心用户拥有所有权限
@@ -87,6 +88,17 @@ export class MenuFilter {
     ];
     if (polishPermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.PS_POLISH);
+    }
+    
+    // 需要 operation_right为16 或 core_user=1 的权限
+    const cardPermissions = [
+      PERMISSIONS.VIEW_CARD_BIND,
+      PERMISSIONS.EDIT_CARD_BIND,
+      PERMISSIONS.VIEW_CARD_CONSUME,
+      PERMISSIONS.EDIT_CARD_CONSUME,
+    ];
+    if (cardPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.CARD_MANAGEMENT);
     }
     
     // 基础权限 - 所有staff用户都可以访问
@@ -433,6 +445,28 @@ export const defaultMenuConfig: MenuItem[] = [
       //   icon: 'clipboard-document-list',
       //   requiredPermissions: [PERMISSIONS.VIEW_STAFF],
       // },
+    ],
+  },
+  {
+    key: 'card-info',
+    label: 'Card Info',
+    icon: 'dollar-sign',
+    requiredPermissions: [PERMISSIONS.VIEW_CARD_BIND],
+    children: [
+      {
+        key: 'bind-overview',
+        label: 'Bind Overview',
+        path: '/card/bind-overview',
+        icon: 'user-group',
+        requiredPermissions: [PERMISSIONS.VIEW_CARD_BIND],
+      },
+      {
+        key: 'check-consume',
+        label: 'Check Consume',
+        path: '/card/check-consume',
+        icon: 'calculator',
+        requiredPermissions: [PERMISSIONS.VIEW_CARD_CONSUME],
+      },
     ],
   },
   {

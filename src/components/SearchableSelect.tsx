@@ -5,15 +5,17 @@ import * as Popover from '@radix-ui/react-popover';
 import { Command } from 'cmdk';
 import { ChevronDownIcon, CheckIcon } from '@radix-ui/react-icons';
 
+type Id = string | number;
+
 interface Option {
-  id: number;
+  id: Id;
   name: string;
 }
 
 interface SearchableSelectProps {
   options: Option[];
-  value: number | number[];
-  onValueChange: (value: number | number[]) => void;
+  value: Id | Id[];
+  onValueChange: (value: Id | Id[]) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
@@ -33,19 +35,24 @@ export default function SearchableSelect({
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  const toKey = (v: Id) => String(v);
+
   // 当前选中项
   const selectedOptions = multiple 
-    ? options.filter(option => (value as number[]).includes(option.id))
-    : options.find(option => option.id === value);
+    ? (() => {
+        const set = new Set((value as Id[]).map(toKey));
+        return options.filter(option => set.has(toKey(option.id)));
+      })()
+    : options.find(option => toKey(option.id) === toKey(value as Id));
 
   // 处理选择
-  const handleSelect = (selectedValue: string) => {
-    const selectedId = Number(selectedValue);
-    
+  const handleSelect = (selectedId: Id) => {
     if (multiple) {
-      const currentValues = value as number[];
-      const newValues = currentValues.includes(selectedId)
-        ? currentValues.filter(id => id !== selectedId)
+      const currentValues = (value as Id[]) || [];
+      const set = new Set(currentValues.map(toKey));
+      const key = toKey(selectedId);
+      const newValues = set.has(key)
+        ? currentValues.filter(v => toKey(v) !== key)
         : [...currentValues, selectedId];
       onValueChange(newValues);
     } else {
@@ -55,10 +62,11 @@ export default function SearchableSelect({
   };
 
   // 移除多选中的项目
-  const removeSelected = (idToRemove: number) => {
+  const removeSelected = (idToRemove: Id) => {
     if (multiple) {
-      const currentValues = value as number[];
-      const newValues = currentValues.filter(id => id !== idToRemove);
+      const currentValues = value as Id[];
+      const key = toKey(idToRemove);
+      const newValues = currentValues.filter(id => toKey(id) !== key);
       onValueChange(newValues);
     }
   };
@@ -94,7 +102,7 @@ export default function SearchableSelect({
               <div className="flex flex-wrap gap-1">
                 {(selectedOptions as Option[]).map(option => (
                   <span
-                    key={option.id}
+                    key={toKey(option.id)}
                     className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
                   >
                     {option.name}
@@ -145,14 +153,14 @@ export default function SearchableSelect({
               </Command.Empty>
               {options.map((option) => {
                 const isSelected = multiple 
-                  ? (value as number[]).includes(option.id)
-                  : option.id === value;
+                  ? new Set((value as Id[]).map(toKey)).has(toKey(option.id))
+                  : toKey(option.id) === toKey(value as Id);
                 
                 return (
                   <Command.Item
-                    key={option.id}
+                    key={toKey(option.id)}
                     value={`${option.id} ${option.name}`}
-                    onSelect={() => handleSelect(option.id.toString())}
+                    onSelect={() => handleSelect(option.id)}
                     className="
                       relative flex items-center px-3 py-2 text-sm select-none cursor-pointer rounded
                       data-[selected]:bg-blue-50 data-[selected]:text-blue-900
