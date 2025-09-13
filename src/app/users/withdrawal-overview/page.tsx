@@ -16,6 +16,15 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
+// 退考状态常量定义
+const WITHDRAWAL_STATUS = {
+  "-1": "已撤回",
+  "1": "已提交", 
+  "2": "已完成-退考退费",
+  "4": "已完成-退考",
+  "3": "已拒绝"
+};
+
 export default function WithdrawalOverviewPage() {
   const { user, hasPermission } = useAuth();
   const [data, setData] = useState<WithdrawalExamItem[]>([]);
@@ -92,6 +101,8 @@ export default function WithdrawalOverviewPage() {
     if (!selectedRecord || !canEdit) return;
 
     try {
+      // 通过时设置为状态2（已完成-退考退费）
+      // 拒绝时设置为状态3（已拒绝）
       const result = await updateWithdrawalExamStatus({
         record_id: selectedRecord.record_id,
         status: parseInt(statusForm.status),
@@ -283,26 +294,33 @@ export default function WithdrawalOverviewPage() {
                       {canEdit && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedRecord(item);
-                                setStatusForm({ status: '1', reject_reason: '' });
-                                setShowStatusModal(true);
-                              }}
-                              className="text-green-600 hover:text-green-900 flex items-center gap-1"
-                            >
-                              通过
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedRecord(item);
-                                setStatusForm({ status: '2', reject_reason: '' });
-                                setShowStatusModal(true);
-                              }}
-                              className="text-red-600 hover:text-red-900 flex items-center gap-1"
-                            >
-                              拒绝
-                            </button>
+                            {/* 状态为1（已提交）时显示通过和拒绝按钮 */}
+                            {item.status === 1 && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedRecord(item);
+                                    setStatusForm({ status: '2', reject_reason: '' });
+                                    setShowStatusModal(true);
+                                  }}
+                                  className="text-green-600 hover:text-green-900 flex items-center gap-1"
+                                >
+                                  通过
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedRecord(item);
+                                    setStatusForm({ status: '3', reject_reason: '' });
+                                    setShowStatusModal(true);
+                                  }}
+                                  className="text-red-600 hover:text-red-900 flex items-center gap-1"
+                                >
+                                  拒绝
+                                </button>
+                              </>
+                            )}
+                            
+                            {/* 所有状态都显示删除按钮 */}
                             <button
                               onClick={() => {
                                 setSelectedRecord(item);

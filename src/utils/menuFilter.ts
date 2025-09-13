@@ -421,13 +421,6 @@ export const defaultMenuConfig: MenuItem[] = [
         requiredPermissions: [PERMISSIONS.VIEW_MY_CARD],
       },
       {
-        key: 'my-subjects',
-        label: 'My Subjects',
-        path: '/users/my-subjects',
-        icon: 'book',
-        requiredPermissions: [PERMISSIONS.VIEW_MY_SUBJECTS],
-      },
-      {
         key: 'schedule',
         label: 'Schedule',
         path: '/schedule',

@@ -15,6 +15,16 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
+// 补考状态常量定义
+const CASHIN_STATUS = {
+  "-1": "已撤回",
+  "1": "已提交-待支付",
+  "2": "已支付-待处理",
+  "3": "已拒绝",
+  "4": "已支付-已处理",
+  "5": "已支付-导师拒绝"
+};
+
 export default function LateCashinOverviewPage() {
   const { user, hasPermission } = useAuth();
   const [data, setData] = useState<CashinExamItem[]>([]);
@@ -53,6 +63,8 @@ export default function LateCashinOverviewPage() {
     if (!selectedRecord || !canEdit) return;
 
     try {
+      // 通过时设置为状态4（已支付-已处理）
+      // 拒绝时设置为状态5（已支付-导师拒绝）
       const result = await updateCashin({
         record_id: selectedRecord.record_id,
         status: parseInt(statusForm.status),
@@ -123,28 +135,34 @@ export default function LateCashinOverviewPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      学生姓名
+                      学生
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       导师
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      考试季
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      当前状态
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       科目
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      考试代码
+                      证书等级
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      等级
+                      考号
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      状态
+                      说明
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      拒绝原因
+                      拒绝/驳回原因
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      创建时间
+                      提交时间
                     </th>
                     {canEdit && (
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -163,18 +181,26 @@ export default function LateCashinOverviewPage() {
                         {item.mentor_name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.subject_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.exam_code}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.level}
+                        {item.season || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
                           {item.status_name}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.subject_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.level}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.exam_code}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                        <div className="truncate" title={item.note}>
+                          {item.note || '-'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
                         <div className="truncate" title={item.reject_reason}>
@@ -187,28 +213,33 @@ export default function LateCashinOverviewPage() {
                       {canEdit && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedRecord(item);
-                                setStatusForm({ status: '1', reject_reason: '' });
-                                setShowStatusModal(true);
-                              }}
-                              className="text-green-600 hover:text-green-900 flex items-center gap-1"
-                            >
-                              <CheckIcon className="h-4 w-4" />
-                              通过
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedRecord(item);
-                                setStatusForm({ status: '2', reject_reason: '' });
-                                setShowStatusModal(true);
-                              }}
-                              className="text-red-600 hover:text-red-900 flex items-center gap-1"
-                            >
-                              <XMarkIcon className="h-4 w-4" />
-                              拒绝
-                            </button>
+                            {/* 只有状态为2（已支付-待处理）时才显示操作按钮 */}
+                            {item.status === 2 && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedRecord(item);
+                                    setStatusForm({ status: '4', reject_reason: '' });
+                                    setShowStatusModal(true);
+                                  }}
+                                  className="text-green-600 hover:text-green-900 flex items-center gap-1"
+                                >
+                                  <CheckIcon className="h-4 w-4" />
+                                  通过
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedRecord(item);
+                                    setStatusForm({ status: '5', reject_reason: '' });
+                                    setShowStatusModal(true);
+                                  }}
+                                  className="text-red-600 hover:text-red-900 flex items-center gap-1"
+                                >
+                                  <XMarkIcon className="h-4 w-4" />
+                                  拒绝
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       )}

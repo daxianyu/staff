@@ -15,12 +15,21 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
+// 备注状态常量定义
+const REMARK_STATUS = {
+  "-1": "已撤回",
+  "1": "已提交-待支付",
+  "2": "已支付-待处理", 
+  "3": "已拒绝",
+  "4": "已支付-已处理",
+  "5": "已支付-但拒绝"
+};
+
 export default function RemarkOverviewPage() {
   const { user, hasPermission } = useAuth();
   const [data, setData] = useState<RemarkItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<RemarkItem | null>(null);
   const [statusForm, setStatusForm] = useState({
     status: '',
@@ -71,6 +80,8 @@ export default function RemarkOverviewPage() {
     if (!selectedRecord || !canEdit) return;
 
     try {
+      // 通过时设置为状态4（已支付-已处理）
+      // 拒绝时设置为状态5（已支付-但拒绝）
       const result = await updateRemarkStatus({
         record_id: selectedRecord.record_id,
         status: parseInt(statusForm.status),
@@ -92,24 +103,6 @@ export default function RemarkOverviewPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedRecord || !canEdit) return;
-
-    try {
-      const result = await deleteRemarkRecord({ record_id: selectedRecord.record_id });
-      if (result.code === 200) {
-        alert('删除成功');
-        setShowDeleteModal(false);
-        setSelectedRecord(null);
-        loadData();
-      } else {
-        alert(result.message || '删除失败');
-      }
-    } catch (error) {
-      console.error('删除失败:', error);
-      alert('删除失败');
-    }
-  };
 
   const handlePageChange = async (page: number) => {
     setCurrentPage(page);
@@ -280,35 +273,31 @@ export default function RemarkOverviewPage() {
                       {canEdit && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedRecord(item);
-                                setStatusForm({ status: '1', reject_reason: '' });
-                                setShowStatusModal(true);
-                              }}
-                              className="text-green-600 hover:text-green-900 flex items-center gap-1"
-                            >
-                              通过
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedRecord(item);
-                                setStatusForm({ status: '2', reject_reason: '' });
-                                setShowStatusModal(true);
-                              }}
-                              className="text-red-600 hover:text-red-900 flex items-center gap-1"
-                            >
-                              拒绝
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedRecord(item);
-                                setShowDeleteModal(true);
-                              }}
-                              className="text-red-600 hover:text-red-900 flex items-center gap-1"
-                            >
-                              删除
-                            </button>
+                            {/* 只有状态为2（已支付-待处理）时才显示操作按钮 */}
+                            {item.status === 2 && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedRecord(item);
+                                    setStatusForm({ status: '4', reject_reason: '' });
+                                    setShowStatusModal(true);
+                                  }}
+                                  className="text-green-600 hover:text-green-900 flex items-center gap-1"
+                                >
+                                  通过
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedRecord(item);
+                                    setStatusForm({ status: '5', reject_reason: '' });
+                                    setShowStatusModal(true);
+                                  }}
+                                  className="text-red-600 hover:text-red-900 flex items-center gap-1"
+                                >
+                                  拒绝
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       )}
@@ -523,44 +512,6 @@ export default function RemarkOverviewPage() {
           </div>
         )}
 
-        {/* 删除确认模态框 */}
-        {showDeleteModal && selectedRecord && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-              <div className="p-6">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      确认删除
-                    </h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        确定要删除学生 <strong>{selectedRecord.student_name}</strong> 的备注申请吗？此操作不可撤销。
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  onClick={handleDelete}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  删除
-                </button>
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  取消
-                </button>
-            </div>
-          </div>
-        </div>
-        )}
       </div>
     </div>
   );
