@@ -50,64 +50,62 @@ alwaysApply: true
 - 按钮：删除红色，取消白色
 
 ## 分页组件
-### 分页状态管理
-```typescript
-const [currentPage, setCurrentPage] = useState(1);
-const [pageSize, setPageSize] = useState(10);
-const [totalItems, setTotalItems] = useState(0);
-const [totalPages, setTotalPages] = useState(0);
-```
 
-### 分页处理函数
-```typescript
-const handlePageChange = async (page: number) => {
-  setCurrentPage(page);
-  await loadData(page, searchQuery, showDisabled);
-};
+### 前端分页实现（推荐）
+#### 分页状态管理
+- **基础状态**: `currentPage` (当前页), `pageSize` (每页数量)
+- **计算属性**: `totalItems` (总记录数), `totalPages` (总页数), `paginatedItems` (当前页数据)
+- **数据切片**: 使用 `slice(startIndex, endIndex)` 进行前端分页
 
-const handlePageSizeChange = (newPageSize: number) => {
-  setPageSize(newPageSize);
-  setCurrentPage(1);
-  loadData(1, searchQuery, showDisabled, newPageSize);
-};
-```
+#### 分页处理函数
+- **页面切换**: `handlePageChange(page)` - 直接更新当前页
+- **每页数量**: `handlePageSizeChange(size)` - 更新每页数量并重置到第一页
+- **搜索重置**: 搜索条件改变时自动回到第一页
 
-### 分页UI组件
-- 容器：`bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6`
-- 布局：`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4`
-- 信息显示：`text-sm text-gray-600`
-- 按钮组：`flex items-center gap-2`
+#### 分页UI组件结构
+- **容器**: `bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6`
+- **布局**: `flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4`
+- **信息显示**: 左侧显示 "显示第 X - Y 条，共 Z 条记录"
+- **控制区域**: 右侧包含每页选择器和分页按钮组
 
-### 分页按钮样式
-- 上一页/下一页：`px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50`
-- 页码按钮：`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded`
-- 当前页：`bg-blue-600 border-blue-600 text-white`
-- 普通页：`bg-white border-gray-300 text-gray-700 hover:bg-gray-50`
-- 省略号：`bg-white border-gray-300 text-gray-400 cursor-not-allowed`
+#### 每页显示数量选择器
+- **位置**: 分页按钮组最前面
+- **样式**: `px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500`
+- **选项**: 5, 10, 20, 50 条每页
 
-### 智能页码显示逻辑
-```typescript
-// 最多显示7个页码，智能显示省略号
-const maxVisiblePages = 7;
-if (totalPages <= maxVisiblePages) {
-  // 显示所有页码
-} else {
-  // 智能显示：第一页 + ... + 当前页附近 + ... + 最后一页
-}
-```
+#### 分页按钮组
+- **上一页按钮**: `px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50`
+- **页码按钮**: `w-8 h-8 flex items-center justify-center text-sm font-medium border rounded`
+- **当前页样式**: `bg-blue-600 border-blue-600 text-white`
+- **普通页样式**: `bg-white border-gray-300 text-gray-700 hover:bg-gray-50`
+- **下一页按钮**: 同上一页按钮样式
 
-### 分页数据加载
-```typescript
-const loadData = async (page?: number, search?: string, showDisable?: number, newPageSize?: number) => {
-  const params = {
-    page: page !== undefined ? page : currentPage,
-    page_size: newPageSize !== undefined ? newPageSize : pageSize,
-    search: search !== undefined ? search : searchQuery,
-    show_disable: showDisable !== undefined ? showDisable : showDisabled,
-  };
-  // API调用和状态更新
-};
-```
+#### 智能页码显示逻辑
+- **显示规则**: 最多显示7个页码按钮
+- **≤7页**: 显示所有页码
+- **>7页**: 显示第一页 + ... + 当前页附近 + ... + 最后一页
+- **省略号**: `w-8 h-8 flex items-center justify-center text-sm text-gray-400`
+
+### 后端分页实现（可选）
+#### 分页状态管理
+- **额外状态**: `totalItems`, `totalPages` 从后端获取
+- **异步加载**: 每次分页都需要调用API
+
+#### 分页处理函数
+- **页面切换**: 异步调用 `loadData(page, search, showDisabled)`
+- **每页数量**: 异步调用 `loadData(1, search, showDisabled, newPageSize)`
+
+#### 分页数据加载
+- **参数传递**: page, page_size, search, show_disable
+- **API调用**: 根据参数获取对应页面的数据
+
+### 分页组件特性
+- **前端分页**: 适合数据量较小的场景，响应快速
+- **后端分页**: 适合数据量大的场景，减少网络传输
+- **智能页码**: 最多显示7个页码，自动显示省略号
+- **每页选择**: 支持5/10/20/50条每页显示
+- **响应式**: 移动端和桌面端都有良好体验
+- **搜索重置**: 搜索条件改变时自动回到第一页
 
 ## 必须遵循的规则
 1. **权限检查**: 每个页面都必须有权限检查

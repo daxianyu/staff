@@ -47,8 +47,78 @@ export const PERMISSIONS = {
 - `requiredAllPermissions`: 用户需要所有权限
 - 无权限要求：所有用户可访问
 
+## operation_right 数字权限系统
+
+### 权限类型说明
+系统使用两种权限类型：
+1. **字符串权限** (`rights` 数组): 基础功能权限
+2. **数字权限** (`operation_right` 数组): 特殊操作权限
+
+### operation_right 权限定义
+```typescript
+export const OPERATION_RIGHTS = {
+  BASIC_STAFF: 0,              // 基础权限 - 所有staff用户
+  WITHDRAWAL_MANAGEMENT: 11,   // 退考管理、成绩补合并、备注管理
+  PS_POLISH: 13,               // PS润色权限
+  CARD_MANAGEMENT: 16,         // 卡片管理权限
+} as const;
+```
+
+### 权限检查逻辑
+```typescript
+// 1. 核心用户 (core_user=1) 拥有所有权限
+if (isCoreUser) return true;
+
+// 2. 检查基础字符串权限
+if (rights.includes(permission)) return true;
+
+// 3. 检查特殊数字权限
+const operationRights = Array.isArray(user.operation_right) ? user.operation_right : [];
+
+// 退考管理相关权限需要 operation_right=11
+if (withdrawalPermissions.includes(permission)) {
+  return operationRights.includes(OPERATION_RIGHTS.WITHDRAWAL_MANAGEMENT);
+}
+
+// PS润色权限需要 operation_right=13
+if (polishPermissions.includes(permission)) {
+  return operationRights.includes(OPERATION_RIGHTS.PS_POLISH);
+}
+
+// 卡片管理权限需要 operation_right=16
+if (cardPermissions.includes(permission)) {
+  return operationRights.includes(OPERATION_RIGHTS.CARD_MANAGEMENT);
+}
+```
+
+### 特殊权限分组
+- **退考管理权限** (operation_right=11):
+  - `VIEW_WITHDRAWAL_OVERVIEW` - 查看退考概览
+  - `EDIT_WITHDRAWAL_OVERVIEW` - 编辑退考概览
+  - `VIEW_LATE_CASHIN_OVERVIEW` - 查看晚缴费概览
+  - `EDIT_LATE_CASHIN_OVERVIEW` - 编辑晚缴费概览
+  - `VIEW_REMARK_OVERVIEW` - 查看备注概览
+  - `EDIT_REMARK_OVERVIEW` - 编辑备注概览
+
+- **PS润色权限** (operation_right=13):
+  - `VIEW_PS_POLISH` - 查看PS润色
+  - `EDIT_PS_POLISH` - 编辑PS润色
+
+- **卡片管理权限** (operation_right=16):
+  - `VIEW_CARD_BIND` - 查看卡片绑定
+  - `EDIT_CARD_BIND` - 编辑卡片绑定
+  - `VIEW_CARD_CONSUME` - 查看卡片消费
+  - `EDIT_CARD_CONSUME` - 编辑卡片消费
+
+### 后端数据来源
+- 数据表: `operation_rights` (权限定义) + `config_operation` (用户权限分配)
+- 接口: `/api/rights/operation_list` (获取权限列表)
+- 函数: `get_staff_config_right()` (获取用户数字权限)
+
 ## 重要提醒
 - 菜单配置在 `src/utils/menuFilter.ts` 的 `defaultMenuConfig` 数组中
 - 权限常量在 `src/types/auth.ts` 的 `PERMISSIONS` 对象中
+- 数字权限常量在 `src/types/auth.ts` 的 `OPERATION_RIGHTS` 对象中
 - 页面必须兼容手机端
 - 模态框遮罩层背景使用 `bg-black/50`
+- 新增菜单时，如需特殊权限，优先使用字符串权限，必要时才使用数字权限

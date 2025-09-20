@@ -147,6 +147,20 @@ export const PERMISSIONS = {
   EDIT_CARD_CONSUME: 'edit_card_consume',
   VIEW_CARD_INFO: 'view_card_info',
   EDIT_CARD_INFO: 'edit_card_info',
+  
+  // STAS统计相关权限
+  VIEW_STAS: 'stas',
+  VIEW_CENTER_LIST: 'core_admin',
+  VIEW_MENTEE_DASHBOARD: 'stas',
+  VIEW_MENTOR_DASHBOARD: 'stas',
+  VIEW_TEACHER_HOURS: 'view_teaching_hours_overview',
+  VIEW_SUBJECT_RELATIVE: 'view_students',
+  VIEW_SUBJECT_RELATIVE_MONTHLY: 'view_students',
+  VIEW_STUDENT_FULLNESS: 'view_students',
+  VIEW_CLASSROOM_USAGE: 'sales_person',
+  VIEW_TEACHER_MONTHLY_HOURS: 'view_teaching_hours_overview',
+  VIEW_STUDENT_MONTHLY_HOURS: 'view_teaching_hours_overview',
+  VIEW_STUDENT_ATTENDANCE: 'stas',
 } as const;
 
 // 数字权限常量 - 基于 operation_right 数组
