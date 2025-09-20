@@ -52,77 +52,49 @@ alwaysApply: true
 ## API接口系统
 
 ### 接口文件结构
-- **主文件**: `src/services/auth.ts` (4300+ 行)
-- **服务文件**: `src/services/authService.ts`
+- **聚合出口**: `src/services/auth.ts`（仅 re-export 模块和公共方法）
+- **模块目录**: `src/services/modules/`（按业务域拆分 API，如 `users.ts`、`staff.ts`）
+- **通用工具**: `src/services/apiClient.ts`（`request`, `getAuthHeader`, `buildQueryString` 等）
+- **响应类型**: `src/services/types.ts`
 - **环境配置**: `src/config/env.ts`
 
 ### 新增API接口规范
 
 #### 1. 接口定义
-```typescript
-// 在 auth.ts 文件顶部定义接口类型
-export interface NewApiParams {
-  param1: string;
-  param2: number;
-}
-
-export interface NewApiResponse {
-  code: number;
-  message: string;
-  data?: any;
-}
-```
+- 根据业务选择或新增模块文件（例如 `src/services/modules/users.ts`）
+- 在模块顶部声明专用的 `interface`/`type`，共用类型放在 `src/services/types.ts`
 
 #### 2. 接口实现
+- 使用 `request`/`normalizeApiResponse` 优先封装常见模式，必要时可直接 `fetch`
+- 统一从 `apiClient.ts` 获取 `getAuthHeader`、`buildQueryString`
+- 保持函数签名与原 `auth_raw.ts` 中版本兼容，避免破坏现有调用方
+
 ```typescript
-// 在 auth.ts 文件末尾添加接口函数
+import { request, normalizeApiResponse } from '../apiClient';
+import type { ApiResponse } from '../types';
+
 export const newApiFunction = async (params: NewApiParams): Promise<ApiResponse> => {
   try {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...getAuthHeader(),
-    };
-    
-    const response = await fetch('/api/new-endpoint', {
+    const { data } = await request('/api/new-endpoint', {
       method: 'POST',
-      headers,
-      body: JSON.stringify(params),
+      body: params,
     });
-    
-    const data = await response.json();
-    
-    return {
-      code: data.status === 0 ? 200 : 400,
-      message: data.message || '',
-      data: data.data,
-    };
+    return normalizeApiResponse(data);
   } catch (error) {
     console.error('新功能API调用失败:', error);
-    return {
-      code: 500,
-      message: error instanceof Error ? error.message : '新功能API调用失败',
-    };
+    return { code: 500, message: error instanceof Error ? error.message : '新功能API调用失败' };
   }
 };
 ```
 
 #### 3. 接口使用
-```typescript
-// 在组件中使用
-import { newApiFunction } from '@/services/auth';
-
-const handleApiCall = async () => {
-  const result = await newApiFunction({ param1: 'value', param2: 123 });
-  if (result.code === 200) {
-    // 处理成功响应
-  }
-};
-```
+- 页面或组件通过 `@/services/auth` 聚合出口引入对应函数
+- 类型导入时使用 `import type { ApiResponse } from '@/services/auth'`
 
 ### API统一规范
-- **认证**: 自动添加Bearer token
+- **认证**: 默认 `request` 会合并 `getAuthHeader()`，手动 `fetch` 时需显式设置
 - **错误处理**: 统一的try-catch结构
-- **响应格式**: 统一的ApiResponse接口
+- **响应格式**: 统一的 `ApiResponse`/`ApiEnvelope`
 - **日志**: 开发环境自动打印请求/响应
 
 ## 项目结构

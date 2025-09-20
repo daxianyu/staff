@@ -1,0 +1,450 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { PERMISSIONS } from '@/types/auth';
+import { ExclamationTriangleIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+
+interface Complaint {
+  complaint_id: number;
+  student_id: number;
+  student_name: string;
+  mentor_id: number;
+  mentor_name: string;
+  is_mentor_complaint: number;
+  description: string;
+  time: string;
+}
+
+interface ComplaintsResponse {
+  result: Complaint[];
+  can_reply: number;
+}
+
+interface ComplaintModalData {
+  complaint: Complaint;
+}
+
+export default function ComplaintsPage() {
+  const { hasPermission, user } = useAuth();
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [canReply, setCanReply] = useState(false);
+  
+  // 回复模态框状态
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [replyLoading, setReplyLoading] = useState(false);
+
+  const canView = hasPermission(PERMISSIONS.VIEW_COMPLAINTS);
+
+  // 加载投诉数据
+  const loadComplaints = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/complains/list', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 0 && data.data) {
+        setComplaints(data.data.result || []);
+        setCanReply(data.data.can_reply === 1);
+      } else {
+        console.error('加载投诉数据失败:', data.message);
+      }
+    } catch (error) {
+      console.error('加载投诉数据时出错:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (canView) {
+      loadComplaints();
+    }
+  }, [canView]);
+
+  // 搜索过滤
+  const filteredComplaints = complaints.filter(complaint =>
+    complaint.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    complaint.mentor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    complaint.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // 分页计算
+  const totalItems = filteredComplaints.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedComplaints = filteredComplaints.slice(startIndex, endIndex);
+
+  // 处理搜索
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  // 处理分页
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
+
+  // 打开回复模态框
+  const handleReply = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setReplyText('');
+    setReplyModalOpen(true);
+  };
+
+  // 发送回复
+  const handleSendReply = async () => {
+    if (!selectedComplaint || !replyText.trim()) {
+      alert('请输入回复内容');
+      return;
+    }
+
+    try {
+      setReplyLoading(true);
+      const token = localStorage.getItem('token');
+      
+      // 根据后端API，使用GET请求并将参数放在URL中
+      const params = new URLSearchParams({
+        record_id: selectedComplaint.complaint_id.toString(),
+        replay_info: replyText.trim(),
+      });
+      
+      const response = await fetch(`/api/complains/send_complaint_mail?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 0) {
+        alert('回复已发送');
+        setReplyModalOpen(false);
+        setSelectedComplaint(null);
+        setReplyText('');
+      } else {
+        alert(`发送失败: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('发送回复时出错:', error);
+      alert('发送失败，请稍后重试');
+    } finally {
+      setReplyLoading(false);
+    }
+  };
+
+  // 权限检查
+  if (!canView) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">权限不足</h2>
+          <p className="text-gray-600">您没有查看投诉的权限</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 页面标题 */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">投诉管理</h1>
+          <p className="text-gray-600">查看和处理学生投诉</p>
+        </div>
+
+        {/* 搜索栏 */}
+        <div className="bg-white rounded-lg shadow mb-6 p-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+                placeholder="搜索学生、导师或投诉内容..."
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+              />
+            </div>
+            <div className="text-sm text-gray-600">
+              共 {totalItems} 条投诉
+            </div>
+          </div>
+        </div>
+
+        {/* 投诉列表 */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">加载中...</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        投诉信息
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        学生
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        导师
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        时间
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        操作
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedComplaints.map((complaint) => (
+                      <tr key={complaint.complaint_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="max-w-xs">
+                            <div className="flex items-center">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mr-2 ${
+                                complaint.is_mentor_complaint 
+                                  ? 'bg-orange-100 text-orange-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {complaint.is_mentor_complaint ? '导师投诉' : '学生投诉'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-900 mt-1 break-words">
+                              {complaint.description}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {complaint.student_name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            ID: {complaint.student_id}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {complaint.mentor_name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            ID: {complaint.mentor_id}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(complaint.time).toLocaleString('zh-CN')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {canReply && (
+                            <button
+                              onClick={() => handleReply(complaint)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                              <ChatBubbleLeftIcon className="h-4 w-4 mr-1" />
+                              回复
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 空状态 */}
+              {paginatedComplaints.length === 0 && (
+                <div className="p-8 text-center">
+                  <ExclamationTriangleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">暂无投诉记录</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* 分页组件 */}
+        {totalPages > 1 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="text-sm text-gray-700">
+                显示第 {startIndex + 1} - {Math.min(endIndex, totalItems)} 条，共 {totalItems} 条记录
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value={5}>5条/页</option>
+                  <option value={10}>10条/页</option>
+                  <option value={20}>20条/页</option>
+                  <option value={50}>50条/页</option>
+                </select>
+                
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    上一页
+                  </button>
+                  
+                  {/* 页码按钮 */}
+                  {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 7) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 4) {
+                      pageNum = i < 5 ? i + 1 : (i === 5 ? '...' : totalPages);
+                    } else if (currentPage >= totalPages - 3) {
+                      pageNum = i < 2 ? (i === 0 ? 1 : '...') : totalPages - (6 - i);
+                    } else {
+                      if (i === 0) pageNum = 1;
+                      else if (i === 1) pageNum = '...';
+                      else if (i === 5) pageNum = '...';
+                      else if (i === 6) pageNum = totalPages;
+                      else pageNum = currentPage + (i - 3);
+                    }
+                    
+                    if (pageNum === '...') {
+                      return (
+                        <span key={i} className="w-8 h-8 flex items-center justify-center text-sm text-gray-400">
+                          ...
+                        </span>
+                      );
+                    }
+                    
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handlePageChange(pageNum as number)}
+                        className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${
+                          currentPage === pageNum
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    下一页
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 回复模态框 */}
+      {replyModalOpen && selectedComplaint && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">回复投诉</h3>
+                <button
+                  onClick={() => setReplyModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 投诉信息 */}
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-600 mb-2">
+                  <span className="font-medium">学生:</span> {selectedComplaint.student_name}
+                </div>
+                <div className="text-sm text-gray-600 mb-2">
+                  <span className="font-medium">导师:</span> {selectedComplaint.mentor_name}
+                </div>
+                <div className="text-sm text-gray-600 mb-2">
+                  <span className="font-medium">投诉内容:</span>
+                </div>
+                <div className="text-sm text-gray-900 bg-white p-3 rounded border">
+                  {selectedComplaint.description}
+                </div>
+              </div>
+
+              {/* 回复输入 */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  回复内容
+                </label>
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="请输入回复内容..."
+                />
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setReplyModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSendReply}
+                  disabled={replyLoading || !replyText.trim()}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {replyLoading ? '发送中...' : '发送回复'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

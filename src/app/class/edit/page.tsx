@@ -15,7 +15,7 @@ import {
   type ClassSubjectEdit,
   type ClassStudentEdit,
   type Topic,
-  type ExamInfo,
+  type ClassExamInfo,
   type Campus,
   type StudentInfo
 } from '@/services/auth';

@@ -161,6 +161,13 @@ export const PERMISSIONS = {
   VIEW_TEACHER_MONTHLY_HOURS: 'view_teaching_hours_overview',
   VIEW_STUDENT_MONTHLY_HOURS: 'view_teaching_hours_overview',
   VIEW_STUDENT_ATTENDANCE: 'stas',
+
+  // Master Admin 相关权限
+  REPLY_COMPLAINTS: 'core_user',
+  VIEW_SET_SIGNUP_TIME: 'tool_user',
+  EDIT_SET_SIGNUP_TIME: 'tool_user',
+  VIEW_TOPICS: 'core_admin',
+  EDIT_TOPICS: 'core_admin',
 } as const;
 
 // 数字权限常量 - 基于 operation_right 数组
