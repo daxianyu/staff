@@ -101,6 +101,50 @@ export class MenuFilter {
       return operationRights.includes(OPERATION_RIGHTS.CARD_MANAGEMENT);
     }
     
+    // 需要 operation_right为17 或 core_user=1 的权限
+    const weekendPlanPermissions = [
+      PERMISSIONS.VIEW_WEEKEND_PLAN,
+      PERMISSIONS.EDIT_WEEKEND_PLAN,
+    ];
+    if (weekendPlanPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WEEKEND_PLAN);
+    }
+    
+    // 需要 operation_right为21 或 core_user=1 的权限
+    const warningPermissions = [
+      PERMISSIONS.VIEW_WARNING_OVERVIEW,
+      PERMISSIONS.EDIT_WARNING_OVERVIEW,
+    ];
+    if (warningPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WARNING_MANAGEMENT);
+    }
+    
+    // 需要 operation_right为22 或 core_user=1 的权限
+    const weekendSpecialDatePermissions = [
+      PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE,
+      PERMISSIONS.EDIT_WEEKEND_SPECIAL_DATE,
+    ];
+    if (weekendSpecialDatePermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WEEKEND_SPECIAL_DATE);
+    }
+    
+    // 需要 tool_user 权限
+    const toolUserPermissions = [
+      PERMISSIONS.VIEW_FREE_SEARCH,
+    ];
+    if (toolUserPermissions.includes(permission as any)) {
+      return this.userRights.includes('tool_user');
+    }
+    
+    // 需要 edit_classes 或 sales_admin 权限
+    const selfSignupPermissions = [
+      PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES,
+      PERMISSIONS.EDIT_SELF_SIGNUP_CLASSES,
+    ];
+    if (selfSignupPermissions.includes(permission as any)) {
+      return this.userRights.includes('edit_classes') || this.userRights.includes('sales_admin');
+    }
+    
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,
@@ -587,6 +631,205 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/stas/student-attendance',
         icon: 'clipboard-document-list',
         requiredPermissions: [PERMISSIONS.VIEW_STUDENT_ATTENDANCE],
+      },
+    ],
+  },
+  {
+    key: 'school-admin',
+    label: 'School Admin',
+    icon: 'building-office',
+    requiredPermissions: [
+      PERMISSIONS.VIEW_WARNING_OVERVIEW,
+      PERMISSIONS.VIEW_WEEKEND_PLAN,
+      PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE,
+      PERMISSIONS.VIEW_FREE_SEARCH,
+      PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES,
+      'view_staff',
+      'view_students',
+      'view_classes',
+      'edit_exams',
+      'sms',
+      'edit_books',
+      'edit_tests',
+      'edit_surveys',
+      'view_dormitory',
+      'view_locker',
+    ],
+    children: [
+      {
+        key: 'school-staff',
+        label: 'Staff',
+        path: '/school-admin/staff',
+        icon: 'users',
+        requiredPermissions: ['view_staff'],
+      },
+      {
+        key: 'school-students',
+        label: 'Students',
+        path: '/school-admin/students',
+        icon: 'graduation-cap',
+        requiredPermissions: ['view_students'],
+      },
+      {
+        key: 'school-parents',
+        label: 'Parents',
+        path: '/school-admin/parents',
+        icon: 'user-group',
+        requiredPermissions: ['view_students'],
+      },
+      {
+        key: 'school-classes',
+        label: 'Classes',
+        path: '/school-admin/classes',
+        icon: 'book',
+        requiredPermissions: ['view_classes'],
+      },
+      {
+        key: 'self-signup-classes',
+        label: 'Self Signup Classes',
+        path: '/school-admin/self-signup-classes',
+        icon: 'plus-circle',
+        requiredPermissions: [PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES],
+      },
+      {
+        key: 'group-assignment-requests',
+        label: 'Group Assignment Requests',
+        path: '/school-admin/group-assignment-requests',
+        icon: 'user-group',
+        requiredPermissions: ['view_classes'],
+      },
+      {
+        key: 'school-subjects',
+        label: 'Subjects',
+        path: '/school-admin/subjects',
+        icon: 'book',
+        requiredPermissions: ['view_classes'],
+      },
+      {
+        key: 'school-classrooms',
+        label: 'Classrooms',
+        path: '/school-admin/classrooms',
+        icon: 'building',
+        requiredPermissions: ['view_classrooms'],
+      },
+      {
+        key: 'school-exams',
+        label: 'Exams',
+        path: '/school-admin/exams',
+        icon: 'clipboard-document-list',
+        requiredPermissions: ['edit_exams'],
+      },
+      {
+        key: 'school-sms',
+        label: 'SMS',
+        path: '/school-admin/sms',
+        icon: 'chat-bubble-left-right',
+        requiredPermissions: ['sms'],
+      },
+      {
+        key: 'dormitory-sms',
+        label: 'Dormitory SMS',
+        path: '/school-admin/dormitory-sms',
+        icon: 'home',
+        requiredPermissions: ['sms'],
+      },
+      {
+        key: 'school-textbooks',
+        label: 'Textbooks',
+        path: '/school-admin/textbooks',
+        icon: 'book',
+        requiredPermissions: ['edit_books'],
+      },
+      {
+        key: 'edit-tests',
+        label: 'Edit Tests',
+        path: '/school-admin/edit-tests',
+        icon: 'clipboard-document-list',
+        requiredPermissions: ['edit_tests'],
+      },
+      {
+        key: 'edit-surveys',
+        label: 'Edit Surveys',
+        path: '/school-admin/edit-surveys',
+        icon: 'clipboard-document-list',
+        requiredPermissions: ['edit_surveys'],
+      },
+      {
+        key: 'school-services',
+        label: 'Services',
+        path: '/school-admin/services',
+        icon: 'home',
+        requiredPermissions: ['view_dormitory'],
+      },
+      {
+        key: 'school-lockers',
+        label: 'Lockers',
+        path: '/school-admin/lockers',
+        icon: 'building-office',
+        requiredPermissions: ['view_locker'],
+      },
+      {
+        key: 'mentor-profile',
+        label: 'MentorProfile',
+        path: '/school-admin/mentor-profile',
+        icon: 'user',
+        requiredPermissions: ['view_staff'],
+      },
+      {
+        key: 'transcript-manager',
+        label: 'Transcript Manager',
+        path: '/school-admin/transcript-manager',
+        icon: 'clipboard-document-list',
+        requiredPermissions: ['view_students'],
+      },
+      {
+        key: 'polish-overview',
+        label: 'Polish Overview',
+        path: '/school-admin/polish-overview',
+        icon: 'book',
+        requiredPermissions: [PERMISSIONS.VIEW_PS_POLISH],
+      },
+      {
+        key: 'certificate-overview',
+        label: 'Certificate Overview',
+        path: '/school-admin/certificate-overview',
+        icon: 'clipboard-document-list',
+        requiredPermissions: ['view_students'],
+      },
+      {
+        key: 'locker-return-overview',
+        label: 'Locker Return Overview',
+        path: '/school-admin/locker-return-overview',
+        icon: 'building-office',
+        requiredPermissions: ['view_locker'],
+      },
+      {
+        key: 'free-search',
+        label: 'Free Search',
+        path: '/school-admin/free-search',
+        icon: 'magnifying-glass',
+        requiredPermissions: [PERMISSIONS.VIEW_FREE_SEARCH],
+      },
+      {
+        key: 'warning-overview',
+        label: 'Warning Overview',
+        path: '/school-admin/warning-overview',
+        icon: 'exclamation-triangle',
+        requiredPermissions: [PERMISSIONS.VIEW_WARNING_OVERVIEW],
+      },
+      {
+        key: 'weekend-plan-overview',
+        label: 'Weekend Plan Overview',
+        path: '/school-admin/weekend-plan-overview',
+        icon: 'calendar',
+        requiredPermissions: [PERMISSIONS.VIEW_WEEKEND_PLAN],
+      },
+      {
+        key: 'weekend-special-date',
+        label: 'Weekend Special Date',
+        path: '/school-admin/weekend-special-date',
+        icon: 'calendar-days',
+        requiredPermissions: [PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE],
       },
     ],
   },

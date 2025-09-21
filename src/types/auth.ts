@@ -168,6 +168,26 @@ export const PERMISSIONS = {
   EDIT_SET_SIGNUP_TIME: 'tool_user',
   VIEW_TOPICS: 'core_admin',
   EDIT_TOPICS: 'core_admin',
+
+  // School Admin 相关权限
+  // 警告管理权限 (operation_right=21)
+  VIEW_WARNING_OVERVIEW: 'view_warning_overview',
+  EDIT_WARNING_OVERVIEW: 'edit_warning_overview',
+  
+  // 周末计划权限 (operation_right=17)
+  VIEW_WEEKEND_PLAN: 'view_weekend_plan',
+  EDIT_WEEKEND_PLAN: 'edit_weekend_plan',
+  
+  // 节假日配置权限 (operation_right=22)
+  VIEW_WEEKEND_SPECIAL_DATE: 'view_weekend_special_date',
+  EDIT_WEEKEND_SPECIAL_DATE: 'edit_weekend_special_date',
+  
+  // 空闲搜索权限 (tool_user)
+  VIEW_FREE_SEARCH: 'view_free_search',
+  
+  // 自助报名班级权限 (edit_classes or sales_admin)
+  VIEW_SELF_SIGNUP_CLASSES: 'view_self_signup_classes',
+  EDIT_SELF_SIGNUP_CLASSES: 'edit_self_signup_classes',
 } as const;
 
 // 数字权限常量 - 基于 operation_right 数组
@@ -183,6 +203,15 @@ export const OPERATION_RIGHTS = {
   
   // 卡片管理权限
   CARD_MANAGEMENT: 16,
+  
+  // 周末计划统计权限
+  WEEKEND_PLAN: 17,
+  
+  // 警告管理权限
+  WARNING_MANAGEMENT: 21,
+  
+  // 节假日配置权限
+  WEEKEND_SPECIAL_DATE: 22,
 } as const;
 
 // 预定义角色常量（向后兼容）
