@@ -46,9 +46,8 @@ export default function WeekendSpecialDatePage() {
 
   // 特殊日期类型映射
   const specialTypeMap: Record<number, { name: string; color: string }> = {
-    1: { name: '节假日', color: 'bg-red-100 text-red-800' },
-    2: { name: '工作日', color: 'bg-blue-100 text-blue-800' },
-    3: { name: '特殊日', color: 'bg-purple-100 text-purple-800' },
+    1: { name: '住宿', color: 'bg-blue-100 text-blue-800' },
+    2: { name: '就餐', color: 'bg-green-100 text-green-800' },
   };
 
   // 加载数据
@@ -75,7 +74,7 @@ export default function WeekendSpecialDatePage() {
   // 过滤数据
   const filteredDates = specialDates.filter(date =>
     date.special_day.includes(searchTerm) ||
-    (specialTypeMap[date.type]?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    date.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // 分页计算
@@ -132,7 +131,7 @@ export default function WeekendSpecialDatePage() {
     if (!selectedDate) return;
 
     try {
-      const response = await deleteWeekendDate(selectedDate.id);
+      const response = await deleteWeekendDate(selectedDate.record_id);
       if (response.code === 200) {
         setShowDeleteModal(false);
         loadData();
@@ -166,9 +165,9 @@ export default function WeekendSpecialDatePage() {
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {Object.entries(specialTypeMap).map(([type, config]) => {
-            const count = specialDates.filter(date => date.type === Number(type)).length;
+            const count = specialDates.filter(date => date.type === config.name).length;
             return (
               <div key={type} className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
@@ -230,9 +229,6 @@ export default function WeekendSpecialDatePage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         类型
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        创建时间
-                      </th>
                       {canEdit && (
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           操作
@@ -242,7 +238,7 @@ export default function WeekendSpecialDatePage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paginatedDates.map((date) => (
-                      <tr key={date.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={date.record_id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <CalendarDaysIcon className="h-5 w-5 text-gray-400 mr-3" />
@@ -253,13 +249,10 @@ export default function WeekendSpecialDatePage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            specialTypeMap[date.type]?.color || 'bg-gray-100 text-gray-800'
+                            date.type === '住宿' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                           }`}>
-                            {specialTypeMap[date.type]?.name || '未知类型'}
+                            {date.type || '未知类型'}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {date.create_time}
                         </td>
                         {canEdit && (
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

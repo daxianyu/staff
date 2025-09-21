@@ -37,11 +37,9 @@ export interface WeekendTimeTableResponse {
 }
 
 export interface SpecialDateRecord {
-  id: number;
+  record_id: number;
   special_day: string;
-  type: number;
-  type_name: string;
-  create_time: string;
+  type: string;
 }
 
 export interface SpecialDateTableResponse {
@@ -97,7 +95,7 @@ export const addWeekendDate = async (params: AddWeekendDateRequest): Promise<Api
 // 删除节假日
 export const deleteWeekendDate = async (recordId: number): Promise<ApiResponse> => {
   try {
-    const { data } = await request('/api/weekend/delete_weekend_date', {
+    const { data } = await request('/api/weekend/delete_special_date', {
       method: 'POST',
       body: { record_id: recordId },
     });

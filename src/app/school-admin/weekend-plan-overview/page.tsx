@@ -218,6 +218,9 @@ export default function WeekendPlanOverviewPage() {
                         学生信息
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        校区
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         导师
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -245,10 +248,10 @@ export default function WeekendPlanOverviewPage() {
                     {paginatedData.map((record, index) => (
                       <tr key={`${activeTab}-${record.record_id}-${index}`} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{record.student_name}</div>
-                            <div className="text-sm text-gray-500">{record.campus_name}</div>
-                          </div>
+                          <div className="text-sm font-medium text-gray-900">{record.student_name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {record.campus_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {record.mentor_name}
