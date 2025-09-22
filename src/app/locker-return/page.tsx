@@ -25,6 +25,12 @@ interface ModalProps {
   children: React.ReactNode;
 }
 
+const RETURN_LOCKER_STATUS: Record<number, string> = {
+  0: '申请中',
+  1: '已处理',
+  2: '拒绝',
+};
+
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
@@ -69,6 +75,9 @@ export default function LockerReturnManagementPage() {
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  const getStatusLabel = (status: number, fallback?: string) =>
+    returnLockerStatus[status] ?? RETURN_LOCKER_STATUS[status] ?? fallback ?? '未知状态';
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_RETURN_LOCKER);
@@ -202,7 +211,7 @@ export default function LockerReturnManagementPage() {
           record.campus_name,
           record.alipay_account,
           record.alipay_name,
-          record.status_name,
+          getStatusLabel(record.status, record.status_name),
           record.create_time
         ])
       }]
@@ -332,15 +341,19 @@ export default function LockerReturnManagementPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            record.status === 0
+                          {(() => {
+                            const statusLabel = getStatusLabel(record.status, record.status_name);
+                            const badgeClass = record.status === 0
                               ? 'bg-yellow-100 text-yellow-800'
                               : record.status === 1
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {record.status_name}
-                          </span>
+                              : 'bg-red-100 text-red-800';
+                            return (
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${badgeClass}`}>
+                                {statusLabel}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {record.create_time}

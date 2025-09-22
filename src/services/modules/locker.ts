@@ -285,7 +285,7 @@ export interface ReturnLockerListResponse {
 
 export interface UpdateReturnLockerStatusParams {
   record_id: number;
-  status: number; // 1: 完成, 其他: 拒绝
+  status: 1 | 2; // 1: 已处理, 2: 拒绝
 }
 
 // 获取退柜记录列表
