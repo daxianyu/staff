@@ -36,10 +36,10 @@ const ATTENDANCE_STATUS = {
 };
 
 const ATTENDANCE_STATUS_LABELS = {
-  [ATTENDANCE_STATUS.PRESENT]: '出席',
-  [ATTENDANCE_STATUS.LEAVE]: '请假',
-  [ATTENDANCE_STATUS.ABSENT]: '旷课',
-  [ATTENDANCE_STATUS.LATE]: '迟到',
+  [ATTENDANCE_STATUS.PRESENT]: 'Present',
+  [ATTENDANCE_STATUS.LEAVE]: 'Leave',
+  [ATTENDANCE_STATUS.ABSENT]: 'Absent',
+  [ATTENDANCE_STATUS.LATE]: 'Late',
 };
 
 export default function DashboardPage() {
@@ -303,7 +303,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-3">
-              欢迎回来，{user?.name || '老师'} 👋
+              Welcome back, {user?.name || 'Teacher'} 👋
             </h1>
             <p className="text-blue-100 text-lg mb-4">
               {new Date().toLocaleDateString('zh-CN', { 
@@ -335,7 +335,7 @@ export default function DashboardPage() {
               }`}
             >
               <ClockIcon className="h-5 w-5 mr-2" />
-              考勤管理
+              Attendance
               <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
                 activeTab === 'attendance' 
                   ? 'bg-blue-100 text-blue-600' 
@@ -353,7 +353,7 @@ export default function DashboardPage() {
               }`}
             >
               <DocumentTextIcon className="h-5 w-5 mr-2" />
-              反馈评价
+              Feedback
               <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
                 activeTab === 'feedback' 
                   ? 'bg-green-100 text-green-600' 
@@ -372,8 +372,8 @@ export default function DashboardPage() {
               {dashboardData.attendance_list.length === 0 ? (
                 <div className="text-center py-12">
                   <ClockIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-lg text-gray-500 mb-2">暂无待处理考勤</p>
-                  <p className="text-sm text-gray-400">所有考勤都已处理完成</p>
+                  <p className="text-lg text-gray-500 mb-2">No pending attendance</p>
+                  <p className="text-sm text-gray-400">All attendance has been processed</p>
                 </div>
               ) : (
                 dashboardData.attendance_list.map((item, index) => (
@@ -390,7 +390,7 @@ export default function DashboardPage() {
                               {item.topic_name}
                             </h3>
                             <p className="text-sm text-gray-600 mt-1">
-                              📅 {formatTime(item.start_time)} • 学生 {item.students.length} 人
+                              📅 {formatTime(item.start_time)} • {item.students.length} students
                             </p>
                           </div>
                         </div>
@@ -406,12 +406,12 @@ export default function DashboardPage() {
                           {processingItems.has(`lesson_${item.students[0]?.lesson_id}`) ? (
                             <>
                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              提交中...
+                              Submitting...
                             </>
                           ) : (
                             <>
                               <CheckIcon className="h-4 w-4 mr-2" />
-                              提交考勤 ({item.students.length}人)
+                              Submit Attendance ({item.students.length})
                             </>
                           )}
                         </button>
@@ -427,7 +427,7 @@ export default function DashboardPage() {
                           className="px-4 py-2 text-sm bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center font-medium whitespace-nowrap"
                         >
                           <XMarkIcon className="h-4 w-4 mr-2" />
-                          {processingItems.has(`cancel_${item.students[0]?.lesson_id}`) ? '取消中...' : '取消课程'}
+                          {processingItems.has(`cancel_${item.students[0]?.lesson_id}`) ? 'Canceling...' : 'Cancel Lesson'}
                         </button>
                       </div>
                     </div>
@@ -458,10 +458,10 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="flex-1">
                                   <h4 className="font-semibold text-gray-900 text-lg">{student.student_name}</h4>
-                                  <p className="text-sm text-gray-500">学生 #{student.student_id}</p>
+                                  <p className="text-sm text-gray-500">Student #{student.student_id}</p>
                                   {hasComment && (
                                     <div className="mt-2 p-2 bg-yellow-100 rounded-lg border border-yellow-200">
-                                      <p className="text-xs text-yellow-600 font-medium mb-1">请假说明：{student.comment}</p>
+                                      <p className="text-xs text-yellow-600 font-medium mb-1">Leave Note: {student.comment}</p>
                                     </div>
                                   )}
                                 </div>
@@ -471,16 +471,16 @@ export default function DashboardPage() {
                                 {hasComment ? (
                                   /* 已请假状态 - 只显示，不可修改 */
                                   <>
-                                    <span className="text-sm text-gray-500 mb-2">状态</span>
+                                    <span className="text-sm text-gray-500 mb-2">Status</span>
                                     <span className="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                      已请假
+                                      On Leave
                                     </span>
-                                    <p className="text-sm text-gray-500 mt-1">不可修改</p>
+                                    <p className="text-sm text-gray-500 mt-1">Cannot modify</p>
                                   </>
                                 ) : (
                                   /* 正常状态 - 按钮组选择 */
                                   <>
-                                    <span className="text-sm text-gray-500 mb-2">考勤状态</span>
+                                    <span className="text-sm text-gray-500 mb-2">Attendance Status</span>
                                     <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                                       {Object.entries(ATTENDANCE_STATUS_LABELS).map(([value, label], index) => {
                                         const isSelected = currentStatus === parseInt(value);
@@ -525,8 +525,8 @@ export default function DashboardPage() {
               {dashboardData.feed_back_list.length === 0 ? (
                 <div className="text-center py-12">
                   <DocumentTextIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-lg text-gray-500 mb-2">暂无待反馈评价</p>
-                  <p className="text-sm text-gray-400">所有反馈都已完成</p>
+                  <p className="text-lg text-gray-500 mb-2">No pending feedback</p>
+                  <p className="text-sm text-gray-400">All feedback has been completed</p>
                 </div>
               ) : (
                 dashboardData.feed_back_list.map((item, index) => {
@@ -544,7 +544,7 @@ export default function DashboardPage() {
                             <div>
                               <h3 className="font-semibold text-gray-900 text-xl">{item.topic_name}</h3>
                               <p className="text-sm text-gray-600 mt-1">
-                                📋 学生 {item.student_name}(#{item.student_id})
+                                📋 Student {item.student_name}(#{item.student_id})
                               </p>
                             </div>
                           </div>
@@ -558,7 +558,7 @@ export default function DashboardPage() {
                         
                         <div className="bg-white rounded-lg border border-gray-200 p-4">
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            📝 反馈评价
+                            📝 Feedback
                           </label>
                           <textarea
                             value={feedbackTexts[key] || ''}
@@ -566,7 +566,7 @@ export default function DashboardPage() {
                               ...prev,
                               [key]: e.target.value
                             }))}
-                            placeholder="请详细描述学生在此周期内的学习表现、进步情况、需要改进的地方等..."
+                            placeholder="请从课堂表现，课程进度，作业情况，学习建议等维度去评价"
                             disabled={isProcessing}
                             className="w-full border border-gray-300 rounded-lg p-4 text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-gray-400"
                             rows={4}
@@ -583,12 +583,12 @@ export default function DashboardPage() {
                               {isProcessing ? (
                                 <>
                                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                  提交中...
+                                  Submitting...
                                 </>
                               ) : (
                                 <>
                                   <CheckIcon className="h-4 w-4 mr-2" />
-                                  提交反馈
+                                  Submit Feedback
                                 </>
                               )}
                             </button>

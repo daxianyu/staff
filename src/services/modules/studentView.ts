@@ -22,6 +22,70 @@ export interface StudentViewClassEntry {
   subjects: Record<string, StudentViewSubject>;
 }
 
+export interface FeedBackEntry {
+  id: number;
+  note: string;
+  student_attendance: number;
+  student_behaviour: number;
+  student_homework_completion: number;
+  subject_id: number;
+  teacher: string;
+  time_interval_id: number;
+  time_range_end: string;
+  time_range_start: string;
+  topic_name: string;
+}
+
+export interface BiweeklyFeedbackEntry extends FeedBackEntry {
+  timestamp: number;
+}
+
+const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
+
+const parseDateValueToMs = (value: string | number | null | undefined): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') {
+    if (value > 1e12) return value;
+    if (value > 1e9) return value * 1000;
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const numeric = Number(trimmed);
+  if (!Number.isNaN(numeric)) {
+    if (numeric > 1e12) return numeric;
+    if (numeric > 1e9) return numeric * 1000;
+  }
+  const parsed = Date.parse(trimmed);
+  if (!Number.isNaN(parsed)) return parsed;
+  const fallback = Date.parse(trimmed.replace(/-/g, '/'));
+  if (!Number.isNaN(fallback)) return fallback;
+  return null;
+};
+
+const getFeedbackTimestamp = (entry: FeedBackEntry): number | null =>
+  parseDateValueToMs((entry as any)?.updated_at) ??
+  parseDateValueToMs(entry.time_range_end) ??
+  parseDateValueToMs(entry.time_range_start) ??
+  parseDateValueToMs((entry as any)?.created_at);
+
+export const getBiweeklyFeedbackEntries = (
+  feedback: FeedBackEntry[] | null | undefined,
+  options: { now?: number; days?: number } = {}
+): BiweeklyFeedbackEntry[] => {
+  if (!Array.isArray(feedback) || feedback.length === 0) return [];
+  const { now = Date.now(), days = 30 } = options;
+  const cutoff = now - days * TWENTY_FOUR_HOURS_IN_MS;
+  return feedback
+    .map(item => {
+      const timestamp = getFeedbackTimestamp(item);
+      if (!timestamp) return null;
+      return { ...item, timestamp } as BiweeklyFeedbackEntry;
+    })
+    .filter((item): item is BiweeklyFeedbackEntry => !!item && item.timestamp >= cutoff)
+    .sort((a, b) => b.timestamp - a.timestamp);
+};
+
 export interface StudentViewResponseData {
   lesson_data: Record<string, StudentViewClassEntry>;
   student_data: {
@@ -36,7 +100,7 @@ export interface StudentViewResponseData {
   } | null;
   student_class: Record<string, { start_time: number; end_time: number }>;
   class_topics: Record<string, string>;
-  feedback: any[];
+  feedback: FeedBackEntry[];
   dormitory_data: any[];
   absence_info: any;
 }
