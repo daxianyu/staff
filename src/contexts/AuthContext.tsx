@@ -187,6 +187,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       PERMISSIONS.VIEW_MY_SUBJECTS,
       PERMISSIONS.EDIT_MY_SUBJECTS,
       PERMISSIONS.EDIT_PROFILE,
+      // Mentee 相关权限 - 所有staff用户都可以访问
+      PERMISSIONS.VIEW_MENTEE,
+      PERMISSIONS.EDIT_MENTEE,
+      PERMISSIONS.VIEW_MY_MENTORS,
+      PERMISSIONS.MANAGE_STUDENT_STATUS,
+      PERMISSIONS.VIEW_STUDENT_DETAILS,
+      PERMISSIONS.ADD_STUDENT_COMPLAINT,
+      PERMISSIONS.EDIT_ASSIGNMENT_REQUEST,
+      PERMISSIONS.MANAGE_STUDENT_EXAMS,
     ];
     if (basicPermissions.includes(permission as any)) {
       return true; // 所有staff用户都可以访问

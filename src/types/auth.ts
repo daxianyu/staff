@@ -148,6 +148,16 @@ export const PERMISSIONS = {
   VIEW_CARD_INFO: 'view_card_info',
   EDIT_CARD_INFO: 'edit_card_info',
   
+  // Mentee 相关权限
+  VIEW_MENTEE: 'view_mentee',
+  EDIT_MENTEE: 'edit_mentee',
+  VIEW_MY_MENTORS: 'view_my_mentors',
+  MANAGE_STUDENT_STATUS: 'manage_student_status',
+  VIEW_STUDENT_DETAILS: 'view_student_details',
+  ADD_STUDENT_COMPLAINT: 'add_student_complaint',
+  EDIT_ASSIGNMENT_REQUEST: 'edit_assignment_request',
+  MANAGE_STUDENT_EXAMS: 'manage_student_exams',
+  
   // STAS统计相关权限
   VIEW_STAS: 'stas',
   VIEW_CENTER_LIST: 'core_admin',
@@ -188,6 +198,28 @@ export const PERMISSIONS = {
   // 自助报名班级权限 (edit_classes or sales_admin)
   VIEW_SELF_SIGNUP_CLASSES: 'view_self_signup_classes',
   EDIT_SELF_SIGNUP_CLASSES: 'edit_self_signup_classes',
+
+  // Core 相关权限 (需要 core_user=1)
+  VIEW_CORE_RECORD: 'view_core_record',
+  VIEW_CLASS_CHANGE_OVERVIEW: 'view_class_change_overview',
+  VIEW_STAFF_RIGHTS: 'view_staff_rights',
+  EDIT_STAFF_RIGHTS: 'edit_staff_rights',
+  VIEW_OPERATION_CONFIG: 'view_operation_config',
+  EDIT_OPERATION_CONFIG: 'edit_operation_config',
+  VIEW_TIME_OPERATION_CONFIG: 'view_time_operation_config',
+  EDIT_TIME_OPERATION_CONFIG: 'edit_time_operation_config',
+  VIEW_ARCHIVES: 'view_archives',
+  EDIT_ARCHIVES: 'edit_archives',
+  VIEW_TOOLS: 'view_tools',
+  EDIT_TOOLS: 'edit_tools',
+  VIEW_PROMOTION: 'view_promotion',
+  EDIT_PROMOTION: 'edit_promotion',
+  VIEW_FEE_PROMOTION: 'view_fee_promotion',
+  EDIT_FEE_PROMOTION: 'edit_fee_promotion',
+  VIEW_PAY_CONFIG: 'view_pay_config',
+  EDIT_PAY_CONFIG: 'edit_pay_config',
+  VIEW_CORE_EXIT_PERMIT: 'view_core_exit_permit',
+  EDIT_CORE_EXIT_PERMIT: 'edit_core_exit_permit',
 } as const;
 
 // 数字权限常量 - 基于 operation_right 数组

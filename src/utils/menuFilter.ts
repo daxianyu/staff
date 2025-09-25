@@ -136,6 +136,33 @@ export class MenuFilter {
       return this.userRights.includes('tool_user');
     }
     
+    // 需要 core_user=1 的权限
+    const corePermissions = [
+      PERMISSIONS.VIEW_CORE_RECORD,
+      PERMISSIONS.VIEW_CLASS_CHANGE_OVERVIEW,
+      PERMISSIONS.VIEW_STAFF_RIGHTS,
+      PERMISSIONS.EDIT_STAFF_RIGHTS,
+      PERMISSIONS.VIEW_OPERATION_CONFIG,
+      PERMISSIONS.EDIT_OPERATION_CONFIG,
+      PERMISSIONS.VIEW_TIME_OPERATION_CONFIG,
+      PERMISSIONS.EDIT_TIME_OPERATION_CONFIG,
+      PERMISSIONS.VIEW_ARCHIVES,
+      PERMISSIONS.EDIT_ARCHIVES,
+      PERMISSIONS.VIEW_TOOLS,
+      PERMISSIONS.EDIT_TOOLS,
+      PERMISSIONS.VIEW_PROMOTION,
+      PERMISSIONS.EDIT_PROMOTION,
+      PERMISSIONS.VIEW_FEE_PROMOTION,
+      PERMISSIONS.EDIT_FEE_PROMOTION,
+      PERMISSIONS.VIEW_PAY_CONFIG,
+      PERMISSIONS.EDIT_PAY_CONFIG,
+      PERMISSIONS.VIEW_CORE_EXIT_PERMIT,
+      PERMISSIONS.EDIT_CORE_EXIT_PERMIT,
+    ];
+    if (corePermissions.includes(permission as any)) {
+      return isCoreUser;
+    }
+    
     // 需要 edit_classes 或 sales_admin 权限
     const selfSignupPermissions = [
       PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES,
@@ -160,6 +187,15 @@ export class MenuFilter {
       PERMISSIONS.VIEW_MY_SUBJECTS,
       PERMISSIONS.EDIT_MY_SUBJECTS,
       PERMISSIONS.EDIT_PROFILE,
+      // Mentee 相关权限 - 所有staff用户都可以访问
+      PERMISSIONS.VIEW_MENTEE,
+      PERMISSIONS.EDIT_MENTEE,
+      PERMISSIONS.VIEW_MY_MENTORS,
+      PERMISSIONS.MANAGE_STUDENT_STATUS,
+      PERMISSIONS.VIEW_STUDENT_DETAILS,
+      PERMISSIONS.ADD_STUDENT_COMPLAINT,
+      PERMISSIONS.EDIT_ASSIGNMENT_REQUEST,
+      PERMISSIONS.MANAGE_STUDENT_EXAMS,
     ];
     if (basicPermissions.includes(permission as any)) {
       return true; // 所有staff用户都可以访问
@@ -281,6 +317,28 @@ export const defaultMenuConfig: MenuItem[] = [
           icon: 'table',
           requiredPermissions: ['view_lesson_table'],
         },
+    ],
+  },
+  {
+    key: 'mentees',
+    label: 'Mentee Management',
+    icon: 'user-group',
+    requiredPermissions: [PERMISSIONS.VIEW_MENTEE],
+    children: [
+      {
+        key: 'mentee-list',
+        label: 'Mentee List',
+        path: '/mentee',
+        icon: 'users',
+        requiredPermissions: [PERMISSIONS.VIEW_MENTEE],
+      },
+      {
+        key: 'my-mentors',
+        label: 'My Mentors',
+        path: '/mentee/my-mentors',
+        icon: 'user-group',
+        requiredPermissions: [PERMISSIONS.VIEW_MY_MENTORS],
+      },
     ],
   },
   {
@@ -830,6 +888,91 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/school-admin/weekend-special-date',
         icon: 'calendar-days',
         requiredPermissions: [PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE],
+      },
+    ],
+  },
+  {
+    key: 'core',
+    label: 'Core',
+    icon: 'settings',
+    requiredPermissions: [PERMISSIONS.VIEW_CORE_RECORD],
+    children: [
+      {
+        key: 'core-record',
+        label: 'Core Record',
+        path: '/core/record',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_CORE_RECORD],
+      },
+      {
+        key: 'class-change-overview',
+        label: 'Class Change Overview',
+        path: '/core/class-change-overview',
+        icon: 'calendar',
+        requiredPermissions: [PERMISSIONS.VIEW_CLASS_CHANGE_OVERVIEW],
+      },
+      {
+        key: 'staff-rights',
+        label: 'Staff Rights',
+        path: '/core/staff-rights',
+        icon: 'users',
+        requiredPermissions: [PERMISSIONS.VIEW_STAFF_RIGHTS],
+      },
+      {
+        key: 'operation-config',
+        label: 'Operation Config',
+        path: '/core/operation-config',
+        icon: 'settings',
+        requiredPermissions: [PERMISSIONS.VIEW_OPERATION_CONFIG],
+      },
+      {
+        key: 'time-operation-config',
+        label: 'Time Operation Config',
+        path: '/core/time-operation-config',
+        icon: 'calendar',
+        requiredPermissions: [PERMISSIONS.VIEW_TIME_OPERATION_CONFIG],
+      },
+      {
+        key: 'archives',
+        label: 'Archives',
+        path: '/core/archives',
+        icon: 'book',
+        requiredPermissions: [PERMISSIONS.VIEW_ARCHIVES],
+      },
+      {
+        key: 'tools',
+        label: 'Tools',
+        path: '/core/tools',
+        icon: 'calculator',
+        requiredPermissions: [PERMISSIONS.VIEW_TOOLS],
+      },
+      {
+        key: 'promotion',
+        label: 'Promotion',
+        path: '/core/promotion',
+        icon: 'chart',
+        requiredPermissions: [PERMISSIONS.VIEW_PROMOTION],
+      },
+      {
+        key: 'fee-promotion',
+        label: 'Fee Promotion',
+        path: '/core/fee-promotion',
+        icon: 'dollar-sign',
+        requiredPermissions: [PERMISSIONS.VIEW_FEE_PROMOTION],
+      },
+      {
+        key: 'pay-config',
+        label: 'Pay Config',
+        path: '/core/pay-config',
+        icon: 'dollar-sign',
+        requiredPermissions: [PERMISSIONS.VIEW_PAY_CONFIG],
+      },
+      {
+        key: 'exit-permit',
+        label: 'Exit Permit',
+        path: '/core/exit-permit',
+        icon: 'map-pin',
+        requiredPermissions: [PERMISSIONS.VIEW_CORE_EXIT_PERMIT],
       },
     ],
   },

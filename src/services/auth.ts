@@ -16,5 +16,7 @@ export * from './modules/warning';
 export * from './modules/weekend';
 export * from './modules/tools';
 export * from './modules/selfSignupClass';
+export * from './modules/core';
+export * from './modules/mentee';
 export { type ApiEnvelope, type ApiResponse } from './types';
 export { getAuthHeader } from './apiClient';
