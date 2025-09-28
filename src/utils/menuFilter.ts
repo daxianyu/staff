@@ -352,7 +352,7 @@ export const defaultMenuConfig: MenuItem[] = [
         label: 'Class List',
         path: '/class',
         icon: 'book',
-        requiredPermissions: ['view_classes'],
+        requiredPermissions: [PERMISSIONS.EDIT_CLASSES],
       },
     ],
   },
