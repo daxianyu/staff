@@ -545,7 +545,7 @@ export const addCommitmentRecord = async (params: NewCommitmentParams): Promise<
 };
 
 // 教材管理相关接口定义
-export interface TextbookInventory {
+export interface TextbookInventoryWithCount {
   campus_id: number;
   campus_name: string;
   inventory: number;
@@ -557,7 +557,7 @@ export interface Textbook {
   type: string;
   price: number;
   paid_count: number;
-  inventory_info: TextbookInventory[];
+  inventory_info: TextbookInventoryWithCount[];
 }
 
 export interface TextbookFormData {

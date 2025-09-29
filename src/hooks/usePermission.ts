@@ -64,6 +64,11 @@ export function useUserInfo() {
     hasAllPermissions,
     
     // 常用权限检查
+    isStaff: user?.type === 0,        // 员工
+    isStudent: user?.type === 1,      // 学生
+    isParent: user?.type === 2,       // 家长
+    isStudentCandidate: user?.type === 4, // 预备学生
+    // 向后兼容
     isAdmin: user?.type === 0,
     isTeacher: user?.type === 2,
     

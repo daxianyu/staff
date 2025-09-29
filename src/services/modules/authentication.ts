@@ -167,40 +167,46 @@ export const getStudentSalesInfo = async (): Promise<ApiResponse> => {
   }
 };
 
+// 用户类型常量
+const USER_STAFF = 0;
+const USER_STUDENT = 1;
+const USER_PARENT = 2;
+const USER_STUDENT_CANDIDATE = 4;
+
 type BasicUser = { type?: number } | null | undefined;
 
 export const handleUserRedirect = async (userData: BasicUser, router: RouterLike, useWindowLocation = false) => {
   if (!userData) return;
 
   try {
-    if (userData.type === 4) {
-      const salesInfoResp = await getStudentSalesInfo();
-
-      if (salesInfoResp.code === 200) {
-        const salesInfo = salesInfoResp.data as SalesInfoResponse;
-        const targetPath = salesInfo?.info_sign === 0 ? '/my-profile' : '/my-test';
-
+    // 根据用户类型进行不同的跳转处理
+    switch (userData.type) {
+      case USER_STUDENT: // 学生 - 跳转到学生系统
+      case USER_STUDENT_CANDIDATE: // 预备学生 - 跳转到学生系统
+        // 直接跳转到学生系统网站
+        window.location.href = 'https://www.huayaopudong.com/student/notification';
+        break;
+        
+      case USER_PARENT: // 家长 - 暂时保持现状，跳转到dashboard
         if (useWindowLocation) {
-          window.location.href = targetPath;
+          window.location.href = '/dashboard';
         } else {
-          router?.push(targetPath);
+          router?.push('/dashboard');
         }
-      } else {
+        break;
+        
+      case USER_STAFF: // 员工 - 保持现状，跳转到dashboard
+      default: // 其他未知类型默认也跳转到dashboard
         if (useWindowLocation) {
-          window.location.href = '/staff/my-profile';
+          window.location.href = '/dashboard';
         } else {
-          router?.push('/my-profile');
+          router?.push('/dashboard');
         }
-      }
-    } else {
-      if (useWindowLocation) {
-        window.location.href = '/dashboard';
-      } else {
-        router?.push('/dashboard');
-      }
+        break;
     }
   } catch (error) {
     console.error('处理用户重定向异常:', error);
+    // 出错时默认跳转到dashboard
     if (useWindowLocation) {
       window.location.href = '/dashboard';
     } else {

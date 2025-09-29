@@ -1605,32 +1605,29 @@ export default function StudentDetailPage() {
 
           {activeTab === 'exam-records' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">考试记录</h3>
               {examsInfo ? (
                 <div className="space-y-6">
                   {/* 大考记录 */}
                   {examsInfo.table_1 && examsInfo.table_1.length > 0 && (
                     <div>
-                      <h4 className="text-md font-semibold text-gray-900 mb-4">大考记录</h4>
+                      <h4 className="text-md font-semibold text-gray-900 mb-4">Exam</h4>
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试名称</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试类型</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">结果</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">等级</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作员</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam	</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Score</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
                             {examsInfo.table_1.map((exam, index) => (
                               <tr key={index} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_type}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.result}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.second}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.grade}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.operator}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1639,29 +1636,26 @@ export default function StudentDetailPage() {
                     </div>
                   )}
 
-                  {/* 语言考试记录 */}
                   {examsInfo.table_2 && examsInfo.table_2.length > 0 && (
                     <div>
-                      <h4 className="text-md font-semibold text-gray-900 mb-4">语言考试记录</h4>
+                      <h4 className="text-md font-semibold text-gray-900 mb-4">School Exam</h4>
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试名称</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试类型</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">结果</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">等级</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作员</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Score</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
                             {examsInfo.table_2.map((exam, index) => (
                               <tr key={index} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_type}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.score}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.result}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.grade}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.operator}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1675,7 +1669,7 @@ export default function StudentDetailPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500">暂无考试记录</p>
+                <p className="text-gray-500">No exam records</p>
               )}
             </div>
           )}

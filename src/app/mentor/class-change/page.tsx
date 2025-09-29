@@ -62,8 +62,8 @@ export default function ClassChangePage() {
         setSelectData(selectResponse.data);
       }
       
-      if (listResponse.code === 200) {
-        setRecords(listResponse.data || []);
+      if (listResponse.code === 0) {
+        setRecords(listResponse.data.rows || []);
       }
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -144,7 +144,7 @@ export default function ClassChangePage() {
   const filteredRecords = records.filter(record => {
     return record.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
            record.apply_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           record.apply_desc.toLowerCase().includes(searchTerm.toLowerCase());
+           record.desc.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   // 权限检查
@@ -259,23 +259,23 @@ export default function ClassChangePage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900 max-w-xs truncate">
-                          {record.apply_desc}
+                          {record.desc}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-900">
                           <ClockIcon className="h-4 w-4 text-gray-400 mr-2" />
-                          {new Date(record.apply_time * 1000).toLocaleString('zh-CN')}
+                          {record.apply_time}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          record.status === 0 ? 'bg-yellow-100 text-yellow-800' :
-                          record.status === 1 ? 'bg-green-100 text-green-800' :
-                          record.status === 2 ? 'bg-red-100 text-red-800' :
+                          record.status_num === 0 ? 'bg-yellow-100 text-yellow-800' :
+                          record.status_num === 1 ? 'bg-green-100 text-green-800' :
+                          record.status_num === 2 ? 'bg-red-100 text-red-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {selectData?.status_dict[record.status.toString()] || '未知'}
+                          {selectData?.status_dict[record.status_num.toString()] || record.status || '未知'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -287,7 +287,7 @@ export default function ClassChangePage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {record.status === 0 && (
+                        {record.status_num === 0 && (
                           <button
                             onClick={() => handleRevoke(record.id)}
                             className="text-red-600 hover:text-red-900 text-sm font-medium"

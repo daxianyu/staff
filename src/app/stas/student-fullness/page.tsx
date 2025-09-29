@@ -33,7 +33,7 @@ export default function StudentFullnessPage() {
   const [pageSize, setPageSize] = useState(20);
 
   // 权限检查
-  const canView = hasPermission(PERMISSIONS.VIEW_STUDENT_FULLNESS) || hasPermission('finance') || hasPermission(PERMISSIONS.VIEW_STAS);
+  const canView = hasPermission('finance') || hasPermission(PERMISSIONS.VIEW_STAS);
 
   // 如果没有权限，显示无权限页面
   if (!canView) {

@@ -21,17 +21,25 @@ export interface MentorClassChangeRecord {
   apply_name: string;
   operator_id: number;
   operator_name: string;
+  user_id: number;
   student_name: string;
-  apply_desc: string;
-  apply_time: number;
-  status: number;
+  desc: string;
+  apply_time: string;
+  update_time: string;
+  status_num: number;
+  status: string;
   reject_reason: string;
+}
+
+export interface ClassChangeListData {
+  rows: MentorClassChangeRecord[];
+  total: number;
 }
 
 export interface ClassChangeListResponse {
   code: number;
   message: string;
-  data: MentorClassChangeRecord[];
+  data: ClassChangeListData;
 }
 
 export interface AddClassChangeParams {
@@ -54,7 +62,7 @@ export interface MentorUpdateClassChangeStatusParams {
  */
 export const getClassChangeSelect = async (): Promise<ClassChangeSelectResponse> => {
   try {
-    const { data } = await request('/api/classroom/get_class_change_select', {
+    const { data } = await request('/api/room/get_class_change_select', {
       method: 'GET',
     });
     const response = normalizeApiResponse(data as any);
@@ -89,21 +97,28 @@ export const getClassChangeSelect = async (): Promise<ClassChangeSelectResponse>
  */
 export const getClassChangeList = async (): Promise<ClassChangeListResponse> => {
   try {
-    const { data } = await request('/api/core/operator_list', {
+    const { data } = await request('/api/room/class_change/get_list', {
       method: 'GET',
     });
-    const response = normalizeApiResponse(data as any);
+    // 直接使用原始响应，因为它已经是正确的格式
+    const apiData = data as any;
     return {
-      code: response.code,
-      message: response.message,
-      data: (response.data as MentorClassChangeRecord[]) || []
+      code: apiData.status || 0,
+      message: apiData.message || '',
+      data: {
+        rows: (apiData.data?.rows as MentorClassChangeRecord[]) || [],
+        total: apiData.data?.total || 0
+      }
     };
   } catch (error) {
     console.error('获取调课申请列表失败:', error);
     return { 
       code: 500, 
       message: error instanceof Error ? error.message : '获取调课申请列表失败',
-      data: []
+      data: {
+        rows: [],
+        total: 0
+      }
     };
   }
 };
@@ -115,7 +130,7 @@ export const getClassChangeList = async (): Promise<ClassChangeListResponse> => 
  */
 export const addClassChange = async (params: AddClassChangeParams): Promise<ApiResponse> => {
   try {
-    const { data } = await request('/api/classroom/class_change/add', {
+    const { data } = await request('/api/room/class_change/add', {
       method: 'POST',
       body: params,
     });
@@ -136,7 +151,7 @@ export const addClassChange = async (params: AddClassChangeParams): Promise<ApiR
  */
 export const updateMentorClassChangeStatus = async (params: MentorUpdateClassChangeStatusParams): Promise<ApiResponse> => {
   try {
-    const { data } = await request('/api/classroom/class_change/update_status', {
+    const { data } = await request('/api/room/class_change/update_status', {
       method: 'POST',
       body: params,
     });

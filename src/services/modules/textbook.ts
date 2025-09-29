@@ -1,7 +1,7 @@
 import { request, normalizeApiResponse } from '../apiClient';
 import type { ApiResponse } from '../types';
 
-export interface TextbookInventory {
+export interface TextbookCampusInfo {
   campus_name: string;
   campus_id: number;
 }
@@ -14,7 +14,7 @@ export interface TextbookItem {
   price: number;
   paid_count: number;
   campus_id: number;
-  inventory_info: TextbookInventory[]
+  inventory_info: TextbookCampusInfo[]
 }
 
 export interface TextbookResponse {

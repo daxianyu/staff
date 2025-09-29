@@ -20,5 +20,6 @@ export * from './modules/mentee';
 export * from './modules/classroom';
 export * from './modules/subjects';
 export * from './modules/textbook';
+export * from './modules/library';
 export { type ApiEnvelope, type ApiResponse } from './types';
 export { getAuthHeader } from './apiClient';

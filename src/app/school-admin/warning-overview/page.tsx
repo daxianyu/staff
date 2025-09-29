@@ -54,7 +54,7 @@ export default function WarningOverviewPage() {
   const [pageSize, setPageSize] = useState(10);
 
   // 权限检查
-  const canView = hasPermission(PERMISSIONS.VIEW_WARNING_OVERVIEW);
+  const canView = true; // 所有staff都可以查看
   const canEdit = hasPermission(PERMISSIONS.EDIT_WARNING_OVERVIEW);
 
   // 加载数据
@@ -83,10 +83,9 @@ export default function WarningOverviewPage() {
   };
 
   useEffect(() => {
-    if (canView) {
-      loadData();
-    }
-  }, [canView]);
+    // 所有staff都可以查看，直接加载数据
+    loadData();
+  }, []);
 
   // 过滤数据
   const filteredWarnings = warnings.filter(warning =>
@@ -216,17 +215,7 @@ export default function WarningOverviewPage() {
     }));
   };
 
-  if (!canView) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-500" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">权限不足</h3>
-          <p className="mt-1 text-sm text-gray-500">您没有访问警告管理页面的权限</p>
-        </div>
-      </div>
-    );
-  }
+  // 移除权限检查，所有staff都可以查看
 
   return (
     <div className="min-h-screen bg-gray-50">

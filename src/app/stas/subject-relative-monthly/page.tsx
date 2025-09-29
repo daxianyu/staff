@@ -44,7 +44,7 @@ export default function SubjectRelativeMonthlyPage() {
   const [pageSize, setPageSize] = useState(10);
 
   // 权限检查
-  const canView = hasPermission(PERMISSIONS.VIEW_SUBJECT_RELATIVE_MONTHLY) || hasPermission('finance') || hasPermission(PERMISSIONS.VIEW_STAS);
+  const canView = hasPermission('finance') || hasPermission(PERMISSIONS.VIEW_STAS);
 
   // 如果没有权限，显示无权限页面
   if (!canView) {

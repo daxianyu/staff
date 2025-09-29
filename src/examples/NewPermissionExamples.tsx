@@ -73,7 +73,7 @@ export default function NewPermissionExamples() {
         {/* 基于用户类型和权限的综合检查 */}
         <AdvancedPermissionGate 
           permissions={[COMMON_PERMISSIONS.VIEW_STUDENTS]}
-          userTypes={[USER_TYPES.ADMIN, USER_TYPES.TEACHER]}
+          userTypes={[USER_TYPES.STAFF]}
           fallback={<div className="text-red-500">需要管理员或教师权限且有学生查看权限</div>}
         >
           <div className="bg-purple-100 p-4 rounded mb-4">
@@ -156,7 +156,7 @@ function HookExamples() {
   ], 'all');
   
   // 用户类型检查
-  const isAdminOrTeacher = useHasUserType([USER_TYPES.ADMIN, USER_TYPES.TEACHER]);
+  const isAdminOrTeacher = useHasUserType([USER_TYPES.STAFF]);
   
   // 校区权限检查
   const hasCampusAccess = useHasCampusAccess([1, 2]);
@@ -164,7 +164,7 @@ function HookExamples() {
   // 综合权限检查
   const canAccessFinance = useConditionalPermission({
     permissions: [COMMON_PERMISSIONS.FINANCE],
-    userTypes: [USER_TYPES.ADMIN],
+    userTypes: [USER_TYPES.STAFF],
     campusIds: [1, 2]
   });
   

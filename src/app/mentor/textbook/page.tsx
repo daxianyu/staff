@@ -6,10 +6,6 @@ import {
   BookOpenIcon,
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
-  CurrencyDollarIcon,
-  TagIcon,
-  BuildingOfficeIcon,
-  CubeIcon,
 } from '@heroicons/react/24/outline';
 
 export default function TextbookPage() {
@@ -146,7 +142,6 @@ export default function TextbookPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-900">
-                          <CurrencyDollarIcon className="h-4 w-4 text-gray-400 mr-2" />
                           {textbook.price} CNY
                         </div>
                       </td>

@@ -212,7 +212,7 @@ export default function ExamSignupPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          ${exam.price || 0}
+                          {exam.price || 0} CNY
                         </div>
                       </td>
                     </tr>

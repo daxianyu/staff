@@ -255,9 +255,10 @@ export const ROLES = {
 
 // 预定义用户类型常量
 export const USER_TYPES = {
-  ADMIN: 0,
-  TEACHER: 2,
-  OTHER: 1,
+  STAFF: 0,           // 员工（原ADMIN）
+  STUDENT: 1,         // 学生
+  PARENT: 2,          // 家长
+  STUDENT_CANDIDATE: 4, // 预备学生
 } as const;
 
 // 菜单项接口（向后兼容）
