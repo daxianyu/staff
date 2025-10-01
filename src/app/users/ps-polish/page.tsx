@@ -60,7 +60,7 @@ export default function PSPolishPage() {
     unhappy: ''
   });
 
-  const canView = hasPermission(PERMISSIONS.VIEW_PS_POLISH);
+  const canView = true;
   const canEdit = hasPermission(PERMISSIONS.EDIT_PS_POLISH);
 
   useEffect(() => {

@@ -31,7 +31,7 @@ export default function EditProfilePage() {
     confirm: false
   });
 
-  const canView = hasPermission(PERMISSIONS.VIEW_STAFF);
+  const canView = true; //hasPermission(PERMISSIONS.VIEW_STAFF);
   const canEdit = hasPermission(PERMISSIONS.EDIT_PROFILE);
 
   useEffect(() => {

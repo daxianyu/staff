@@ -172,6 +172,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return operationRights.includes(OPERATION_RIGHTS.CARD_MANAGEMENT);
     }
     
+    // 需要 operation_right为17 或 core_user=1 的权限
+    const weekendPlanPermissions = [
+      PERMISSIONS.VIEW_WEEKEND_PLAN,
+      PERMISSIONS.EDIT_WEEKEND_PLAN,
+    ];
+    if (weekendPlanPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WEEKEND_PLAN);
+    }
+    
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,

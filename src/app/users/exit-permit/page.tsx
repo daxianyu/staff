@@ -230,18 +230,22 @@ export default function ExitPermitPage() {
 
   const getStatusColor = (status: number) => {
     switch (status) {
-      case 1: return 'bg-yellow-100 text-yellow-800'; // 待处理
-      case 2: return 'bg-red-100 text-red-800'; // 已拒绝
-      case 3: return 'bg-green-100 text-green-800'; // 已同意
+      case 0: return 'bg-yellow-100 text-yellow-800'; // 审批中
+      case 1: return 'bg-green-100 text-green-800'; // 通过
+      case 2: return 'bg-red-100 text-red-800'; // 拒绝
+      case 3: return 'bg-blue-100 text-blue-800'; // 已开门
+      case 4: return 'bg-orange-100 text-orange-800'; // 导师撤回
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusText = (status: number) => {
     switch (status) {
-      case 1: return '待处理';
-      case 2: return '已拒绝';
-      case 3: return '已同意';
+      case 0: return '审批中';
+      case 1: return '通过';
+      case 2: return '拒绝';
+      case 3: return '已开门';
+      case 4: return '导师撤回';
       default: return '未知';
     }
   };
@@ -366,13 +370,22 @@ export default function ExitPermitPage() {
                       {canEdit && (
                         <td className="w-32 px-3 py-4 text-sm font-medium">
                           <div className="flex items-center gap-1 flex-wrap">
-                            {item.status === 1 && (
-                              <button
-                                onClick={() => handleStatusChange(item, 3)}
-                                className="text-green-600 hover:text-green-900 text-xs px-2 py-1 rounded"
-                              >
-                                同意
-                              </button>
+                            {/* 只有审批中状态才显示通过/拒绝按钮 */}
+                            {item.status === 0 && (
+                              <>
+                                <button
+                                  onClick={() => handleStatusChange(item, 1)}
+                                  className="text-green-600 hover:text-green-900 text-xs px-2 py-1 rounded"
+                                >
+                                  通过
+                                </button>
+                                <button
+                                  onClick={() => handleStatusChange(item, 2)}
+                                  className="text-red-600 hover:text-red-900 text-xs px-2 py-1 rounded"
+                                >
+                                  拒绝
+                                </button>
+                              </>
                             )}
                             <button
                               onClick={() => {
@@ -383,10 +396,11 @@ export default function ExitPermitPage() {
                             >
                               删除
                             </button>
-                            {item.status === 3 && (
+                            {/* 只有通过状态才显示撤回按钮 */}
+                            {item.status === 1 && (
                               <button
-                                onClick={() => handleStatusChange(item, 1)}
-                                className="text-yellow-600 hover:text-yellow-900 text-xs px-2 py-1 rounded"
+                                onClick={() => handleStatusChange(item, 4)}
+                                className="text-orange-600 hover:text-orange-900 text-xs px-2 py-1 rounded"
                               >
                                 撤回
                               </button>

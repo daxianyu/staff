@@ -25,8 +25,8 @@ export default function RootLayout({
         <AuthProvider>
           <NotifyProvider>
             <ClientLayout>{children}</ClientLayout>
-            <PermissionDebugger />
-            <MenuDebugger />
+            {ENV.enableApiDebugger && <PermissionDebugger />}
+            {ENV.enableApiDebugger && <MenuDebugger />}
           </NotifyProvider>
         </AuthProvider>
         {ENV.enableApiDebugger && <ApiDebugger />}

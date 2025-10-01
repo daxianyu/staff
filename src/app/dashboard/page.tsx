@@ -299,13 +299,13 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* 头部欢迎区域 */}
-      <div className="bg-gradient-to-br from-blue-400 to-indigo-200 rounded-xl p-8 text-white shadow-xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-3">
+      <div className="bg-gradient-to-br from-blue-400 to-indigo-200 rounded-xl p-4 sm:p-6 lg:p-8 text-white shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-3">
               Welcome back, {user?.name || 'Teacher'} 👋
             </h1>
-            <p className="text-blue-100 text-lg mb-4">
+            <p className="text-blue-100 text-sm sm:text-base lg:text-lg mb-4">
               {new Date().toLocaleDateString('zh-CN', { 
                 year: 'numeric', 
                 month: 'long', 
@@ -314,9 +314,9 @@ export default function DashboardPage() {
               })}
             </p>
           </div>
-          <div className="hidden md:block">
-            <div className="bg-white/10 backdrop-blur-sm rounded-full p-4">
-              <UserGroupIcon className="h-12 w-12 text-white" />
+          <div className="hidden sm:block">
+            <div className="bg-white/10 backdrop-blur-sm rounded-full p-3 lg:p-4">
+              <UserGroupIcon className="h-8 w-8 lg:h-12 lg:w-12 text-white" />
             </div>
           </div>
         </div>
@@ -324,19 +324,20 @@ export default function DashboardPage() {
 
       {/* Tab 导航 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="px-6 pt-6 pb-0">
+        <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-0">
           <nav className="flex space-x-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('attendance')}
-              className={`flex-1 flex items-center justify-center px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
                 activeTab === 'attendance'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <ClockIcon className="h-5 w-5 mr-2" />
-              Attendance
-              <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+              <ClockIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="hidden md:inline">Attendance</span>
+              <span className="md:hidden">Att</span>
+              <span className={`ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs rounded-full ${
                 activeTab === 'attendance' 
                   ? 'bg-blue-100 text-blue-600' 
                   : 'bg-gray-200 text-gray-600'
@@ -346,15 +347,16 @@ export default function DashboardPage() {
             </button>
             <button
               onClick={() => setActiveTab('feedback')}
-              className={`flex-1 flex items-center justify-center px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
                 activeTab === 'feedback'
                   ? 'bg-white text-green-600 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <DocumentTextIcon className="h-5 w-5 mr-2" />
-              Feedback
-              <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+              <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="hidden md:inline">Feedback</span>
+              <span className="md:hidden">Feed</span>
+              <span className={`ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs rounded-full ${
                 activeTab === 'feedback' 
                   ? 'bg-green-100 text-green-600' 
                   : 'bg-gray-200 text-gray-600'
@@ -366,7 +368,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Tab 内容 */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {activeTab === 'attendance' && (
             <div className="space-y-4">
               {dashboardData.attendance_list.length === 0 ? (
@@ -377,19 +379,19 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 dashboardData.attendance_list.map((item, index) => (
-                  <div key={`${item.subject_id}_${index}`} className="bg-gradient-to-r from-white to-blue-50 border border-blue-100 rounded-xl p-6 hover:shadow-md transition-all duration-200">
+                  <div key={`${item.subject_id}_${index}`} className="bg-gradient-to-r from-white to-blue-50 border border-blue-100 rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-200">
                     {/* 课程头部信息和操作按钮 */}
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          <div className="bg-blue-100 rounded-full p-2 mr-3">
-                            <ChartBarIcon className="h-5 w-5 text-blue-600" />
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 sm:mb-6">
+                      <div className="flex-1 mb-4 sm:mb-0">
+                        <div className="flex items-start sm:items-center mb-2">
+                          <div className="bg-blue-100 rounded-full p-2 mr-3 flex-shrink-0">
+                            <ChartBarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900 text-xl">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold text-gray-900 text-lg sm:text-xl break-words">
                               {item.topic_name}
                             </h3>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1">
                               📅 {formatTime(item.start_time)} • {item.students.length} students
                             </p>
                           </div>
@@ -397,21 +399,23 @@ export default function DashboardPage() {
                       </div>
                       
                       {/* 右上角操作按钮 */}
-                      <div className="flex flex-col sm:flex-row gap-2 ml-4">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:ml-4 w-full sm:w-auto">
                         <button
                           onClick={() => handleSubmitAllAttendance(item)}
                           disabled={processingItems.has(`lesson_${item.students[0]?.lesson_id}`)}
-                          className="px-4 py-2 text-sm bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center font-medium shadow-sm hover:shadow-md whitespace-nowrap"
+                          className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-medium shadow-sm hover:shadow-md"
                         >
                           {processingItems.has(`lesson_${item.students[0]?.lesson_id}`) ? (
                             <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Submitting...
+                              <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
+                              <span className="hidden sm:inline">Submitting...</span>
+                              <span className="sm:hidden">提交中...</span>
                             </>
                           ) : (
                             <>
-                              <CheckIcon className="h-4 w-4 mr-2" />
-                              Submit Attendance ({item.students.length})
+                              <CheckIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">Submit Attendance ({item.students.length})</span>
+                              <span className="sm:hidden">提交考勤 ({item.students.length})</span>
                             </>
                           )}
                         </button>
@@ -424,10 +428,15 @@ export default function DashboardPage() {
                             }
                           }}
                           disabled={processingItems.has(`cancel_${item.students[0]?.lesson_id}`)}
-                          className="px-4 py-2 text-sm bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center font-medium whitespace-nowrap"
+                          className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-medium"
                         >
-                          <XMarkIcon className="h-4 w-4 mr-2" />
-                          {processingItems.has(`cancel_${item.students[0]?.lesson_id}`) ? 'Canceling...' : 'Cancel Lesson'}
+                          <XMarkIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">
+                            {processingItems.has(`cancel_${item.students[0]?.lesson_id}`) ? 'Canceling...' : 'Cancel Lesson'}
+                          </span>
+                          <span className="sm:hidden">
+                            {processingItems.has(`cancel_${item.students[0]?.lesson_id}`) ? '取消中...' : '取消课程'}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -440,25 +449,25 @@ export default function DashboardPage() {
                         const hasComment = student.comment && student.comment.trim() !== '';
                         
                         return (
-                          <div key={key} className={`bg-white border rounded-lg p-4 transition-all duration-200 ${
+                          <div key={key} className={`bg-white border rounded-lg p-3 sm:p-4 transition-all duration-200 ${
                             hasComment 
                               ? 'border-yellow-200 bg-yellow-50 hover:border-yellow-300' 
                               : 'border-gray-200 hover:border-blue-200'
                           }`}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center flex-1">
-                                <div className={`rounded-full p-2 mr-4 ${
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex items-start sm:items-center flex-1 mb-3 sm:mb-0">
+                                <div className={`rounded-full p-2 mr-3 flex-shrink-0 ${
                                   hasComment 
                                     ? 'bg-gradient-to-br from-yellow-100 to-orange-100' 
                                     : 'bg-gradient-to-br from-blue-100 to-indigo-100'
                                 }`}>
-                                  <UserGroupIcon className={`h-5 w-5 ${
+                                  <UserGroupIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${
                                     hasComment ? 'text-yellow-600' : 'text-blue-600'
                                   }`} />
                                 </div>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900 text-lg">{student.student_name}</h4>
-                                  <p className="text-sm text-gray-500">Student #{student.student_id}</p>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-gray-900 text-base sm:text-lg break-words">{student.student_name}</h4>
+                                  <p className="text-xs sm:text-sm text-gray-500">Student #{student.student_id}</p>
                                   {hasComment && (
                                     <div className="mt-2 p-2 bg-yellow-100 rounded-lg border border-yellow-200">
                                       <p className="text-xs text-yellow-600 font-medium mb-1">Leave Note: {student.comment}</p>
@@ -467,21 +476,21 @@ export default function DashboardPage() {
                                 </div>
                               </div>
                               
-                              <div className="flex flex-col items-start sm:items-center">
+                              <div className="flex flex-col items-start sm:items-center w-full sm:w-auto">
                                 {hasComment ? (
                                   /* 已请假状态 - 只显示，不可修改 */
                                   <>
-                                    <span className="text-sm text-gray-500 mb-2">Status</span>
-                                    <span className="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <span className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">Status</span>
+                                    <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                       On Leave
                                     </span>
-                                    <p className="text-sm text-gray-500 mt-1">Cannot modify</p>
+                                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Cannot modify</p>
                                   </>
                                 ) : (
                                   /* 正常状态 - 按钮组选择 */
                                   <>
-                                    <span className="text-sm text-gray-500 mb-2">Attendance Status</span>
-                                    <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                                    <span className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">Attendance Status</span>
+                                    <div className="flex border border-gray-300 rounded-lg overflow-hidden w-full sm:w-auto">
                                       {Object.entries(ATTENDANCE_STATUS_LABELS).map(([value, label], index) => {
                                         const isSelected = currentStatus === parseInt(value);
                                         return (
@@ -493,7 +502,7 @@ export default function DashboardPage() {
                                               student.student_id, 
                                               parseInt(value)
                                             )}
-                                            className={`px-4 py-2 text-sm font-medium transition-colors ${
+                                            className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
                                               isSelected 
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -534,30 +543,29 @@ export default function DashboardPage() {
                   const isProcessing = processingItems.has(key);
                   
                   return (
-                    <div key={key} className="bg-gradient-to-r from-white to-green-50 border border-green-100 rounded-xl p-6 hover:shadow-md transition-all duration-200">
-                      <div className="mb-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center">
-                            <div className="bg-green-100 rounded-full p-2 mr-3">
-                              <ChatBubbleLeftEllipsisIcon className="h-5 w-5 text-green-600" />
+                    <div key={key} className="bg-gradient-to-r from-white to-green-50 border border-green-100 rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-200">
+                      <div className="mb-4 sm:mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
+                          <div className="flex items-start sm:items-center mb-3 sm:mb-0">
+                            <div className="bg-green-100 rounded-full p-2 mr-3 flex-shrink-0">
+                              <ChatBubbleLeftEllipsisIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900 text-xl">{item.topic_name}</h3>
-                              <p className="text-sm text-gray-600 mt-1">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold text-gray-900 text-lg sm:text-xl break-words">{item.topic_name}</h3>
+                              <p className="text-xs sm:text-sm text-gray-600 mt-1">
                                 📋 Student {item.student_name}(#{item.student_id})
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            {/* <p className="text-xs text-gray-500">评价周期</p> */}
-                            <p className="text-md text-gray-500 mt-1">
+                          <div className="text-left sm:text-right">
+                            <p className="text-sm sm:text-md text-gray-500 mt-1">
                               {formatDateRange(item.time_unit_start, item.time_unit_end)}
                             </p>
                           </div>
                         </div>
                         
-                        <div className="bg-white rounded-lg border border-gray-200 p-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                             📝 Feedback
                           </label>
                           <textarea
@@ -568,27 +576,29 @@ export default function DashboardPage() {
                             }))}
                             placeholder="请从课堂表现，课程进度，作业情况，学习建议等维度去评价"
                             disabled={isProcessing}
-                            className="w-full border border-gray-300 rounded-lg p-4 text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-gray-400"
+                            className="w-full border border-gray-300 rounded-lg p-3 sm:p-4 text-xs sm:text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-gray-400"
                             rows={4}
                           />
-                          <div className="flex justify-between items-center mt-3">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-3 gap-2">
                             <p className="text-xs text-gray-500">
                               {feedbackTexts[key]?.length || 0} 字符
                             </p>
                             <button
                               onClick={() => handleSubmitFeedback(item)}
                               disabled={isProcessing || !feedbackTexts[key]?.trim()}
-                              className="px-5 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center font-medium shadow-sm hover:shadow-md"
+                              className="px-4 sm:px-5 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-medium shadow-sm hover:shadow-md text-xs sm:text-sm"
                             >
                               {isProcessing ? (
                                 <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                  Submitting...
+                                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
+                                  <span className="hidden sm:inline">Submitting...</span>
+                                  <span className="sm:hidden">提交中...</span>
                                 </>
                               ) : (
                                 <>
-                                  <CheckIcon className="h-4 w-4 mr-2" />
-                                  Submit Feedback
+                                  <CheckIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  <span className="hidden sm:inline">Submit Feedback</span>
+                                  <span className="sm:hidden">提交反馈</span>
                                 </>
                               )}
                             </button>
