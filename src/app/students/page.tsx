@@ -106,7 +106,7 @@ export default function StudentsPage() {
   const canEditStudents = hasPermission(PERMISSIONS.EDIT_STUDENTS);
   const canDeleteStudents = hasPermission(PERMISSIONS.DELETE_STUDENTS);
   const canAddStudents = hasPermission(PERMISSIONS.ADD_STUDENTS);
-  const hasAnyActionPermission = canViewStudentDetails || canEditStudents || canDeleteStudents;
+  const hasAnyActionPermission = canEditStudents || canDeleteStudents;
 
   // 验证函数
   const validateEmail = (email: string): string | null => {
@@ -376,8 +376,12 @@ export default function StudentsPage() {
 
   useEffect(() => {
     loadStudentList(); // 这个函数现在也会加载导师列表
-    loadCampusList();
-  }, []);
+    
+    // 只有有添加学生权限的用户才加载校区列表
+    if (canAddStudents) {
+      loadCampusList();
+    }
+  }, [canAddStudents]);
 
   useEffect(() => {
     // 切换学生状态过滤时，重新加载
@@ -1097,9 +1101,12 @@ export default function StudentsPage() {
                       value={formData.campus_id}
                       onChange={(e) => handleInputChange('campus_id', Number(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      disabled={campusLoading}
+                      disabled={campusLoading || !canAddStudents}
                     >
-                      <option value={0}>{campusLoading ? 'Loading campuses...' : 'Select a campus'}</option>
+                      <option value={0}>
+                        {!canAddStudents ? 'No permission to add students' : 
+                         campusLoading ? 'Loading campuses...' : 'Select a campus'}
+                      </option>
                       {campusList.map((campus) => (
                         <option key={campus.id} value={campus.id}>
                           {campus.name}{campus.code ? ` - ${campus.code}` : ''}
