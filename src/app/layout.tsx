@@ -25,11 +25,11 @@ export default function RootLayout({
         <AuthProvider>
           <NotifyProvider>
             <ClientLayout>{children}</ClientLayout>
-            {ENV.enableApiDebugger && <PermissionDebugger />}
-            {ENV.enableApiDebugger && <MenuDebugger />}
+            {ENV.enableApiDebugger && <div className="hidden md:block"><PermissionDebugger /></div>}
+            {ENV.enableApiDebugger && <div className="hidden md:block"><MenuDebugger /></div>}
           </NotifyProvider>
         </AuthProvider>
-        {ENV.enableApiDebugger && <ApiDebugger />}
+        {ENV.enableApiDebugger && <div className="hidden md:block"><ApiDebugger /></div>}
       </body>
     </html>
   );

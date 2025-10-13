@@ -31,7 +31,7 @@ import {
 export default function EditExamPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const canEdit = hasPermission(PERMISSIONS.EDIT_EXAMS);
   const examId = Number(searchParams.get('id')) || 0;
 
@@ -66,6 +66,9 @@ export default function EditExamPage() {
   const [newStudentId, setNewStudentId] = useState('');
   const [availableStudents, setAvailableStudents] = useState<any[]>([]);
   const [searchStudentTerm, setSearchStudentTerm] = useState('');
+
+  // 科目选择相关状态
+  const [showTopicDropdown, setShowTopicDropdown] = useState(false);
 
   useEffect(() => {
     if (!canEdit || !examId) return;
@@ -532,11 +535,58 @@ export default function EditExamPage() {
                       <input
                         type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-9 bg-gray-50 focus:bg-white transition-colors"
-                        placeholder="请输入考试科目"
+                        placeholder="请输入或选择考试科目"
                         value={form.exam_topic}
-                        onChange={(e) => setForm({ ...form, exam_topic: e.target.value })}
+                        onChange={(e) => {
+                          setForm({ ...form, exam_topic: e.target.value });
+                          setShowTopicDropdown(true);
+                        }}
+                        onFocus={() => setShowTopicDropdown(true)}
+                        onBlur={() => {
+                          // 延迟关闭以允许点击下拉选项
+                          setTimeout(() => setShowTopicDropdown(false), 200);
+                        }}
                       />
                       <TagIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      
+                      {/* 科目下拉列表 */}
+                      {showTopicDropdown && user?.topics && Object.keys(user.topics).length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {Object.entries(user.topics)
+                            .filter(([id, name]) => 
+                              name.toLowerCase().includes(form.exam_topic.toLowerCase()) ||
+                              id.includes(form.exam_topic)
+                            )
+                            .map(([id, name]) => (
+                              <div
+                                key={id}
+                                className="px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setForm({ 
+                                    ...form, 
+                                    exam_topic: name,
+                                    exam_topic_id: Number(id)
+                                  });
+                                  setShowTopicDropdown(false);
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-900">{name}</span>
+                                </div>
+                              </div>
+                            ))}
+                          {Object.entries(user.topics)
+                            .filter(([id, name]) => 
+                              name.toLowerCase().includes(form.exam_topic.toLowerCase()) ||
+                              id.includes(form.exam_topic)
+                            ).length === 0 && (
+                            <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                              未找到匹配的科目
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 

@@ -759,8 +759,8 @@ export default function StudentEditPage() {
                     onChange={(e) => handleInputChange('gender', Number(e.target.value))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value={1}>Male</option>
-                    <option value={0}>Female</option>
+                    <option value={0}>Male</option>
+                    <option value={1}>Female</option>
                     <option value={-1}>Not set</option>
                   </select>
                 </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import moment from 'moment';
+import Link from 'next/link';
 import TimePicker from '../../../components/TimePicker';
 import Button from '../../../components/Button';
 import NumberInput from '../../../components/NumberInput';
@@ -726,22 +727,22 @@ export default function AddEventModal({
                         {initialEvent?.title || initialEvent?.subject_name || '未命名课程'}
                       </p>
                       <div className="mt-2 flex space-x-2">
-                        <a
+                        <Link
                           href={`/class/edit?id=${initialEvent.class_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
                         >
                           编辑课程
-                        </a>
-                        <a
+                        </Link>
+                        <Link
                           href={`/class/view?id=${initialEvent.class_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
                         >
                           课程详情
-                        </a>
+                        </Link>
                       </div>
                     </div>
                   )}

@@ -53,7 +53,7 @@ export default function ClassroomPage() {
     campus_id: 0,
     size: 1,
     flag: 1,
-    owner: 0
+    owner: -1
   });
   
 
@@ -100,7 +100,7 @@ export default function ClassroomPage() {
       campus_id: 0,
       size: 1,
       flag: 1,
-      owner: 0
+      owner: -1
     });
     setShowAddModal(true);
   };
@@ -129,7 +129,7 @@ export default function ClassroomPage() {
     e.preventDefault();
     
     // 检查必填字段
-    if (!formData.room_name || formData.campus_id === 0 || formData.owner === 0) {
+    if (!formData.room_name || formData.campus_id === 0) {
       alert('请填写所有必填字段');
       return;
     }
@@ -299,10 +299,10 @@ export default function ClassroomPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${
                           classroom.flag === 1 
-                            ? 'bg-green-50 text-green-700 border border-green-200' 
-                            : 'bg-red-50 text-red-700 border border-red-200'
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : 'bg-green-50 text-green-700 border border-green-200' 
                         }`}>
-                          {classroom.flag === 1 ? '是' : '否'}
+                          {classroom.flag === 1 ? '否' : '是'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -489,15 +489,14 @@ export default function ClassroomPage() {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      负责人 <span className="text-red-500">*</span>
+                      负责人
                     </label>
                     <select
-                      required
                       value={formData.owner}
                       onChange={(e) => handleInputChange('owner', Number(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value={0}>请选择负责人</option>
+                      <option value={-1}>不选择</option>
                       {Object.entries(staffInfo).map(([id, name]) => (
                         <option key={id} value={Number(id)}>
                           {name}
@@ -515,8 +514,8 @@ export default function ClassroomPage() {
                       onChange={(e) => handleInputChange('flag', Number(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value={1}>启用</option>
-                      <option value={0}>禁用</option>
+                      <option value={1}>参与AI排课</option>
+                      <option value={0}>不参与AI排课</option>
                     </select>
                   </div>
                   

@@ -829,10 +829,10 @@ export default function StudentDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
         {/* 页面头部 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {studentInfo.english_name || '学生详情'}
@@ -854,63 +854,98 @@ export default function StudentDetailPage() {
         </div>
 
         {/* 选项卡导航 */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+        <div className="bg-white rounded-lg shadow mb-6" style={{overflow: 'visible'}}>
+          <div className="border-b border-gray-200 relative" style={{overflow: 'visible'}}>
+            <nav className="flex space-x-8 px-6 md:overflow-visible overflow-x-auto scrollbar-hide touch-pan-x" aria-label="Tabs">
               {tabs.map((tab) => (
-                <div key={tab.id} className="relative">
+                <>
                   {tab.children ? (
-                    <div>
+                    <>
+                      {/* 桌面端下拉菜单 */}
+                      <div key={tab.id} className="relative hidden md:block">
+                        <button
+                          onClick={() => {
+                            console.log('Exam group clicked, current state:', examGroupExpanded);
+                            setExamGroupExpanded(!examGroupExpanded);
+                          }}
+                          className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                            activeTab.startsWith('exam-') 
+                              ? 'border-blue-500 text-blue-600' 
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          <tab.icon className="h-5 w-5 mr-2" />
+                          {tab.label}
+                          {examGroupExpanded ? (
+                            <ChevronDownIcon className="h-4 w-4 ml-1" />
+                          ) : (
+                            <ChevronRightIcon className="h-4 w-4 ml-1" />
+                          )}
+                        </button>
+                        
+                        {examGroupExpanded && (
+                          <div 
+                            className="absolute top-full left-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-48 mt-1" 
+                            style={{
+                              position: 'absolute', 
+                              top: '100%', 
+                              left: '0', 
+                              zIndex: 9999,
+                              display: 'block',
+                              visibility: 'visible'
+                            }}
+                          >
+                            {tab.children.map((child) => (
+                              <button
+                                key={child.id}
+                                onClick={() => {
+                                  setActiveTab(child.id);
+                                  setExamGroupExpanded(false);
+                                }}
+                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
+                                  activeTab === child.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                }`}
+                              >
+                                {child.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 移动端：直接显示子菜单项，不显示父菜单 */}
+                      {tab.children.map((child) => (
+                        <div key={child.id} className="relative md:hidden">
+                          <button
+                            onClick={() => setActiveTab(child.id)}
+                            className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                              activeTab === child.id 
+                                ? 'border-blue-500 text-blue-600' 
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                          >
+                            <DocumentTextIcon className="h-5 w-5 mr-2" />
+                            {child.label}
+                          </button>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div key={tab.id} className="relative">
                       <button
-                        onClick={() => setExamGroupExpanded(!examGroupExpanded)}
-                        className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
-                          activeTab.startsWith('exam-') 
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                          activeTab === tab.id 
                             ? 'border-blue-500 text-blue-600' 
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}
                       >
                         <tab.icon className="h-5 w-5 mr-2" />
                         {tab.label}
-                        {examGroupExpanded ? (
-                          <ChevronDownIcon className="h-4 w-4 ml-1" />
-                        ) : (
-                          <ChevronRightIcon className="h-4 w-4 ml-1" />
-                        )}
                       </button>
-                      
-                      {examGroupExpanded && (
-                        <div className="absolute top-full left-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-48">
-                          {tab.children.map((child) => (
-                            <button
-                              key={child.id}
-                              onClick={() => {
-                                setActiveTab(child.id);
-                                setExamGroupExpanded(false);
-                              }}
-                              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
-                                activeTab === child.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                              }`}
-                            >
-                              {child.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
-                        activeTab === tab.id 
-                          ? 'border-blue-500 text-blue-600' 
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                    >
-                      <tab.icon className="h-5 w-5 mr-2" />
-                      {tab.label}
-                    </button>
                   )}
-                </div>
+                </>
               ))}
             </nav>
           </div>
@@ -989,11 +1024,11 @@ export default function StudentDetailPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {assignments.map((assignment) => (
                         <tr key={assignment.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{assignment.exam_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{assignment.class_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{assignment.note}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{assignment.note}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.exam_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.class_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.note}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.note}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">
                             {new Date(assignment.signup_time * 1000).toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1339,15 +1374,15 @@ export default function StudentDetailPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {remarks.rows.map((remark) => (
                         <tr key={remark.record_id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.student_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.mentor_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.campus_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.season}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.price}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.exam_center}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.exam_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.status_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{remark.create_time}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.student_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.mentor_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.campus_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.season}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.price}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.exam_center}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.exam_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.status_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{remark.create_time}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1381,15 +1416,15 @@ export default function StudentDetailPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {cashin.rows.map((item) => (
                         <tr key={item.record_id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.season}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.mentor_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.subject_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.student_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.exam_code}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.level}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.note}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.status_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.create_time}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.season}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.mentor_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.subject_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.student_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.exam_code}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.level}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.note}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.status_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.create_time}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1425,17 +1460,17 @@ export default function StudentDetailPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {withdrawal.rows.map((item) => (
                         <tr key={item.record_id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.student_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.campus_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.mentor_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.season}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.status_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.exam_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.pay_account}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.account_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.signup_price}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.create_time}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.reject_reason}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.student_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.campus_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.mentor_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.season}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.status_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.exam_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.pay_account}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.account_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.signup_price}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.create_time}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{item.reject_reason}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1480,16 +1515,16 @@ export default function StudentDetailPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {normalExams.rows.map((exam) => (
                         <tr key={exam.record_id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_center}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_season}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.subject}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.qualification}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.grade}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.module}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.ums_pum}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_room_num}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.student_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.staff_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.exam_center}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.exam_season}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.subject}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.qualification}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.grade}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.module}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.ums_pum}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.exam_room_num}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.student_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.staff_name}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <button
                               onClick={() => {
@@ -1558,12 +1593,12 @@ export default function StudentDetailPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {languageExams.rows.map((exam) => (
                         <tr key={exam.record_id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_day}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.grade}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.score}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.student_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.staff_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.exam_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.exam_day}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.grade}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.score}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.student_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.staff_name}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <button
                               onClick={() => {
@@ -1624,10 +1659,10 @@ export default function StudentDetailPage() {
                           <tbody className="bg-white divide-y divide-gray-200">
                             {examsInfo.table_1.map((exam, index) => (
                               <tr key={index} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.result}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.second}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.grade}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.exam_name}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.result}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.second}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.grade}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1652,10 +1687,10 @@ export default function StudentDetailPage() {
                           <tbody className="bg-white divide-y divide-gray-200">
                             {examsInfo.table_2.map((exam, index) => (
                               <tr key={index} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.exam_name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.score}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.result}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.grade}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.exam_name}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.score}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.result}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.grade}</td>
                               </tr>
                             ))}
                           </tbody>

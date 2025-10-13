@@ -16,6 +16,7 @@ export interface ServiceItem {
   grade?: string;
   graduate_year: number;
   mentor_name?: string;
+  is_dormitory: number;
   campus_name?: string;
   toilets?: number;
   price?: number;

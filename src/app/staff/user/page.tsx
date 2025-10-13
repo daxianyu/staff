@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { getStaffInfo, StaffInfo } from '@/services/auth';
 
 export default function StaffInfoPage() {
@@ -419,9 +420,9 @@ export default function StaffInfoPage() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex space-x-2">
-                              <a href={`/class/edit?id=${subject.class_id}`} className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">编辑</a>
-                              <a href={`/class/view?id=${subject.class_id}`} className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">查看</a>
-                              <a href={`/class/schedule?id=${subject.class_id}`} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition">排课</a>
+                              <Link href={`/class/edit?id=${subject.class_id}`} className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">编辑</Link>
+                              <Link href={`/class/view?id=${subject.class_id}`} className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">查看</Link>
+                              <Link href={`/class/schedule?id=${subject.class_id}`} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition">排课</Link>
                             </div>
                           </td>
                         </tr>

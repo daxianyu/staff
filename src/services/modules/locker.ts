@@ -396,6 +396,8 @@ export interface CommitmentStudent {
   name: string;
   done: number;
   student_id?: number;
+  unread_list: string[];
+  read_list: string[];
 }
 
 export interface CommitmentFile {

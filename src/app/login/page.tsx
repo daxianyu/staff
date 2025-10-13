@@ -11,14 +11,34 @@ interface LoginFormData {
   password: string;
 }
 
+// localStorage keys
+const STORAGE_KEYS = {
+  USERNAME: 'saved_username',
+  PASSWORD: 'saved_password',
+  REMEMBER_ME: 'remember_me',
+};
+
 export default function LoginPage() {
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm<LoginFormData>();
+  const { register, handleSubmit, formState: { isSubmitting }, setValue } = useForm<LoginFormData>();
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [verifyingToken, setVerifyingToken] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // 页面加载时，从 localStorage 恢复保存的用户名和密码
+  useEffect(() => {
+    const savedUsername = localStorage.getItem(STORAGE_KEYS.USERNAME);
+    const savedPassword = localStorage.getItem(STORAGE_KEYS.PASSWORD);
+    const savedRememberMe = localStorage.getItem(STORAGE_KEYS.REMEMBER_ME) === 'true';
+
+    if (savedRememberMe && savedUsername && savedPassword) {
+      setValue('username', savedUsername);
+      setValue('password', savedPassword);
+      setRememberMe(true);
+    }
+  }, [setValue]);
 
   // 检查URL中的token参数并验证
   useEffect(() => {
@@ -63,7 +83,20 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError('');
+      
+      // 执行登录
       await login(data.username, data.password);
+      
+      // 根据"记住我"选项保存或清除密码
+      if (rememberMe) {
+        localStorage.setItem(STORAGE_KEYS.USERNAME, data.username);
+        localStorage.setItem(STORAGE_KEYS.PASSWORD, data.password);
+        localStorage.setItem(STORAGE_KEYS.REMEMBER_ME, 'true');
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.USERNAME);
+        localStorage.removeItem(STORAGE_KEYS.PASSWORD);
+        localStorage.removeItem(STORAGE_KEYS.REMEMBER_ME);
+      }
     } catch (error) {
       console.error('登录异常:', error);
       setError(error instanceof Error ? error.message : '登录失败，请稍后重试');

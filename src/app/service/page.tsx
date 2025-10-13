@@ -122,7 +122,7 @@ const ServiceTable = memo(function ServiceTable({
                           : 'bg-green-50 text-green-700 border border-green-200'
                         }`}
                     >
-                      {service.dormitory_type === 1 ? '宿舍' : '餐包'}
+                      {service.is_dormitory ? '宿舍' : '餐包'}
                     </span>
                   </div>
                 </td>

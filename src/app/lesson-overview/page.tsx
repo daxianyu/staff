@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import DashboardLayout from '@/app/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
@@ -229,13 +230,12 @@ export default function LessonOverviewPage() {
                 ) : staffError ? (
                   <span className="text-red-500 text-sm">{staffError}</span>
                 ) : staffInfo ? (
-                  <a
+                  <Link
                     href={`/staff/user?userId=${userId}`}
                     className="text-blue-600 hover:underline ml-2 text-gray-700 text-sm"
-                    rel="noopener noreferrer"
                   >
                     {staffInfo.staff_name}
-                  </a>
+                  </Link>
                 ) : null}
               </div>
             </div>
@@ -314,9 +314,9 @@ export default function LessonOverviewPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex space-x-2">
-                            <a href={`/class/edit?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">编辑</a>
-                            <a href={`/class/view?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">查看</a>
-                            <a href={`/class/schedule?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition">排课</a>
+                            <Link href={`/class/edit?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">编辑</Link>
+                            <Link href={`/class/view?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">查看</Link>
+                            <Link href={`/class/schedule?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition">排课</Link>
                           </div>
                         </td>
                       </tr>

@@ -303,36 +303,36 @@ export default function ExitPermitPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <div className="w-full">
-              <table className="w-full divide-y divide-gray-200 table-fixed">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full divide-y divide-gray-200 min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="w-16 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       序号
                     </th>
-                    <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       学生名称
                     </th>
-                    <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       外出原因
                     </th>
-                    <th className="w-20 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       当前状态
                     </th>
-                    <th className="w-36 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       外出开始时间
                     </th>
-                    <th className="w-36 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       外出结束时间
                     </th>
-                    <th className="w-36 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden lg:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       创建时间
                     </th>
-                    <th className="w-36 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden lg:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       更新时间
                     </th>
                     {canEdit && (
-                      <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         操作
                       </th>
                     )}
@@ -341,47 +341,47 @@ export default function ExitPermitPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {data.map((item, index) => (
                     <tr key={item.record_id} className="hover:bg-gray-50 transition-colors">
-                      <td className="w-16 px-3 py-4 text-sm text-gray-900 text-center">
+                      <td className="px-3 py-4 text-sm text-gray-900 text-center">
                         {index + 1}
                       </td>
-                      <td className="w-24 px-3 py-4 text-sm text-gray-900 truncate" title={item.student_name}>
+                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[120px]" title={item.student_name}>
                         {item.student_name}
                       </td>
-                      <td className="w-32 px-3 py-4 text-sm text-gray-900 truncate" title={item.note || '-'}>
+                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[150px]" title={item.note || '-'}>
                         {item.note || '-'}
                       </td>
-                      <td className="w-20 px-3 py-4 text-sm">
+                      <td className="px-3 py-4 text-sm">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
                           {item.status_name}
                         </span>
                       </td>
-                      <td className="w-36 px-3 py-4 text-sm text-gray-900 truncate" title={item.start_time}>
+                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[140px]" title={item.start_time}>
                         {item.start_time}
                       </td>
-                      <td className="w-36 px-3 py-4 text-sm text-gray-900 truncate" title={item.end_time}>
+                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[140px]" title={item.end_time}>
                         {item.end_time}
                       </td>
-                      <td className="w-36 px-3 py-4 text-sm text-gray-500 truncate" title={item.create_time}>
+                      <td className="hidden lg:table-cell px-3 py-4 text-sm text-gray-500 truncate max-w-[140px]" title={item.create_time}>
                         {item.create_time}
                       </td>
-                      <td className="w-36 px-3 py-4 text-sm text-gray-500 truncate" title={item.update_time || '-'}>
+                      <td className="hidden lg:table-cell px-3 py-4 text-sm text-gray-500 truncate max-w-[140px]" title={item.update_time || '-'}>
                         {item.update_time || '-'}
                       </td>
                       {canEdit && (
-                        <td className="w-32 px-3 py-4 text-sm font-medium">
+                        <td className="px-3 py-4 text-sm font-medium">
                           <div className="flex items-center gap-1 flex-wrap">
                             {/* 只有审批中状态才显示通过/拒绝按钮 */}
                             {item.status === 0 && (
                               <>
                                 <button
                                   onClick={() => handleStatusChange(item, 1)}
-                                  className="text-green-600 hover:text-green-900 text-xs px-2 py-1 rounded"
+                                  className="text-green-600 hover:text-green-900 text-xs px-3 py-2 rounded-md min-h-[32px] min-w-[44px] flex items-center justify-center"
                                 >
                                   通过
                                 </button>
                                 <button
                                   onClick={() => handleStatusChange(item, 2)}
-                                  className="text-red-600 hover:text-red-900 text-xs px-2 py-1 rounded"
+                                  className="text-red-600 hover:text-red-900 text-xs px-3 py-2 rounded-md min-h-[32px] min-w-[44px] flex items-center justify-center"
                                 >
                                   拒绝
                                 </button>
@@ -392,7 +392,7 @@ export default function ExitPermitPage() {
                                 setSelectedRecord(item);
                                 setShowDeleteModal(true);
                               }}
-                              className="text-red-600 hover:text-red-900 text-xs px-2 py-1 rounded"
+                              className="text-red-600 hover:text-red-900 text-xs px-3 py-2 rounded-md min-h-[32px] min-w-[44px] flex items-center justify-center"
                             >
                               删除
                             </button>
@@ -400,7 +400,7 @@ export default function ExitPermitPage() {
                             {item.status === 1 && (
                               <button
                                 onClick={() => handleStatusChange(item, 4)}
-                                className="text-orange-600 hover:text-orange-900 text-xs px-2 py-1 rounded"
+                                className="text-orange-600 hover:text-orange-900 text-xs px-3 py-2 rounded-md min-h-[32px] min-w-[44px] flex items-center justify-center"
                               >
                                 撤回
                               </button>
@@ -429,12 +429,12 @@ export default function ExitPermitPage() {
               <div className="text-sm text-gray-600">
                 显示第 {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalItems)} 条，共 {totalItems} 条记录
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] min-w-[60px]"
                   >
                     上一页
                   </button>
@@ -457,7 +457,7 @@ export default function ExitPermitPage() {
                         <button
                           key={pageNum}
                           onClick={() => handlePageChange(pageNum)}
-                          className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${currentPage === pageNum
+                          className={`w-10 h-10 flex items-center justify-center text-sm font-medium border rounded ${currentPage === pageNum
                               ? 'bg-blue-600 border-blue-600 text-white'
                               : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                             }`}
@@ -472,7 +472,7 @@ export default function ExitPermitPage() {
                         <span className="px-2 text-gray-400">...</span>
                         <button
                           onClick={() => handlePageChange(totalPages)}
-                          className="w-8 h-8 flex items-center justify-center text-sm font-medium border rounded bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                          className="w-10 h-10 flex items-center justify-center text-sm font-medium border rounded bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                           {totalPages}
                         </button>
@@ -483,7 +483,7 @@ export default function ExitPermitPage() {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] min-w-[60px]"
                   >
                     下一页
                   </button>
@@ -492,7 +492,7 @@ export default function ExitPermitPage() {
                 <select
                   value={pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px]"
                 >
                   <option value={10}>10条/页</option>
                   <option value={20}>20条/页</option>
@@ -508,19 +508,19 @@ export default function ExitPermitPage() {
         {showAddModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">批量添加外出申请</h3>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 p-2 -m-2"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="p-4 sm:p-6 space-y-6">
                 {/* 时间选择 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       开始时间
@@ -529,7 +529,7 @@ export default function ExitPermitPage() {
                       type="datetime-local"
                       value={formData.start_time}
                       onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
                     />
                   </div>
 
@@ -541,56 +541,56 @@ export default function ExitPermitPage() {
                       type="datetime-local"
                       value={formData.end_time}
                       onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
                     />
                   </div>
                 </div>
 
                 {/* 学生列表类型选择 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     学生列表类型
                   </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center">
+                  <div className="space-y-3">
+                    <label className="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
                       <input
                         type="radio"
                         name="student_list_type"
                         value="all"
                         checked={studentListType === 'all'}
                         onChange={(e) => handleStudentListTypeChange(e.target.value as 'all' | 'live' | 'out')}
-                        className="mr-2"
+                        className="mr-3 h-4 w-4"
                       />
-                      全部学生 ({allStudents.length} 人)
+                      <span className="text-sm">全部学生 ({allStudents.length} 人)</span>
                     </label>
-                    <label className="flex items-center">
+                    <label className="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
                       <input
                         type="radio"
                         name="student_list_type"
                         value="live"
                         checked={studentListType === 'live'}
                         onChange={(e) => handleStudentListTypeChange(e.target.value as 'all' | 'live' | 'out')}
-                        className="mr-2"
+                        className="mr-3 h-4 w-4"
                       />
-                      住宿学生 ({liveStudents.length} 人)
+                      <span className="text-sm">住宿学生 ({liveStudents.length} 人)</span>
                     </label>
-                    <label className="flex items-center">
+                    <label className="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
                       <input
                         type="radio"
                         name="student_list_type"
                         value="out"
                         checked={studentListType === 'out'}
                         onChange={(e) => handleStudentListTypeChange(e.target.value as 'all' | 'live' | 'out')}
-                        className="mr-2"
+                        className="mr-3 h-4 w-4"
                       />
-                      外出学生 ({outStudents.length} 人)
+                      <span className="text-sm">外出学生 ({outStudents.length} 人)</span>
                     </label>
                   </div>
                 </div>
 
                 {/* 学生选择 */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
                     <label className="block text-sm font-medium text-gray-700">
                       选择学生 ({studentOptions.length} 人可选)
                     </label>
@@ -599,7 +599,7 @@ export default function ExitPermitPage() {
                         type="button"
                         onClick={handleSelectAll}
                         disabled={studentOptions.length === 0}
-                        className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px]"
                       >
                         全选
                       </button>
@@ -607,7 +607,7 @@ export default function ExitPermitPage() {
                         type="button"
                         onClick={handleDeselectAll}
                         disabled={formData.student_ids.length === 0}
-                        className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px]"
                       >
                         取消全选
                       </button>
@@ -630,17 +630,17 @@ export default function ExitPermitPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="w-full sm:w-auto px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 min-h-[44px]"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleBatchAdd}
                   disabled={!formData.start_time || !formData.end_time || formData.student_ids.length === 0}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   添加
                 </button>
@@ -670,10 +670,10 @@ export default function ExitPermitPage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
                 <button
                   onClick={handleDelete}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-3 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm min-h-[44px]"
                 >
                   删除
                 </button>
@@ -682,7 +682,7 @@ export default function ExitPermitPage() {
                     setShowDeleteModal(false);
                     setSelectedRecord(null);
                   }}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm min-h-[44px]"
                 >
                   取消
                 </button>

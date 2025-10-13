@@ -36,8 +36,6 @@ export default function SubjectRelativePage() {
   const [selectedCampus, setSelectedCampus] = useState<number | null>(null);
   const [sortField, setSortField] = useState<keyof CampusEntry>('progress');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
 
   // 权限检查
   const canView = hasPermission('finance') || hasPermission(PERMISSIONS.VIEW_STAS);
@@ -97,22 +95,15 @@ export default function SubjectRelativePage() {
   };
 
   const currentCampus = getCurrentCampusData();
-  
-  // 分页处理函数
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
 
-  // 搜索时重置到第一页
+  // 搜索处理函数
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
   };
 
-  // 校区切换时重置到第一页
+  // 校区切换处理函数
   const handleCampusChange = (campusId: number) => {
     setSelectedCampus(campusId);
-    setCurrentPage(1);
   };
   
   // 过滤和排序数据
@@ -139,13 +130,6 @@ export default function SubjectRelativePage() {
         }
       }
     }) || [];
-
-  // 分页计算
-  const totalItems = filteredAndSortedEntries.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedEntries = filteredAndSortedEntries.slice(startIndex, endIndex);
 
   // 统计信息
   const totalStudents = campuses.reduce((sum, campus) => sum + (campus.campus_entries?.length || 0), 0);
@@ -355,14 +339,14 @@ export default function SubjectRelativePage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedEntries.length === 0 ? (
+                  {filteredAndSortedEntries.length === 0 ? (
                     <tr>
                       <td colSpan={12} className="px-6 py-12 text-center text-sm text-gray-500">
                         {searchTerm ? '没有找到匹配的数据' : !currentCampus ? '请选择校区' : '暂无数据'}
                       </td>
                     </tr>
                   ) : (
-                    paginatedEntries.map((entry, index) => (
+                    filteredAndSortedEntries.map((entry, index) => (
                       <tr key={`${entry.long_id}-${index}`} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {entry.student_name}
@@ -425,65 +409,11 @@ export default function SubjectRelativePage() {
           )}
         </div>
 
-        {/* 分页组件 */}
-        {totalItems > 0 && (
+        {/* 数据统计信息 */}
+        {filteredAndSortedEntries.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              {/* 显示信息 */}
-              <div className="text-sm text-gray-700">
-                显示第 {startIndex + 1} - {Math.min(endIndex, totalItems)} 条，共 {totalItems} 条记录
-              </div>
-              
-              {/* 分页按钮组 */}
-              {totalPages > 1 && (
-                <div className="flex items-center gap-2">
-                  {/* 上一页 */}
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    上一页
-                  </button>
-                  
-                  {/* 页码按钮 */}
-                  {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 7) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 4) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 3) {
-                      pageNum = totalPages - 6 + i;
-                    } else {
-                      pageNum = currentPage - 3 + i;
-                    }
-                    
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${
-                          currentPage === pageNum
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  
-                  {/* 下一页 */}
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    下一页
-                  </button>
-                </div>
-              )}
+            <div className="text-sm text-gray-700">
+              共显示 {filteredAndSortedEntries.length} 条记录
             </div>
           </div>
         )}
