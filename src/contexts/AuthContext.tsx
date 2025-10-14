@@ -117,6 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      
+      // 如果在小程序环境，通知小程序登出
+      const { notifyMiniProgramLogout } = await import('@/utils/miniprogram');
+      notifyMiniProgramLogout();
+      
       // 确保状态更新后再跳转
       setTimeout(() => {
         router.push('/login');

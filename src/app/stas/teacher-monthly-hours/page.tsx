@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { getTeachingHoursOverview } from '@/services/auth';
@@ -31,6 +32,7 @@ interface TeachingHoursData {
 }
 
 export default function TeacherMonthlyHoursPage() {
+  const router = useRouter();
   const { hasPermission } = useAuth();
   const [data, setData] = useState<TeachingHoursData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -321,7 +323,12 @@ export default function TeacherMonthlyHoursPage() {
                     return (
                       <tr key={teacher.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {teacher.name}
+                          <button
+                            onClick={() => router.push(`/schedule?staffId=${teacher.id}`)}
+                            className="text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:underline"
+                          >
+                            {teacher.name}
+                          </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

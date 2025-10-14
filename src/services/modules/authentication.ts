@@ -134,7 +134,6 @@ export const getUserInfo = async (): Promise<ApiResponse> => {
     const { data } = await request<ApiEnvelope>('/api/public/user_info', {
       headers: getAuthHeader(),
     });
-
     return {
       code: data?.status === 0 ? 200 : 400,
       message: data?.message || '',
@@ -189,7 +188,7 @@ export const handleUserRedirect = async (userData: BasicUser, router: RouterLike
         
       case USER_PARENT: // 家长 - 暂时保持现状，跳转到dashboard
         if (useWindowLocation) {
-          window.location.href = '/dashboard';
+          window.location.href = '/staff/dashboard';
         } else {
           router?.push('/dashboard');
         }
@@ -198,7 +197,7 @@ export const handleUserRedirect = async (userData: BasicUser, router: RouterLike
       case USER_STAFF: // 员工 - 保持现状，跳转到dashboard
       default: // 其他未知类型默认也跳转到dashboard
         if (useWindowLocation) {
-          window.location.href = '/dashboard';
+          window.location.href = '/staff/dashboard';
         } else {
           router?.push('/dashboard');
         }
@@ -208,7 +207,7 @@ export const handleUserRedirect = async (userData: BasicUser, router: RouterLike
     console.error('处理用户重定向异常:', error);
     // 出错时默认跳转到dashboard
     if (useWindowLocation) {
-      window.location.href = '/dashboard';
+      window.location.href = '/staff/dashboard';
     } else {
       router?.push('/dashboard');
     }

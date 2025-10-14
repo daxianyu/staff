@@ -299,7 +299,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* 头部欢迎区域 */}
-      <div className="bg-gradient-to-br from-blue-400 to-indigo-200 rounded-xl p-4 sm:p-6 lg:p-8 text-white shadow-xl">
+      <div className="bg-blue-500 rounded-xl p-4 sm:p-6 lg:p-8 text-white shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-3">
@@ -379,7 +379,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 dashboardData.attendance_list.map((item, index) => (
-                  <div key={`${item.subject_id}_${index}`} className="bg-gradient-to-r from-white to-blue-50 border border-blue-100 rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-200">
+                  <div key={`${item.subject_id}_${index}`} className="bg-blue-50 border border-blue-100 rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-200">
                     {/* 课程头部信息和操作按钮 */}
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 sm:mb-6">
                       <div className="flex-1 mb-4 sm:mb-0">
@@ -403,7 +403,7 @@ export default function DashboardPage() {
                         <button
                           onClick={() => handleSubmitAllAttendance(item)}
                           disabled={processingItems.has(`lesson_${item.students[0]?.lesson_id}`)}
-                          className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-medium shadow-sm hover:shadow-md"
+                          className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-medium shadow-sm hover:shadow-md"
                         >
                           {processingItems.has(`lesson_${item.students[0]?.lesson_id}`) ? (
                             <>
@@ -458,8 +458,8 @@ export default function DashboardPage() {
                               <div className="flex items-start sm:items-center flex-1 mb-3 sm:mb-0">
                                 <div className={`rounded-full p-2 mr-3 flex-shrink-0 ${
                                   hasComment 
-                                    ? 'bg-gradient-to-br from-yellow-100 to-orange-100' 
-                                    : 'bg-gradient-to-br from-blue-100 to-indigo-100'
+                                    ? 'bg-yellow-100' 
+                                    : 'bg-blue-100'
                                 }`}>
                                   <UserGroupIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${
                                     hasComment ? 'text-yellow-600' : 'text-blue-600'
@@ -543,7 +543,7 @@ export default function DashboardPage() {
                   const isProcessing = processingItems.has(key);
                   
                   return (
-                    <div key={key} className="bg-gradient-to-r from-white to-green-50 border border-green-100 rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-200">
+                    <div key={key} className="bg-green-50 border border-green-100 rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-200">
                       <div className="mb-4 sm:mb-6">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
                           <div className="flex items-start sm:items-center mb-3 sm:mb-0">
@@ -586,7 +586,7 @@ export default function DashboardPage() {
                             <button
                               onClick={() => handleSubmitFeedback(item)}
                               disabled={isProcessing || !feedbackTexts[key]?.trim()}
-                              className="px-4 sm:px-5 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-medium shadow-sm hover:shadow-md text-xs sm:text-sm"
+                              className="px-4 sm:px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-medium shadow-sm hover:shadow-md text-xs sm:text-sm"
                             >
                               {isProcessing ? (
                                 <>

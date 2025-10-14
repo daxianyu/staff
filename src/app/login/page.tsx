@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getUserInfo, getStudentSalesInfo, handleUserRedirect } from '@/services/auth';
@@ -23,11 +23,13 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [verifyingToken, setVerifyingToken] = useState(false);
+  const tokenVerifiedRef = useRef(false); // 防止重复验证
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // 页面加载时，从 localStorage 恢复保存的用户名和密码
+  // WebView 的 localStorage 是持久化的，小程序和浏览器都可以直接使用
   useEffect(() => {
     const savedUsername = localStorage.getItem(STORAGE_KEYS.USERNAME);
     const savedPassword = localStorage.getItem(STORAGE_KEYS.PASSWORD);
@@ -40,45 +42,80 @@ export default function LoginPage() {
     }
   }, [setValue]);
 
-  // 检查URL中的token参数并验证
+  // 统一处理 token 验证和跳转逻辑
   useEffect(() => {
-    const token = searchParams.get('token');
+    // 如果已经验证过token，不再重复验证（防止跳转后再次触发）
+    if (tokenVerifiedRef.current) return;
     
-    if (token) {
-      const verifyToken = async () => {
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isInMiniProgram = ua.includes('miniprogram');
+    const urlToken = searchParams.get('token');
+    const storedToken = localStorage.getItem('token');
+    
+    // 确定最终使用的token（URL参数优先于localStorage）
+    const token = urlToken || storedToken;
+    
+    // 小程序跳转到登录页的辅助函数
+    const redirectToMiniProgramLogin = () => {
+      if (isInMiniProgram && (window as any).wx?.miniProgram) {
         try {
-          setVerifyingToken(true);
-          setError('');
-          
-          // 设置token到localStorage供auth.ts中使用
-          localStorage.setItem('token', token);
-          
-          // 尝试获取用户信息
-          const response = await getUserInfo();
-          
-          if (response.code === 200 && response.data) {
-            // 验证成功，强制刷新页面以确保AuthContext完成更新
-            console.log('Token验证成功，正在跳转...');
-            
-            // 使用统一的重定向处理函数，并设置useWindowLocation=true
-            handleUserRedirect(response.data, router, true);
-          } else {
-            // 验证失败，清除token
-            localStorage.removeItem('token');
-            setError('Token验证失败，请重新登录');
-          }
+          (window as any).wx.miniProgram.redirectTo({
+            url: '/pages/login/login'
+          });
         } catch (error) {
-          console.error('Token验证异常:', error);
-          localStorage.removeItem('token');
-          setError('登录验证失败，请重新登录');
-        } finally {
-          setVerifyingToken(false);
+          console.error('跳转小程序登录页失败:', error);
         }
-      };
+      }
+    };
+    
+    // Token验证和跳转
+    const verifyAndRedirect = async () => {
+      // 没有token的情况
+      if (!token) {
+        console.log(isInMiniProgram ? '小程序环境无token，跳转到小程序登录页' : '浏览器环境无token，停留在登录页');
+        redirectToMiniProgramLogin();
+        return;
+      }
       
-      verifyToken();
-    }
-  }, [searchParams]);  // 移除router依赖，使用window.location跳转
+      try {
+        setVerifyingToken(true);
+        setError('');
+        tokenVerifiedRef.current = true; // 标记为已验证，防止重复验证
+        
+        // 如果是URL传入的token，保存到localStorage
+        if (urlToken) {
+          localStorage.setItem('token', urlToken);
+        }
+        
+        // 验证token
+        const response = await getUserInfo();
+        
+        if (response.code === 200 && response.data) {
+          // 验证成功，跳转业务页面
+          console.log('Token验证成功，正在跳转...');
+          handleUserRedirect(response.data, router, true);
+        } else {
+          // 验证失败
+          console.error('Token验证失败:', response.message);
+          localStorage.removeItem('token');
+          tokenVerifiedRef.current = false; // 重置验证标记
+          setError('Token验证失败，请重新登录');
+          redirectToMiniProgramLogin();
+        }
+      } catch (error) {
+        // 验证异常
+        console.error('Token验证异常:', error);
+        localStorage.removeItem('token');
+        tokenVerifiedRef.current = false; // 重置验证标记
+        setError('登录验证失败，请重新登录');
+        redirectToMiniProgramLogin();
+      } finally {
+        setVerifyingToken(false);
+      }
+    };
+    
+    verifyAndRedirect();
+  }, [searchParams, router]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -88,6 +125,7 @@ export default function LoginPage() {
       await login(data.username, data.password);
       
       // 根据"记住我"选项保存或清除密码
+      // WebView 的 localStorage 是持久化的，小程序和浏览器都可以直接使用
       if (rememberMe) {
         localStorage.setItem(STORAGE_KEYS.USERNAME, data.username);
         localStorage.setItem(STORAGE_KEYS.PASSWORD, data.password);

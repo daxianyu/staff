@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
@@ -18,6 +19,7 @@ import {
 } from '@/services/auth';
 
 export default function MyMentorsPage() {
+  const router = useRouter();
   const { hasPermission } = useAuth();
   const [mentorStudents, setMentorStudents] = useState<MyMentorStudents[]>([]);
   const [loading, setLoading] = useState(true);
@@ -267,7 +269,7 @@ export default function MyMentorsPage() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <button
                                 onClick={() => {
-                                  window.location.href = `/mentee/student-detail?student_id=${student.student_id}`;
+                                  router.push(`/mentee/student-detail?student_id=${student.student_id}`);
                                 }}
                                 className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors flex items-center justify-center"
                                 title="View Student Details"
