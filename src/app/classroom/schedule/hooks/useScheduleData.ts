@@ -16,7 +16,7 @@ export interface ScheduleEvent {
   class_id?: number;
   room_name?: string;
   students?: string;
-  students_ids?: number[];
+  student_ids?: number[];
   teacher?: string;
   // 监考
   topic_id?: string;
@@ -113,7 +113,7 @@ export function useScheduleData(params: {
           room_id: l.room_id,
           class_id: l.class_id,
           students: l.students,
-          students_ids: l.students_ids,
+          student_ids: l.student_ids,
           room_name: l.room_name || '',
           teacher: l.teacher || '',
           subject_name: l.subject_name,

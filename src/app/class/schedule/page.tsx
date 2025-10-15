@@ -63,6 +63,7 @@ export default function SchedulePage() {
   const [classInfo, setClassInfo] = useState<ClassScheduleData | null>(null);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [roomUsage, setRoomUsage] = useState<Record<number, number[][]>>({});
+  const [occupiedRanges, setOccupiedRanges] = useState<Array<{start: Date; end: Date}>>([]);
   const [lastMousePosition, setLastMousePosition] = useState<{
     x: number;
     y: number;
@@ -121,6 +122,19 @@ export default function SchedulePage() {
         
         setEvents(lessonEvents);
         setRoomUsage(resp.data.room_taken);
+        
+        // 解析 lesson_data 为占用的时间范围
+        if (resp.data.lesson_data && resp.data.lesson_data.length > 0) {
+          const occupied = resp.data.lesson_data.map(ld => ({
+            start: new Date(ld.start_time * 1000),
+            end: new Date(ld.end_time * 1000)
+          }));
+          console.log('Parsed occupied ranges from lesson_data:', occupied);
+          setOccupiedRanges(occupied);
+        } else {
+          console.log('No lesson_data found, setting empty occupied ranges');
+          setOccupiedRanges([]);
+        }
       }
     } catch (error) {
       console.error('获取班级课表失败:', error);
@@ -131,6 +145,99 @@ export default function SchedulePage() {
     fetchClassSchedule();
   }, [fetchClassSchedule]);
 
+  // 应用占用时间槽的阴影效果
+  useEffect(() => {
+    if (!occupiedRanges.length) return;
+    
+    // 延迟执行，确保日历已渲染
+    const timer = setTimeout(() => {
+      console.log('Applying occupied time shading, ranges:', occupiedRanges);
+      
+      // 清除之前的样式
+      document.querySelectorAll('.occupied-time').forEach(el => {
+        el.classList.remove('occupied-time');
+      });
+      
+      // 查找日期列中的时间槽（不是左侧时间轴）
+      // 在 react-big-calendar 中，日期列的结构是：.rbc-time-content > .rbc-time-gutter (时间轴) + 多个日期列
+      const timeContent = document.querySelector('.rbc-time-content');
+      if (!timeContent) {
+        console.log('No time content found');
+        return;
+      }
+      
+      // 查找所有日期列（排除时间轴）
+      const dateColumns = Array.from(timeContent.children).filter(child => 
+        !child.classList.contains('rbc-time-gutter')
+      );
+      console.log('Found date columns:', dateColumns.length);
+      
+      // 获取当前周的日期信息
+      const currentDate = new Date(date);
+      const startOfWeek = new Date(currentDate);
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1); // 周一
+      
+      // 为每个日期列匹配对应的日期
+      dateColumns.forEach((column, colIndex) => {
+        const columnDate = new Date(startOfWeek);
+        columnDate.setDate(startOfWeek.getDate() + colIndex);
+        
+        console.log(`Column ${colIndex} represents date: ${columnDate.toDateString()}`);
+        
+        // 在这个日期列中查找时间槽
+        const slots = column.querySelectorAll('.rbc-time-slot');
+        console.log(`Column ${colIndex} has ${slots.length} time slots`);
+        
+        // 处理这个日期列中的时间槽
+        slots.forEach((slot, slotIndex) => {
+          const slotElement = slot as HTMLElement;
+          
+          // 通过索引计算时间（不依赖时间文本）
+          // 日历配置：step=15（每个slot 15分钟），min=9:00
+          const slotMinutes = slotIndex * 15;
+          const startMinutes = 9 * 60; // dayMin是9:00
+          const actualMinutes = startMinutes + slotMinutes;
+          const hour = Math.floor(actualMinutes / 60);
+          const minute = actualMinutes % 60;
+          
+          // 确保时间有效（在9:00-22:00范围内）
+          if (hour >= 9 && hour < 22) {
+            // 检查这个时间槽是否在占用范围内
+            occupiedRanges.forEach(range => {
+              const rangeDate = new Date(range.start);
+              const rangeHour = range.start.getHours();
+              const rangeMin = range.start.getMinutes();
+              const rangeEndHour = range.end.getHours();
+              const rangeEndMin = range.end.getMinutes();
+              
+              // 检查日期是否匹配
+              const isSameDate = columnDate.toDateString() === rangeDate.toDateString();
+              
+              if (isSameDate) {
+                const slotStart = hour * 60 + minute;
+                const slotEnd = slotStart + 15; // 每个格子是15分钟
+                const rangeStart = rangeHour * 60 + rangeMin;
+                const rangeEnd = rangeEndHour * 60 + rangeEndMin;
+                
+                console.log(`Checking slot ${hour}:${minute} (${slotStart}-${slotEnd}) on ${columnDate.toDateString()}, Range: ${rangeStart}-${rangeEnd}`);
+                
+                // 如果时间槽与占用范围有重叠，添加样式
+                if (slotStart < rangeEnd && slotEnd > rangeStart) {
+                  console.log('Adding occupied-time class to slot');
+                  slotElement.classList.add('occupied-time');
+                  slotElement.style.backgroundColor = 'rgba(239, 68, 68, 0.3)';
+                  slotElement.style.border = '2px solid rgba(239, 68, 68, 0.5)';
+                }
+              }
+            });
+          }
+        });
+      });
+    }, 1000); // 增加延迟时间确保日历完全渲染
+    
+    return () => clearTimeout(timer);
+  }, [occupiedRanges, date, view]);
+
   // 刷新数据的函数
   const refresh = useCallback(() => {
     return fetchClassSchedule();
@@ -140,10 +247,20 @@ export default function SchedulePage() {
   const dayMin = useMemo(() => moment(date).hour(9).minute(0).second(0).toDate(), [date]);
   const dayMax = useMemo(() => moment(date).hour(22).minute(0).second(0).toDate(), [date]);
 
-  // 冲突检查：课程
+  // 冲突检查：课程和占用时间范围
   const hasConflict = useCallback((start: Date, end: Date) => {
-    return events.some(ev => ev.type === 'lesson' && start < ev.end && end > ev.start);
-  }, [events]);
+    // 检查现有课程
+    const lessonConflict = events.some(ev => 
+      ev.type === 'lesson' && start < ev.end && end > ev.start
+    );
+    
+    // 检查占用的时间范围（来自 lesson_data）
+    const occupiedConflict = occupiedRanges.some(range => 
+      start < range.end && end > range.start
+    );
+    
+    return lessonConflict || occupiedConflict;
+  }, [events, occupiedRanges]);
 
   // 记录最后一次鼠标位置，用于弹窗定位
   const handleMouseDown = useCallback((e: MouseEvent) => {
@@ -165,7 +282,7 @@ export default function SchedulePage() {
       setShowEditModal(false);
       const actualEnd = end || new Date(start.getTime() + 30 * 60 * 1000);
       if (hasConflict(start, actualEnd)) {
-        alert('所选时间段与已有课程重叠！');
+        alert('所选时间段与已有课程或占用时间重叠！');
         return;
       }
       setSelectedDate(start);
@@ -427,7 +544,10 @@ export default function SchedulePage() {
           editClassLesson: (p: any) => editClassLesson({ record_id: p.record_id, start_time: p.start_time, end_time: p.end_time, room_id: p.room_id, repeat_num: p.repeat_num } as any),
           deleteClassLesson: (p: any) => deleteClassLesson({ record_id: p.record_id, repeat_num: p.repeat_num } as any)
         }}
-        unavailableRangesSec={[]}
+        unavailableRangesSec={occupiedRanges.map(r => ({
+          start_time: Math.floor(r.start.getTime() / 1000),
+          end_time: Math.floor(r.end.getTime() / 1000)
+        }))}
         onSaved={refresh}
         onError={setApiErrors}
       />
@@ -458,7 +578,10 @@ export default function SchedulePage() {
             editClassLesson: (p: any) => editClassLesson({ record_id: p.record_id, start_time: p.start_time, end_time: p.end_time, room_id: p.room_id, repeat_num: p.repeat_num } as any),
             deleteClassLesson: (p: any) => deleteClassLesson({ record_id: p.record_id, repeat_num: p.repeat_num } as any)
           }}
-          unavailableRangesSec={[]}
+          unavailableRangesSec={occupiedRanges.map(r => ({
+            start_time: Math.floor(r.start.getTime() / 1000),
+            end_time: Math.floor(r.end.getTime() / 1000)
+          }))}
           onSaved={refresh}
           onError={setApiErrors}
         />

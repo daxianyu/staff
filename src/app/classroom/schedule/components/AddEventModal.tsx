@@ -51,7 +51,7 @@ interface ScheduleEvent {
   room_id?: number;
   class_id?: number;
   students?: string;
-  students_ids?: number[];
+  student_ids?: number[];
   room_name?: string;
   teacher?: string;
   student_name?: string;

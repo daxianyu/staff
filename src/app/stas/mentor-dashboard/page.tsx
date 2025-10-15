@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { getMentorList } from '@/services/auth';
@@ -20,6 +20,9 @@ export default function MentorDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCampus, setSelectedCampus] = useState<string>('');
   const [selectedMentor, setSelectedMentor] = useState<string>('');
+  const [hovered, setHovered] = useState<{ mentor: string } | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_MENTOR_DASHBOARD) || hasPermission('sales_person') || hasPermission('finance');
@@ -78,6 +81,38 @@ export default function MentorDashboardPage() {
     
     const key = selectedCampus + selectedMentor;
     return data.all_names[key] || [];
+  };
+
+  // 根据导师名获取团队成员（用于悬浮弹层）
+  const getTeamMembersFor = (mentorName: string) => {
+    if (!data || !selectedCampus) return [] as string[];
+    const key = selectedCampus + mentorName;
+    return data.all_names[key] || [];
+  };
+
+  // 悬浮进入色条
+  const handleBarHover = (event: React.MouseEvent, mentorName: string) => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+    }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    setTooltipPosition({ x: rect.left, y: rect.bottom + 6 });
+    setHovered({ mentor: mentorName });
+  };
+
+  // 悬浮离开色条或弹层
+  const handleBarLeave = () => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+    }
+    leaveTimeoutRef.current = setTimeout(() => setHovered(null), 200);
+  };
+
+  // 鼠标进入弹层，保持显示
+  const handleTooltipEnter = () => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+    }
   };
 
   const { mentors, chartData } = getCurrentCampusData();
@@ -220,8 +255,10 @@ export default function MentorDashboardPage() {
                             {/* 导师团队成员数量 - 蓝色 */}
                             {mentorCount > 0 && (
                               <div 
-                                className="bg-blue-500 flex items-center justify-end pr-2"
+                                className="bg-blue-500 flex items-center justify-end pr-2 cursor-pointer hover:bg-blue-600 transition-colors"
                                 style={{ width: `${(mentorCount / maxValue) * 100}%` }}
+                                onMouseEnter={(e) => handleBarHover(e, mentor)}
+                                onMouseLeave={handleBarLeave}
                               >
                                 <span className="text-xs font-medium text-white">{mentorCount}</span>
                               </div>
@@ -257,40 +294,46 @@ export default function MentorDashboardPage() {
           </div>
         )}
 
-        {/* 团队成员详情 */}
-        {selectedMentor && (
-          <div className="mt-6 bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <UserGroupIcon className="h-5 w-5 mr-2 text-green-600" />
-                {selectedMentor} 的团队成员
-              </h3>
-              <p className="mt-1 text-sm text-gray-600">
-                共 {teamMembers.length} 名团队成员
-              </p>
+        {/* 团队成员悬浮弹层 */}
+        {hovered && (
+          <div
+            className="fixed z-50 bg-white rounded-lg shadow-2xl border border-gray-200 p-4 max-w-md"
+            style={{ left: `${tooltipPosition.x}px`, top: `${tooltipPosition.y}px`, maxHeight: '320px', overflowY: 'auto' }}
+            onMouseEnter={handleTooltipEnter}
+            onMouseLeave={handleBarLeave}
+          >
+            <div className="mb-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 bg-blue-500 rounded" />
+                <h4 className="text-sm font-semibold text-gray-900">{hovered.mentor} 的团队成员</h4>
+              </div>
             </div>
-            <div className="max-h-96 overflow-y-auto">
-              {teamMembers.length === 0 ? (
-                <div className="px-6 py-8 text-center text-sm text-gray-500">
-                  该导师暂无团队成员
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-200">
-                  {teamMembers.map((member, index) => (
-                    <div key={`${member}-${index}`} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-xs font-medium text-gray-600">
-                            {member.charAt(0)}
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">{member}</span>
+
+            {(() => {
+              const members = getTeamMembersFor(hovered.mentor);
+              if (members.length === 0) {
+                return <p className="text-sm text-gray-500 text-center py-2">暂无成员</p>;
+              }
+              return (
+                <div className="space-y-1">
+                  <div className="text-xs font-medium text-gray-700 mb-2">共 {members.length} 人</div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {Array.from({ length: Math.ceil(members.length / 4) }, (_, rowIndex) => (
+                      <div key={rowIndex} className="grid grid-cols-4 gap-3 mb-1">
+                        {members.slice(rowIndex * 4, (rowIndex + 1) * 4).map((member, idx) => (
+                          <div key={`${hovered.mentor}-${rowIndex * 4 + idx}`} className="text-sm text-gray-700 text-left px-2 py-1 bg-gray-50 rounded border border-gray-200 truncate">
+                            {member}
+                          </div>
+                        ))}
+                        {Array.from({ length: Math.max(0, 4 - members.slice(rowIndex * 4, (rowIndex + 1) * 4).length) }, (_, fillIdx) => (
+                          <div key={`fill-${rowIndex}-${fillIdx}`} />
+                        ))}
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         )}
       </div>

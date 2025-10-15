@@ -234,3 +234,29 @@
 .rbc-time-view .rbc-time-gutter {
   text-align: left;
 }
+
+/* 占用时间槽的背景阴影 - 针对日期列中的时间槽 */
+.rbc-time-content .rbc-time-slot.occupied-time {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(239, 68, 68, 0.15),
+    rgba(239, 68, 68, 0.15) 4px,
+    rgba(239, 68, 68, 0.25) 4px,
+    rgba(239, 68, 68, 0.25) 8px
+  ) !important;
+  pointer-events: none !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* 更明显的背景色用于调试 */
+.rbc-time-content .rbc-time-slot.occupied-time {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+/* 确保不影响到左侧时间轴 */
+.rbc-time-gutter .rbc-time-slot.occupied-time {
+  background: none !important;
+  border: none !important;
+}

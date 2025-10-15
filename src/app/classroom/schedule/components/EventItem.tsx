@@ -21,7 +21,7 @@ export const EventItem = React.memo(({ event }: { event: ScheduleEvent }) => {
         {event.teacher && <div className="event-line">教师：{event.teacher}</div>}
         {event.students && (
           <div className="event-line">
-            学生：{event.students.length > 8 ? `${event.students.slice(0, 8)}..等（共${event.students_ids?.length || 0}人）` : event.students}
+            学生：{event.students.length > 8 ? `${event.students.slice(0, 8)}..等（共${event.student_ids?.length || 0}人）` : event.students}
           </div>
         )}
       </div>

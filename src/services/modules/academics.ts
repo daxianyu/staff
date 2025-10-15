@@ -37,6 +37,13 @@ export interface ClassScheduleData {
   lessons: ClassScheduleLesson[];
   room_taken: Record<number, number[][]>;
   all_rooms: Array<{ id: number; name: string }>;
+  lesson_data?: Array<{
+    id: number;
+    start_time: number;
+    end_time: number;
+    room_id: number;
+    subject_id: number;
+  }>;
 }
 
 export interface ClassScheduleResponse {

@@ -33,7 +33,7 @@ interface ScheduleEvent {
   room_id?: number;
   class_id?: number;
   students?: string;
-  students_ids?: number[];
+  student_ids?: number[];
   room_name?: string;
   student_name?: string;
   // 监考相关字段
@@ -223,7 +223,7 @@ export default function SchedulePage() {
           room_id: lesson.room_id,
           class_id: lesson.class_id,
           students: lesson.students,
-          students_ids: lesson.students_ids,
+          student_ids: lesson.student_ids,
           room_name: lesson.room_name || '',
           student_name: lesson.student_name || ''
         }));
@@ -1015,7 +1015,7 @@ export default function SchedulePage() {
             {event.students && (
               <div className="event-line">
                 学生: {event.students && event.students.length > 8
-                  ? `${event.students.slice(0, 8)}..等（共${event.students_ids?.length || 0}人）`
+                  ? `${event.students.slice(0, 8)}..等（共${event.student_ids?.length || 0}人）`
                   : event.students}
               </div>
             )}

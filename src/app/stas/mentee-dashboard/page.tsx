@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { getMenteeList } from '@/services/auth';
@@ -23,6 +23,9 @@ export default function MenteeDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [sortType, setSortType] = useState(0); // 0: 按数量排序, 1: 按导师组排序
   const [selectedCampus, setSelectedCampus] = useState<string>('');
+  const [hoveredMentor, setHoveredMentor] = useState<{ index: number; name: string; year: string } | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_MENTEE_DASHBOARD) || hasPermission('sales_person') || hasPermission('finance');
@@ -102,6 +105,60 @@ export default function MenteeDashboardPage() {
   };
 
   const { year2027, year2028 } = getGraduationYearData();
+
+  // 获取导师的学生列表
+  const getMentorStudents = (mentorName: string, year: string) => {
+    if (!data) return [];
+
+    const students: string[] = [];
+
+    // 从 student_graduation_year 获取学生数据
+    if (data.student_graduation_year && data.student_graduation_year[mentorName]) {
+      const mentorData = data.student_graduation_year[mentorName];
+
+      if (mentorData[year] && Array.isArray(mentorData[year])) {
+        students.push(...mentorData[year]);
+      }
+    }
+
+    return students;
+  };
+
+  // 处理鼠标悬停
+  const handleMentorHover = (event: React.MouseEvent, mentorName: string, mentorIndex: number, year: string) => {
+    // 清除离开定时器
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      x: rect.left, // 放在柱状图左侧（头部）
+      y: rect.bottom + 10 // 在柱状图下方
+    });
+    // 立即更新悬浮状态，确保快速切换时正确显示
+    setHoveredMentor({ index: mentorIndex, name: mentorName, year });
+  };
+
+  // 处理鼠标离开
+  const handleMentorLeave = () => {
+    // 清除之前的定时器
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+    }
+    // 延迟隐藏，给用户一点时间移动到其他柱状图或弹出框
+    leaveTimeoutRef.current = setTimeout(() => {
+      setHoveredMentor(null);
+    }, 200);
+  };
+
+  // 处理弹出框鼠标进入
+  const handleTooltipEnter = () => {
+    // 清除离开定时器，保持弹出框显示
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -250,7 +307,10 @@ export default function MenteeDashboardPage() {
                     }), 1); // 防止除零
                     
                     return (
-                      <div key={`${mentor}-${index}`} className="flex items-center gap-4">
+                      <div
+                        key={`${mentor}-${index}`}
+                        className="flex items-center gap-4"
+                      >
                         {/* 导师名称 */}
                         <div className="w-32 text-sm font-medium text-gray-900 text-right">
                           {mentor}
@@ -261,19 +321,23 @@ export default function MenteeDashboardPage() {
                           <div className="h-8 bg-gray-100 rounded-lg overflow-hidden flex">
                             {/* 2027届 - 绿色 */}
                             {mentorYear2027 > 0 && (
-                              <div 
-                                className="bg-green-400 flex items-center justify-end pr-2"
+                              <div
+                                className="bg-green-400 flex items-center justify-end pr-2 cursor-pointer hover:bg-green-500 transition-colors relative group"
                                 style={{ width: `${(mentorYear2027 / maxValue) * 100}%` }}
+                                onMouseEnter={(e) => handleMentorHover(e, mentor, index, '2027')}
+                                onMouseLeave={handleMentorLeave}
                               >
                                 <span className="text-xs font-medium text-white">{mentorYear2027}</span>
                               </div>
                             )}
-                            
+
                             {/* 2028届 - 蓝色 */}
                             {mentorYear2028 > 0 && (
-                              <div 
-                                className="bg-blue-500 flex items-center justify-end pr-2"
+                              <div
+                                className="bg-blue-500 flex items-center justify-end pr-2 cursor-pointer hover:bg-blue-600 transition-colors relative group"
                                 style={{ width: `${(mentorYear2028 / maxValue) * 100}%` }}
+                                onMouseEnter={(e) => handleMentorHover(e, mentor, index, '2028')}
+                                onMouseLeave={handleMentorLeave}
                               >
                                 <span className="text-xs font-medium text-white">{mentorYear2028}</span>
                               </div>
@@ -317,6 +381,64 @@ export default function MenteeDashboardPage() {
                 })()}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 学生列表悬浮框 */}
+        {hoveredMentor && (
+          <div
+            className="fixed z-50 bg-white rounded-lg shadow-2xl border border-gray-200 p-4 max-w-md"
+            style={{
+              left: `${tooltipPosition.x}px`,
+              top: `${tooltipPosition.y}px`,
+              maxHeight: '320px',
+              overflowY: 'auto'
+            }}
+            onMouseEnter={handleTooltipEnter}
+            onMouseLeave={handleMentorLeave}
+          >
+            <div className="mb-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-3 h-3 rounded ${hoveredMentor.year === '2027' ? 'bg-green-400' : 'bg-blue-500'}`}></div>
+                <h4 className="text-sm font-semibold text-gray-900">
+                  {hoveredMentor.name} - {hoveredMentor.year}届学生
+                </h4>
+              </div>
+            </div>
+
+            {(() => {
+              const students = getMentorStudents(hoveredMentor.name, hoveredMentor.year);
+
+              if (students.length === 0) {
+                return (
+                  <p className="text-sm text-gray-500 text-center py-2">暂无学生</p>
+                );
+              }
+
+              return (
+                <div className="space-y-1">
+                  <div className="text-xs font-medium text-gray-700 mb-2">
+                    {hoveredMentor.year}届 ({students.length}人)
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {/* 将学生分成多列显示，每行最多4个名字 */}
+                    {Array.from({ length: Math.ceil(students.length / 4) }, (_, rowIndex) => (
+                      <div key={rowIndex} className="grid grid-cols-4 gap-3 mb-1">
+                        {students.slice(rowIndex * 4, (rowIndex + 1) * 4).map((student, idx) => (
+                          <div key={`${hoveredMentor.year}-${rowIndex * 4 + idx}`} className="text-sm text-gray-700 text-left px-2 py-1 bg-gray-50 rounded border border-gray-200 truncate">
+                            {student}
+                          </div>
+                        ))}
+                        {/* 填充空白单元格以保持网格对齐 */}
+                        {Array.from({ length: Math.max(0, 4 - students.slice(rowIndex * 4, (rowIndex + 1) * 4).length) }, (_, fillIdx) => (
+                          <div key={`fill-${rowIndex}-${fillIdx}`} />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

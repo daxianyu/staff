@@ -9,6 +9,7 @@ import { BookOpenIcon, ExclamationTriangleIcon, AcademicCapIcon, UserGroupIcon }
 interface CampusEntry {
   gender: string;
   student_name: string;
+  student_pinyin_name: string;
   long_id: string;
   mentor_name: string;
   mentor_leader_name: string;
@@ -110,6 +111,7 @@ export default function SubjectRelativePage() {
   const filteredAndSortedEntries = currentCampus?.campus_entries
     .filter(entry =>
       entry.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.student_pinyin_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.mentor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.mentor_leader_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.grade.toLowerCase().includes(searchTerm.toLowerCase())
@@ -140,7 +142,6 @@ export default function SubjectRelativePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 页面标题 */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">学科相关统计</h1>
           <p className="mt-2 text-sm text-gray-600">学生学科学习进度和课时分析</p>
@@ -254,6 +255,9 @@ export default function SubjectRelativePage() {
                       </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Pinyin
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Gender
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -341,7 +345,7 @@ export default function SubjectRelativePage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredAndSortedEntries.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="px-6 py-12 text-center text-sm text-gray-500">
+                      <td colSpan={13} className="px-6 py-12 text-center text-sm text-gray-500">
                         {searchTerm ? '没有找到匹配的数据' : !currentCampus ? '请选择校区' : '暂无数据'}
                       </td>
                     </tr>
@@ -351,6 +355,9 @@ export default function SubjectRelativePage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {entry.student_name}
                         </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {entry.student_pinyin_name}
+                      </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             entry.gender === '男' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'
