@@ -938,8 +938,10 @@ export const resetStudentId = async (recordId: number): Promise<ApiResponse> => 
 // 更新学生考试成绩
 export interface UpdateExamResultParams {
   record_id: number;
-  result: number;
+  result: number | string;      // 分数
   student_id: number;
+  grade: string;       // 等第
+  second: string;      // 总分
 }
 
 export const updateStudentExamResult = async (

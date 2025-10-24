@@ -1224,7 +1224,7 @@ export default function SchedulePage() {
             selectable={!isClosingModal}
             eventPropGetter={eventStyleGetter}
             toolbar={false} // 隐藏默认工具栏
-            min={new Date(2025, 0, 1, 9, 0, 0)} // 早上9点开始
+            min={new Date(2025, 0, 1, 8, 30, 0)} // 早上8:30开始
             max={new Date(2025, 0, 1, 22, 0, 0)} // 晚上10点结束
             step={15} // 15分钟间隔
             timeslots={2} // 每小时2个时间槽

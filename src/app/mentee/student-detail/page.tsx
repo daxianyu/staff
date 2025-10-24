@@ -1081,7 +1081,7 @@ export default function StudentDetailPage() {
                       </span>
                     </div>
                     <div className="flex">
-                      <span className="w-40 text-sm font-medium text-gray-500">年费:</span>
+                      <span className="w-40 text-sm font-medium text-gray-500">学年:</span>
                       <span className="text-sm text-gray-900">{studentInfo.year_fee}</span>
                     </div>
                   </div>

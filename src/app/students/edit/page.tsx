@@ -141,7 +141,12 @@ export default function StudentEditPage() {
   const [newPassword, setNewPassword] = useState('');
   const [examLoadingRow, setExamLoadingRow] = useState<number | null>(null);
   const [examEdits, setExamEdits] = useState<Record<number, string>>({});
+  const [gradeEdits, setGradeEdits] = useState<Record<number, string>>({});
+  const [secondEdits, setSecondEdits] = useState<Record<number, string>>({});
   const [activeTab, setActiveTab] = useState<'profile' | 'exam'>('profile');
+  
+  // Grade 选项
+  const gradeOptions = ["A*", "A", "B", "C", "D", "E", "U", "X No result", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
   const [showResetPwdConfirm, setShowResetPwdConfirm] = useState(false);
   const [showResetIdConfirm, setShowResetIdConfirm] = useState(false);
 
@@ -472,6 +477,10 @@ export default function StudentEditPage() {
       const res = await resetStudentId(formData.record_id);
       if (res.code === 200) {
         setShowSuccess(true);
+        // 3秒后自动隐藏成功提示
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
         // 可选：重新加载信息（如果需要看到更新）
         await loadStudentInfo();
       } else {
@@ -490,13 +499,25 @@ export default function StudentEditPage() {
     if (!studentId) return;
     try {
       setExamLoadingRow(examRecordId);
-      const val = Number(examEdits[examRecordId] ?? 0);
-      const resp = await updateStudentExamResult({ record_id: examRecordId, result: val, student_id: Number(studentId) });
+      const result = examEdits[examRecordId] ? Number(examEdits[examRecordId]) : "";
+      const grade = gradeEdits[examRecordId] || "";
+      const second = secondEdits[examRecordId] || "";
+      const resp = await updateStudentExamResult({ 
+        record_id: examRecordId, 
+        student_id: Number(studentId),
+        result,     // 分数
+        grade,      // 等第
+        second      // 总分
+      });
       if (resp.code !== 200) {
         setErrorMessage(resp.message || 'Update exam result failed');
         setShowError(true);
       } else {
         setShowSuccess(true);
+        // 3秒后自动隐藏成功提示
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
       }
     } catch (e) {
       setErrorMessage('Update exam result failed');
@@ -577,6 +598,14 @@ export default function StudentEditPage() {
                 <p className="text-sm font-medium text-green-800">
                   Student information updated successfully!
                 </p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setShowSuccess(false)}
+                  className="inline-flex text-green-400 hover:text-green-600"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
               </div>
             </div>
           </div>
@@ -1178,30 +1207,111 @@ export default function StudentEditPage() {
                   {/* 考试成绩编辑 */}
                   {Array.isArray((studentInfo as any)?.exam_data) && (studentInfo as any).exam_data.length > 0 ? (
                     <div>
-                      <h3 className="text-base font-medium text-gray-900 mb-3">Exam Results</h3>
-                      <div className="space-y-3">
-                        {(studentInfo as any).exam_data.map((exam: any) => (
-                          <div key={exam.id} className="flex items-center gap-3">
-                            <div className="flex-1 text-sm text-gray-700">
-                              {exam.exam_name || 'Exam'}
-                            </div>
-                            <input
-                              type="number"
-                              value={examEdits[exam.id] ?? ''}
-                              onChange={(e) => setExamEdits(prev => ({ ...prev, [exam.id]: e.target.value }))}
-                              className="w-28 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                              placeholder="Result"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => saveExamResult(exam.id)}
-                              disabled={examLoadingRow === exam.id}
-                              className={`px-3 py-1.5 text-sm rounded-md ${examLoadingRow === exam.id ? 'bg-blue-200 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                            >
-                              {examLoadingRow === exam.id ? 'Saving...' : 'Save'}
-                            </button>
+                      <h3 className="text-base font-medium text-gray-900 mb-4">Exam Results</h3>
+                      <div className="space-y-6">
+                        {/* 校内考试（exam_type 3, 4） */}
+                        <div className="border-b border-gray-200 pb-6">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">校内考试</h4>
+                          <div className="space-y-2">
+                            {(studentInfo as any).exam_data
+                              .filter((exam: any) => exam.exam_type === 3 || exam.exam_type === 4)
+                              .map((exam: any) => (
+                                <div key={exam.id} className="flex items-center gap-2">
+                                  <div className="flex-1 text-sm text-gray-700">
+                                    {exam.exam_name || 'Exam'}
+                                  </div>
+                                  <input
+                                    type="number"
+                                    value={examEdits[exam.id] ?? exam.result ?? ''}
+                                    onChange={(e) => setExamEdits(prev => ({ ...prev, [exam.id]: e.target.value }))}
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    placeholder="分数"
+                                  />
+                                  <span className="text-gray-400 text-sm">/</span>
+                                  <input
+                                    type="text"
+                                    value={secondEdits[exam.id] ?? exam.second ?? ''}
+                                    onChange={(e) => setSecondEdits(prev => ({ ...prev, [exam.id]: e.target.value }))}
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    placeholder="总分"
+                                  />
+                                  <select
+                                    value={gradeEdits[exam.id] ?? exam.grade ?? ''}
+                                    onChange={(e) => setGradeEdits(prev => ({ ...prev, [exam.id]: e.target.value }))}
+                                    className="w-24 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                  >
+                                    <option value="">请选择等第</option>
+                                    {gradeOptions.map(opt => (
+                                      <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    onClick={() => saveExamResult(exam.id)}
+                                    disabled={examLoadingRow === exam.id}
+                                    className={`px-3 py-1.5 text-sm rounded-md whitespace-nowrap ${examLoadingRow === exam.id ? 'bg-blue-200 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                  >
+                                    {examLoadingRow === exam.id ? 'Saving...' : 'Save'}
+                                  </button>
+                                </div>
+                              ))}
+                            {(studentInfo as any).exam_data.filter((exam: any) => exam.exam_type === 3 || exam.exam_type === 4).length === 0 && (
+                              <p className="text-sm text-gray-500 py-2">暂无校内考试</p>
+                            )}
                           </div>
-                        ))}
+                        </div>
+
+                        {/* 大考（exam_type 0, 1, 2） */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">大考 (Major Exams)</h4>
+                          <div className="space-y-2">
+                            {(studentInfo as any).exam_data
+                              .filter((exam: any) => exam.exam_type === 0 || exam.exam_type === 1 || exam.exam_type === 2)
+                              .map((exam: any) => (
+                                <div key={exam.id} className="flex items-center gap-2">
+                                  <div className="flex-1 text-sm text-gray-700">
+                                    {exam.exam_name || 'Exam'}
+                                  </div>
+                                  <input
+                                    type="number"
+                                    value={examEdits[exam.id] ?? exam.result ?? ''}
+                                    onChange={(e) => setExamEdits(prev => ({ ...prev, [exam.id]: e.target.value }))}
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    placeholder="分数"
+                                  />
+                                  <span className="text-gray-400 text-sm">/</span>
+                                  <input
+                                    type="text"
+                                    value={secondEdits[exam.id] ?? exam.second ?? ''}
+                                    onChange={(e) => setSecondEdits(prev => ({ ...prev, [exam.id]: e.target.value }))}
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    placeholder="总分"
+                                  />
+                                  <select
+                                    value={gradeEdits[exam.id] ?? exam.grade ?? ''}
+                                    onChange={(e) => setGradeEdits(prev => ({ ...prev, [exam.id]: e.target.value }))}
+                                    className="w-24 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                  >
+                                    <option value="">请选择等第</option>
+                                    {gradeOptions.map(opt => (
+                                      <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    onClick={() => saveExamResult(exam.id)}
+                                    disabled={examLoadingRow === exam.id}
+                                    className={`px-3 py-1.5 text-sm rounded-md whitespace-nowrap ${examLoadingRow === exam.id ? 'bg-blue-200 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                  >
+                                    {examLoadingRow === exam.id ? 'Saving...' : 'Save'}
+                                  </button>
+                                </div>
+                              ))}
+                            {(studentInfo as any).exam_data.filter((exam: any) => exam.exam_type === 0 || exam.exam_type === 1 || exam.exam_type === 2).length === 0 && (
+                              <p className="text-sm text-gray-500 py-2">暂无大考</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : (

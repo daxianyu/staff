@@ -11,7 +11,6 @@ export async function middleware(request: NextRequest) {
     if (!request.nextUrl.pathname.endsWith('/api/login')) {
       // 从localStorage获取token是在客户端完成的，这里只负责转发
       const token = request.headers.get('Authorization');
-      console.log(token);
       if (token) {
         headers.set('Authorization', token);
       }

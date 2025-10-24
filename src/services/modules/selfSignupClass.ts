@@ -252,3 +252,16 @@ export const deleteSelfSignupClassStudent = async (params: DeleteStudentRequest)
     return { code: 500, message: error instanceof Error ? error.message : '删除学生失败' };
   }
 };
+
+// 删除所有自助报名班级
+export const deleteAllSelfSignupClasses = async (): Promise<ApiResponse> => {
+  try {
+    const { data } = await request('/api/class/self_signup_class/delete_all', {
+      method: 'POST',
+    });
+    return normalizeApiResponse(data as ApiEnvelope);
+  } catch (error) {
+    console.error('删除所有自助报名班级失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '删除所有自助报名班级失败' };
+  }
+};

@@ -341,7 +341,7 @@ export default function SubjectRelativeMonthlyPage() {
                       onClick={() => handleSort('year_fee')}
                     >
                       <div className="flex items-center gap-1">
-                        年费
+                        学年
                       </div>
                     </th>
                   </tr>

@@ -20,6 +20,7 @@ import {
   getSelfSignupClassSelect,
   addSelfSignupClass,
   deleteSelfSignupClass,
+  deleteAllSelfSignupClasses,
   uploadSelfSignupClass,
   downloadSelfSignupClassTemplate,
   getSelfSignupClassEditInfo,
@@ -43,6 +44,7 @@ export default function SelfSignupClassesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<SelfSignupClass | null>(null);
   const [editInfo, setEditInfo] = useState<SelfSignupClassEditInfo | null>(null);
@@ -274,6 +276,24 @@ export default function SelfSignupClassesPage() {
     }
   };
 
+  // 一键删除所有班级
+  const handleDeleteAll = async () => {
+    try {
+      const response = await deleteAllSelfSignupClasses();
+      
+      if (response.code === 200) {
+        setShowDeleteAllModal(false);
+        loadData();
+        alert('所有班级已删除');
+      } else {
+        alert(response.message || '删除失败');
+      }
+    } catch (error) {
+      console.error('删除所有班级失败:', error);
+      alert('删除失败');
+    }
+  };
+
   // 处理文件上传
   const handleFileUpload = async () => {
     if (!uploadFile) {
@@ -445,6 +465,13 @@ export default function SelfSignupClassesPage() {
                 >
                   <PlusIcon className="h-4 w-4" />
                   新增班级
+                </button>
+                <button
+                  onClick={() => setShowDeleteAllModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  删除所有
                 </button>
               </div>
             )}
@@ -969,6 +996,45 @@ export default function SelfSignupClassesPage() {
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(false)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 删除所有班级确认模态框 */}
+        {showDeleteAllModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      删除所有班级
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        确定要删除所有自助报名班级吗？此操作将删除 <span className="font-medium text-red-600">{classes.length}</span> 个班级，且无法撤销。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  onClick={handleDeleteAll}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  确认删除所有
+                </button>
+                <button
+                  onClick={() => setShowDeleteAllModal(false)}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   取消

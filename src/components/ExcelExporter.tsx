@@ -130,6 +130,9 @@ export function convertObjectsToSheetData(
   sheetName: string = 'Sheet1'
 ): SheetData {
   const rows = data.map(item => {
+    if (Array.isArray(item)) {
+      return item;
+    }
     return headers.map(header => {
       // 支持嵌套属性访问，如 'user.name'
       const keys = header.split('.');
