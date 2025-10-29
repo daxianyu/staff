@@ -19,7 +19,9 @@ import {
   TrashIcon,
   XMarkIcon,
   UserGroupIcon,
+  CpuChipIcon,
 } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 import {
   getGroupAssignmentList,
   deleteGroupAssignmentRequests,
@@ -49,6 +51,7 @@ const DEFAULT_VIEWPORT_HEIGHT = 600;
 
 export default function GroupAssignmentRequestsPage() {
   const { hasPermission, user } = useAuth();
+  const router = useRouter();
   const [requests, setRequests] = useState<GroupAssignmentRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -318,11 +321,22 @@ export default function GroupAssignmentRequestsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 页面标题 */}
         <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <UserGroupIcon className="h-8 w-8 text-gray-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Group Assignment Requests</h1>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <UserGroupIcon className="h-8 w-8 text-gray-600" />
+                <h1 className="text-2xl font-bold text-gray-900">Group Assignment Requests</h1>
+              </div>
+              <p className="mt-2 text-sm text-gray-600">学生选课申请管理</p>
+            </div>
+            <button
+              onClick={() => router.push('/school-admin/ai-groups')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <CpuChipIcon className="h-5 w-5" />
+              AI排课
+            </button>
           </div>
-          <p className="mt-2 text-sm text-gray-600">学生选课申请管理</p>
         </div>
 
         {/* 搜索和操作栏 */}
@@ -333,7 +347,7 @@ export default function GroupAssignmentRequestsPage() {
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="搜索学生姓名、校区、导师、考试、班级、科目、备注..."
+                placeholder="搜索..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);

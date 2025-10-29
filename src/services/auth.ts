@@ -16,6 +16,7 @@ export * from './modules/weekend';
 export * from './modules/tools';
 export * from './modules/selfSignupClass';
 export * from './modules/groups';
+export { getAllExams, getRoomList } from './modules/groups';
 export * from './modules/core';
 export * from './modules/mentee';
 export * from './modules/classroom';
