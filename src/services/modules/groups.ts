@@ -155,6 +155,47 @@ export interface ScheduleResult {
     schedule_lessons_data: any[];
     students_data: any[];
     time_slots: string[];
+    return_time_count: Array<{
+      time: string;
+      count: number;
+      teacher_hours: string;
+      student_hours: string;
+      illegal: number;
+    }>;
+    teacher_return_list: Array<{
+      teacher_id: number;
+      class_num: number;
+      illegal: number;
+      lesson_num: number;
+      lesson_hours: string;
+      busy_degree: string;
+      campus_id: number;
+      campus_name: string;
+    }>;
+    student_return_list: Array<{
+      student_id: number;
+      lesson_num: number;
+      lesson_hours: string;
+      busy_degree: string;
+      campus_id: number;
+      campus_name: string;
+      mentor_id: number;
+      mentor_name: string;
+      graduation_date: string;
+    }>;
+    teacher_class: Record<number, Record<number, {
+      count: number;
+      illegal: number;
+      time_slots: number[];
+    }>>;
+    student_class: Record<number, Array<{
+      class_id: number;
+      time_slots: number[];
+      teacher_id?: number;
+      teacher_name?: string;
+      topic_name?: string;
+      student_ids?: number[];
+    }>>;
   };
   message: string;
 }

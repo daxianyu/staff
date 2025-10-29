@@ -13,7 +13,7 @@ interface Complaint {
   mentor_name: string;
   is_mentor_complaint: number;
   description: string;
-  time: string;
+  time: number;
 }
 
 interface ComplaintsResponse {
@@ -250,23 +250,13 @@ export default function ComplaintsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {complaint.student_name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {complaint.student_id}
-                          </div>
+                          {complaint.student_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {complaint.mentor_name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {complaint.mentor_id}
-                          </div>
+                          {complaint.mentor_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(complaint.time).toLocaleString('zh-CN')}
+                          {new Date(complaint.time * 1000).toLocaleString('zh-CN')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           {canReply && (

@@ -6,6 +6,7 @@ import {
   useMemo,
   useCallback,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import {
@@ -38,6 +39,7 @@ import {
   getSelfSignupClassSelect,
   getAllExams,
   getRoomList,
+  downloadSelfSignupClassTemplate,
   type ScheduleSettings,
   type Group,
   type BusyInfo,
@@ -68,6 +70,7 @@ interface ScheduleEvent extends Event {
 }
 
 export default function AIGroupsPage() {
+  const router = useRouter();
   const { hasPermission, user } = useAuth();
   const [loading, setLoading] = useState(false);
   type TabKey = 'group-info' | 'teacher-busy' | 'student-busy';
@@ -239,12 +242,37 @@ export default function AIGroupsPage() {
     if (!searchTerm.trim()) return groups;
 
     const term = searchTerm.toLowerCase();
-    return groups.filter(group =>
-      Object.values(group).some(value =>
+    return groups.filter(group => {
+      // 搜索原始字段值
+      const fieldMatch = Object.values(group).some(value =>
         String(value).toLowerCase().includes(term)
-      )
-    );
-  }, [groups, searchTerm]);
+      );
+      
+      // 搜索显示的名称
+      const topicName = (group.topic_name || (group.topic_id ? topicMap[String(group.topic_id)] : '') || '').toLowerCase();
+      const examName = (group.exam_name || (group.exam_id ? examMap[group.exam_id] : '') || '').toLowerCase();
+      
+      // 搜索教师名称
+      let teacherNames = '';
+      if (group.teacher) {
+        const teacherIds = Array.isArray(group.teacher) ? group.teacher : [group.teacher];
+        teacherNames = teacherIds.map(id => teacherInfoMap[id] || '').join(' ').toLowerCase();
+      }
+      
+      // 搜索学生名称
+      let studentNames = '';
+      if (group.students) {
+        const studentIds = Array.isArray(group.students) ? group.students : [group.students];
+        studentNames = studentIds.map(id => studentInfoMap[id] || '').join(' ').toLowerCase();
+      }
+      
+      return fieldMatch || 
+             topicName.includes(term) || 
+             examName.includes(term) || 
+             teacherNames.includes(term) || 
+             studentNames.includes(term);
+    });
+  }, [groups, searchTerm, topicMap, examMap, teacherInfoMap, studentInfoMap]);
 
   // Excel导出数据
   const exportData: SheetData = useMemo(() => {
@@ -324,11 +352,11 @@ export default function AIGroupsPage() {
     }
   }, [loadCampusData]);
 
-  const handleDeleteBusyEntry = useCallback(async (id: number, isTeacher: boolean) => {
-    const confirmed = window.confirm('确认删除这个busy时间段？');
+  const handleDeleteBusyEntry = useCallback(async (recordIds: string, isTeacher: boolean) => {
+    const confirmed = window.confirm('确认删除该人员的所有busy时间段？');
     if (!confirmed) return;
 
-    const response = await deleteBusy(String(id), isTeacher ? 1 : 0);
+    const response = await deleteBusy(recordIds, isTeacher ? 1 : 0);
     if (response.code === 200) {
       alert('删除成功');
       await loadCampusData();
@@ -336,6 +364,20 @@ export default function AIGroupsPage() {
       alert(response.message || '删除失败');
     }
   }, [loadCampusData]);
+
+  // 下载基础数据模板
+  const handleDownloadTemplate = useCallback(async () => {
+    try {
+      setLoading(true);
+      await downloadSelfSignupClassTemplate();
+      // 函数内部已经处理了下载，无需额外操作
+    } catch (error) {
+      console.error('下载失败:', error);
+      alert('下载失败，请重试');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // 开始排课
   const handleStartSchedule = async () => {
@@ -436,13 +478,25 @@ export default function AIGroupsPage() {
               </select>
 
               <button
-                disabled
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
-                title="预留功能"
+                onClick={handleDownloadTemplate}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                title="下载包含科目、考试、校区信息的基础数据模板"
               >
                 <ArrowDownTrayIcon className="h-4 w-4" />
                 基础数据下载
               </button>
+
+              {isCoreUser && (
+                <button
+                  onClick={() => router.push('/school-admin/ai-schedule')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  title="跳转到 AI 排课执行页面"
+                >
+                  <PlayIcon className="h-4 w-4" />
+                  开始排课
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -520,7 +574,7 @@ export default function AIGroupsPage() {
                     studentInfoMap={studentInfoMap}
                     timeslots={timeslots}
                     onAdd={() => setShowTeacherBusyModal(true)}
-                    onDelete={(id) => handleDeleteBusyEntry(id, true)}
+                    onDelete={(recordIds) => handleDeleteBusyEntry(recordIds, true)}
                   />
                 )}
 
@@ -534,7 +588,7 @@ export default function AIGroupsPage() {
                     studentInfoMap={studentInfoMap}
                     timeslots={timeslots}
                     onAdd={() => setShowStudentBusyModal(true)}
-                    onDelete={(id) => handleDeleteBusyEntry(id, false)}
+                    onDelete={(recordIds) => handleDeleteBusyEntry(recordIds, false)}
                   />
                 )}
               </div>
@@ -833,35 +887,38 @@ function GroupInfoTab({
     // 获取 Topic 和 Exam 的名称
     const topicName = group.topic_name || (group.topic_id ? topicMap[String(group.topic_id)] : null) || '-';
     const examName = group.exam_name || (group.exam_id ? examMap[group.exam_id] : null) || '-';
+    
+    // 背景色类名
+    const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
 
     return (
       <div
         key={group.id || index}
         style={{ display: 'grid', gridTemplateColumns: gridTemplate }}
-        className={`text-sm border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+        className="text-sm border-b border-gray-100"
       >
-        <div className="px-4 py-3 text-gray-900">{topicName}</div>
-        <div className="px-4 py-3 text-gray-700">{group.week_lessons || '-'}</div>
-        <div className="px-4 py-3 text-gray-700">{examName}</div>
-        <div className="px-4 py-3 text-gray-700">{group.max_students ?? '-'}</div>
-        <div className="px-4 py-3 text-gray-700">{group.class_type ?? '-'}</div>
-        <div className="px-4 py-3 text-gray-700 truncate" title={teacherNames}>
+        <div className={`px-4 py-3 text-gray-900 ${bgClass}`}>{topicName}</div>
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{group.week_lessons || '-'}</div>
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{examName}</div>
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{group.max_students ?? '-'}</div>
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{group.class_type ?? '-'}</div>
+        <div className={`px-4 py-3 text-gray-700 truncate ${bgClass}`} title={teacherNames}>
           {teacherNames}
         </div>
-        <div className="px-4 py-3 text-gray-700">{teacherCount}</div>
-        <div className="px-4 py-3 text-gray-700 truncate" title={studentNames}>
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{teacherCount}</div>
+        <div className={`px-4 py-3 text-gray-700 truncate ${bgClass}`} title={studentNames}>
           {studentNames}
         </div>
-        <div className="px-4 py-3 text-gray-700">{studentCount}</div>
-        <div className="px-4 py-3 text-gray-700 truncate" title={formatFixedTime(group.fix_time)}>
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{studentCount}</div>
+        <div className={`px-4 py-3 text-gray-700 truncate ${bgClass}`} title={formatFixedTime(group.fix_time)}>
           {formatFixedTime(group.fix_time)}
         </div>
-        <div className="px-4 py-3 text-gray-700">{group.double_lesson ? '是' : '否'}</div>
-        <div className="px-4 py-3 text-gray-700">
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{group.double_lesson ? '是' : '否'}</div>
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>
           {group.fix_room && group.fix_room !== -1 ? group.fix_room : '-'}
         </div>
-        <div className="px-4 py-3 text-gray-700">{formatSubmitTime(group)}</div>
-        <div className="px-4 py-3">
+        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{formatSubmitTime(group)}</div>
+        <div className={`px-4 py-3 ${bgClass}`}>
           <div className="flex gap-3">
             <button
               onClick={() => onEdit(group)}
@@ -945,7 +1002,7 @@ function GroupInfoTab({
             <div className="max-h-[600px] overflow-y-auto">
               {/* 表头 */}
               <div
-                className="sticky top-0 z-10 grid bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200"
+                className="sticky top-0 z-10 grid text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200"
                 style={{ gridTemplateColumns: gridTemplate }}
               >
                 {[
@@ -964,7 +1021,7 @@ function GroupInfoTab({
                   '提交时间',
                   '操作',
                 ].map((header) => (
-                  <div key={header} className="px-4 py-3">
+                  <div key={header} className="px-4 py-3 bg-gray-50">
                     {header}
                   </div>
                 ))}
@@ -1005,7 +1062,7 @@ function BusyTab({
   studentInfoMap: Record<number, string>;
   timeslots: string[];
   onAdd: () => void;
-  onDelete: (id: number) => void;
+  onDelete: (recordIds: string) => void;
 }) {
   // 根据 ID 获取名称
   const getPersonName = (busy: BusyInfo) => {
@@ -1021,6 +1078,27 @@ function BusyTab({
   const getTimeSlotName = (timeId: number) => {
     return timeslots[timeId] || `时间槽 #${timeId}`;
   };
+
+  // 合并同一个人的多个 busy time
+  const groupedList = useMemo(() => {
+    const grouped = new Map<number, { personId: number; personName: string; busyItems: BusyInfo[] }>();
+    
+    list.forEach((busy) => {
+      const personId = personLabel === '教师' ? busy.teacher_id : busy.student_id;
+      if (!personId) return;
+      
+      if (!grouped.has(personId)) {
+        grouped.set(personId, {
+          personId,
+          personName: getPersonName(busy),
+          busyItems: [],
+        });
+      }
+      grouped.get(personId)!.busyItems.push(busy);
+    });
+    
+    return Array.from(grouped.values());
+  }, [list, personLabel, teacherInfoMap, studentInfoMap]);
 
   return (
     <div className="space-y-4">
@@ -1059,17 +1137,29 @@ function BusyTab({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {list.map((busy) => (
-                <tr key={busy.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {getPersonName(busy)}
+              {groupedList.map((group) => (
+                <tr key={group.personId} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    {group.personName}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {getTimeSlotName(busy.time_id)}
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    <div className="flex flex-wrap gap-2">
+                      {group.busyItems.map((busy) => (
+                        <span
+                          key={busy.id}
+                          className="inline-flex items-center px-2 py-1 bg-gray-100 rounded text-xs"
+                        >
+                          {getTimeSlotName(busy.time_id)}
+                        </span>
+                      ))}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                  <td className="px-6 py-4 text-right text-sm">
                     <button
-                      onClick={() => onDelete(busy.id)}
+                      onClick={() => {
+                        const recordIds = group.busyItems.map(b => b.id).join(',');
+                        onDelete(recordIds);
+                      }}
                       className="text-red-600 hover:text-red-800 inline-flex items-center gap-1"
                     >
                       <TrashIcon className="h-4 w-4" />
