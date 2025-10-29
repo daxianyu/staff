@@ -490,7 +490,6 @@ export default function AISchedulePage() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">课程名称</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">教师</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生数量</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">校区</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -519,7 +518,6 @@ export default function AISchedulePage() {
                               </button>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{studentCount}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{campusName}</td>
                           </tr>
                         );
                       })}
@@ -762,6 +760,18 @@ export default function AISchedulePage() {
             const isExpanded = showAllStudents[classData.id] || false;
             const displayStudents = isExpanded ? classStudents : classStudents.slice(0, 5);
             
+            // 从 class_color 或 teacher_class 获取 time_slots
+            const timeSlots = 
+              scheduleResult?.result?.class_color?.[classData.id] || 
+              scheduleResult?.result?.teacher_class?.[classData.teacher_id]?.[classData.id]?.time_slots || 
+              [];
+            
+            // 合并到 classData 中以便使用
+            const classDataWithTimeSlots = {
+              ...classData,
+              time_slots: timeSlots
+            };
+            
             return (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex }}>
                 <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
@@ -812,6 +822,14 @@ export default function AISchedulePage() {
                         <div>
                           <span className="text-gray-600">Gap:</span>
                           <span className="ml-2 font-medium">{classData.gap || 'N/A'}</span>
+                        </div>
+                        <div className="md:col-span-3">
+                          <span className="text-gray-600">Time Slots:</span>
+                          <span className="ml-2 font-medium">
+                            {timeSlots && Array.isArray(timeSlots) && timeSlots.length > 0
+                              ? `[${timeSlots.join(', ')}]`
+                              : 'N/A'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -890,10 +908,10 @@ export default function AISchedulePage() {
                                         -
                                       </td>
                                     );
-                                  }
-                                  
-                                  // 检查该课程是否在此时间段有课
-                                  const hasClass = classData.time_slots && Array.isArray(classData.time_slots) && classData.time_slots.includes(slotIndex);
+                                    }
+                                    
+                                    // 检查该课程是否在此时间段有课
+                                    const hasClass = timeSlots && Array.isArray(timeSlots) && timeSlots.includes(slotIndex);
                                   
                                   // 判断是否为晚上或周末时间
                                   const isNightOrWeekend = timeLabel === 'Night' || dayIndex >= 5;

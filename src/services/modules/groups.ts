@@ -196,6 +196,7 @@ export interface ScheduleResult {
       topic_name?: string;
       student_ids?: number[];
     }>>;
+    class_color?: Record<number, number[]>;
   };
   message: string;
 }

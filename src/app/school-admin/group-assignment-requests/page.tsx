@@ -329,13 +329,13 @@ export default function GroupAssignmentRequestsPage() {
               </div>
               <p className="mt-2 text-sm text-gray-600">学生选课申请管理</p>
             </div>
-            <button
-              onClick={() => router.push('/school-admin/ai-groups')}
+            {/* <button
+              onClick={() => router.push('/class/ai-groups')}
               className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               <CpuChipIcon className="h-5 w-5" />
               AI排课
-            </button>
+            </button> */}
           </div>
         </div>
 

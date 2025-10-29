@@ -390,6 +390,20 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'book',
         requiredPermissions: [PERMISSIONS.EDIT_CLASSES],
       },
+      {
+        key: 'ai-groups',
+        label: 'AI Groups',
+        path: '/class/ai-groups',
+        icon: 'user-group',
+        requiredPermissions: [PERMISSIONS.EDIT_CLASSES, PERMISSIONS.SALES_ADMIN], // 保持原有权限
+      },
+      // {
+      //   key: 'ai-schedule',
+      //   label: 'AI Schedule',
+      //   path: '/class/ai-schedule',
+      //   icon: 'calendar',
+      //   requiredPermissions: [PERMISSIONS.VIEW_CORE_RECORD], // 只有 core user 能访问
+      // },
     ],
   },
   {

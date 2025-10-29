@@ -489,7 +489,7 @@ export default function AIGroupsPage() {
 
               {isCoreUser && (
                 <button
-                  onClick={() => router.push('/school-admin/ai-schedule')}
+                  onClick={() => router.push('/class/ai-schedule')}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                   title="跳转到 AI 排课执行页面"
                 >
@@ -869,7 +869,7 @@ function GroupInfoTab({
   };
 
   const formatSubmitTime = (group: Group) => {
-    const primary = group.update_time || group.create_time;
+    const primary = group.create_time;
     if (!primary) return '-';
     const numeric = Number(primary);
     if (!Number.isNaN(numeric) && numeric > 0) {
