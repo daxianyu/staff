@@ -186,6 +186,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return operationRights.includes(OPERATION_RIGHTS.WEEKEND_PLAN);
     }
     
+    // 需要 operation_right为7 或 core_user=1 的权限
+    const feePromotionPermissions = [
+      PERMISSIONS.VIEW_FEE_PROMOTION,
+      PERMISSIONS.EDIT_FEE_PROMOTION,
+    ];
+    if (feePromotionPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.FEE_PROMOTION);
+    }
+    
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,

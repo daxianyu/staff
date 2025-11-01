@@ -141,9 +141,26 @@ export default function AISchedulePage() {
     }
   };
 
+  // 根据 teacher_id 查找完整的老师数据
+  const getTeacherData = (teacherId: number) => {
+    if (!scheduleResult?.result?.teacher_return_list) {
+      return { teacher_id: teacherId, class_num: 0, lesson_num: 0, busy_degree: 'N/A' };
+    }
+    const teacherData = scheduleResult.result.teacher_return_list.find(
+      (t: any) => t.teacher_id === teacherId
+    );
+    return teacherData || { teacher_id: teacherId, class_num: 0, lesson_num: 0, busy_degree: 'N/A' };
+  };
+
   // 打开弹窗
   const openModal = (type: 'teacher' | 'student' | 'class', payload: any) => {
     setModalStack(prev => [...prev, { type, payload }]);
+  };
+
+  // 打开老师弹窗（自动查找完整数据）
+  const openTeacherModal = (teacherId: number) => {
+    const teacherData = getTeacherData(teacherId);
+    openModal('teacher', teacherData);
   };
 
   // 关闭当前弹窗
@@ -464,7 +481,7 @@ export default function AISchedulePage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               <button
-                                onClick={() => openModal('teacher', { teacher_id: student.mentor_id, class_num: 0, lesson_num: 0, busy_degree: 'N/A' })}
+                                onClick={() => openTeacherModal(student.mentor_id)}
                                 className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
                               >
                                 {student.mentor_name}
@@ -511,7 +528,7 @@ export default function AISchedulePage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               <button
-                                onClick={() => openModal('teacher', { teacher_id: classItem.teacher_id, class_num: 0, lesson_num: 0, busy_degree: 'N/A' })}
+                                onClick={() => openTeacherModal(classItem.teacher_id)}
                                 className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
                               >
                                 {teacherName}
@@ -678,7 +695,7 @@ export default function AISchedulePage() {
                     <div>
                       <span className="text-gray-600">Mentor:</span>
                       <button
-                        onClick={() => openModal('teacher', { teacher_id: student.mentor_id, class_num: 0, lesson_num: 0, busy_degree: 'N/A' })}
+                        onClick={() => openTeacherModal(student.mentor_id)}
                         className="ml-2 font-medium text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         {student.mentor_name}
@@ -795,17 +812,13 @@ export default function AISchedulePage() {
                       <h4 className="font-medium text-gray-900 mb-2">基本信息</h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600">ID:</span>
-                          <span className="ml-2 font-medium">{classData.id}</span>
-                        </div>
-                        <div>
                           <span className="text-gray-600">Topic:</span>
                           <span className="ml-2 font-medium">{topicName}</span>
                         </div>
                         <div>
                           <span className="text-gray-600">Teacher:</span>
                           <button
-                            onClick={() => openModal('teacher', { teacher_id: classData.teacher_id, class_num: 0, lesson_num: 0, busy_degree: 'N/A' })}
+                            onClick={() => openTeacherModal(classData.teacher_id)}
                             className="ml-2 font-medium text-blue-600 hover:text-blue-800 hover:underline"
                           >
                             {teacherName}
@@ -814,22 +827,6 @@ export default function AISchedulePage() {
                         <div>
                           <span className="text-gray-600">Students:</span>
                           <span className="ml-2 font-medium">{classStudents.length}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Slots:</span>
-                          <span className="ml-2 font-medium">{classData.slots || 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Gap:</span>
-                          <span className="ml-2 font-medium">{classData.gap || 'N/A'}</span>
-                        </div>
-                        <div className="md:col-span-3">
-                          <span className="text-gray-600">Time Slots:</span>
-                          <span className="ml-2 font-medium">
-                            {timeSlots && Array.isArray(timeSlots) && timeSlots.length > 0
-                              ? `[${timeSlots.join(', ')}]`
-                              : 'N/A'}
-                          </span>
                         </div>
                       </div>
                     </div>

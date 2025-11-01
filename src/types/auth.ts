@@ -244,6 +244,9 @@ export const OPERATION_RIGHTS = {
   
   // 节假日配置权限
   WEEKEND_SPECIAL_DATE: 22,
+  
+  // 课时费晋升权限
+  FEE_PROMOTION: 7,
 } as const;
 
 // 预定义角色常量（向后兼容）

@@ -128,6 +128,15 @@ export class MenuFilter {
       return operationRights.includes(OPERATION_RIGHTS.WEEKEND_SPECIAL_DATE);
     }
     
+    // 需要 operation_right为7 或 core_user=1 的权限
+    const feePromotionPermissions = [
+      PERMISSIONS.VIEW_FEE_PROMOTION,
+      PERMISSIONS.EDIT_FEE_PROMOTION,
+    ];
+    if (feePromotionPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.FEE_PROMOTION);
+    }
+    
     // 需要 tool_user 权限
     const toolUserPermissions = [
       PERMISSIONS.VIEW_FREE_SEARCH,

@@ -333,3 +333,76 @@ export const getOperatorList = async (): Promise<ClassChangeRecordListResponse> 
     return { code: 500, message: error instanceof Error ? error.message : '获取用户操作记录失败' };
   }
 };
+
+// 课时费晋升记录相关类型
+export interface ClassHourPromotionRecord {
+  staff_id: number;
+  flag: number;
+  history_hours: number;
+  origin_hours: number;
+  real_hours: number;
+  cumulative_hours: number;
+  promotion_hours: number;
+  base_position: string;
+  flag_name: string;
+  campus_name: string;
+  current_level: string;
+  next_level: string;
+  staff_name: string;
+  fall_info: string;
+}
+
+export interface ClassHourPromotionRecordListParams {
+  query_date?: string;
+}
+
+export interface ClassHourPromotionRecordListResponse extends ApiResponse {
+  data?: ClassHourPromotionRecord[];
+}
+
+/**
+ * 获取课时费晋升记录列表
+ */
+export const getClassHourPromotionRecordList = async (
+  params?: ClassHourPromotionRecordListParams
+): Promise<ClassHourPromotionRecordListResponse> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.query_date) queryParams.append('query_date', params.query_date);
+    
+    const url = `/api/core/class_hour_promotion_record${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    console.log('获取课时费晋升记录列表响应状态:', response.status);
+    console.log('获取课时费晋升记录列表响应结果:', data);
+    
+    // 处理可能的返回格式：直接数组或 { rows: [...], total: ... }
+    let records: ClassHourPromotionRecord[] = [];
+    if (data.data) {
+      if (Array.isArray(data.data)) {
+        records = data.data;
+      } else if (data.data.rows && Array.isArray(data.data.rows)) {
+        records = data.data.rows;
+      }
+    }
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: records,
+    };
+  } catch (error) {
+    console.error('获取课时费晋升记录列表失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '获取课时费晋升记录列表失败' };
+  }
+};
