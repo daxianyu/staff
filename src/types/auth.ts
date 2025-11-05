@@ -220,6 +220,15 @@ export const PERMISSIONS = {
   EDIT_PAY_CONFIG: 'edit_pay_config',
   VIEW_CORE_EXIT_PERMIT: 'view_core_exit_permit',
   EDIT_CORE_EXIT_PERMIT: 'edit_core_exit_permit',
+  
+  // Admission Admin 相关权限
+  VIEW_ADMISSION_MANAGE: 'core_admin', // 查看所有sales记录
+  EDIT_ADMISSION_MANAGE: 'sales_admin', // 创建/删除sales记录
+  VIEW_SALES_INFO: 'sales_person', // 查看sales基本信息
+  VIEW_CONTRACTS_INFO: 'view_contracts', // 查看合同信息（与sales_person等效）
+  MANAGE_INTERVIEW_CONFIG: 'sales_core', // 管理面试配置（需要sales_core=1或core_user=1）
+  MANAGE_EXAM_CONFIG: 'sales_core', // 管理考试配置（需要sales_core=1或core_user=1）
+  VIEW_PAYMENT_INFO: 'sales_person', // 查看支付信息
 } as const;
 
 // 数字权限常量 - 基于 operation_right 数组

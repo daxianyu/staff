@@ -12,6 +12,7 @@ import {
   getClassHourPromotionRecordList,
   ClassHourPromotionRecord,
 } from '@/services/auth';
+import { ExcelExporter, convertObjectsToSheetData } from '@/components/ExcelExporter';
 
 export default function FeePromotionPage() {
   const { hasPermission } = useAuth();
@@ -22,10 +23,6 @@ export default function FeePromotionPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [queryDate, setQueryDate] = useState<string>('');
-  
-  // 分页状态
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
   // 权限检查页面
   if (!canView) {
@@ -77,47 +74,86 @@ export default function FeePromotionPage() {
       )
     : [];
 
-  // 分页计算
-  const totalItems = filteredRecords.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedRecords = filteredRecords.slice(startIndex, endIndex);
-
-  // 分页处理函数
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1);
-  };
-
-  // 搜索时重置到第一页
+  // 处理搜索变化
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
   };
 
   // 处理日期变化
   const handleDateChange = (value: string) => {
     setQueryDate(value);
-    setCurrentPage(1);
   };
 
   // 处理查询
   const handleQuery = () => {
     loadData();
-    setCurrentPage(1);
   };
 
   // 处理重置
   const handleReset = () => {
     setQueryDate('');
     setSearchTerm('');
-    setCurrentPage(1);
     loadData();
+  };
+
+  // 准备导出数据
+  const getExportData = () => {
+    const headers = [
+      '姓名',
+      '所在校区',
+      '当前职级',
+      '基础职级',
+      '历史课时',
+      '初始课时',
+      '实际课时',
+      '累计课时',
+      '晋升需要达到课时',
+      '是否达到晋升',
+      '待晋升后职级',
+      '原因',
+    ];
+
+    const sheetData = convertObjectsToSheetData(
+      filteredRecords,
+      [
+        'staff_name',
+        'campus_name',
+        'current_level',
+        'base_position',
+        'history_hours',
+        'origin_hours',
+        'real_hours',
+        'cumulative_hours',
+        'promotion_hours',
+        'flag_name',
+        'next_level',
+        'fall_info',
+      ],
+      '课时费晋升记录'
+    );
+
+    // 手动映射数据，确保顺序和格式正确
+    sheetData.data = filteredRecords.map(record => [
+      record.staff_name || '',
+      record.campus_name || '',
+      record.current_level || '',
+      record.base_position || '',
+      record.history_hours || 0,
+      record.origin_hours || 0,
+      record.real_hours || 0,
+      record.cumulative_hours || 0,
+      record.promotion_hours || 0,
+      record.flag_name || '',
+      record.next_level || '',
+      record.fall_info || '',
+    ]);
+
+    sheetData.headers = headers;
+
+    return {
+      filename: `课时费晋升记录_${queryDate || '全部'}`,
+      sheets: [sheetData],
+    };
   };
 
   return (
@@ -157,6 +193,12 @@ export default function FeePromotionPage() {
             </div>
             
             <div className="flex gap-2">
+              <ExcelExporter
+                config={getExportData()}
+                disabled={filteredRecords.length === 0 || loading}
+              >
+                导出Excel
+              </ExcelExporter>
               <button
                 onClick={handleQuery}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
@@ -176,27 +218,40 @@ export default function FeePromotionPage() {
 
         {/* 数据表格 */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* 记录数统计 */}
+          {!loading && (
+            <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+              <div className="text-sm text-gray-600">
+                共 {filteredRecords.length} 条记录
+              </div>
+            </div>
+          )}
+          
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="h-[600px] overflow-y-auto overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">所在校区</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">当前职级</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">基础职级</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">授课时长(小时)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">历史课时</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">初始课时</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">实际课时</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">累计课时</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">晋升需要达到课时</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">是否达到晋升</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">待晋升后职级</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原因</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedRecords.map((record, index) => (
+                  {filteredRecords.map((record, index) => (
                     <tr key={`${record.staff_id}-${index}`} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {record.staff_name}
@@ -211,7 +266,19 @@ export default function FeePromotionPage() {
                         {record.base_position}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {record.history_hours}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {record.origin_hours}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {record.real_hours}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {record.cumulative_hours}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {record.promotion_hours}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -230,9 +297,9 @@ export default function FeePromotionPage() {
                       </td>
                     </tr>
                   ))}
-                  {paginatedRecords.length === 0 && filteredRecords.length === 0 && (
+                  {filteredRecords.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={12} className="px-6 py-4 text-center text-sm text-gray-500">
                         暂无数据
                       </td>
                     </tr>
@@ -241,112 +308,12 @@ export default function FeePromotionPage() {
               </table>
             </div>
           )}
+          
+          {/* 底部踢脚线 */}
+          {!loading && (
+            <div className="h-[2px] bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 shadow-[0_-2px_4px_rgba(0,0,0,0.05)]"></div>
+          )}
         </div>
-
-        {/* 分页组件 */}
-        {filteredRecords.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              {/* 分页信息 */}
-              <div className="text-sm text-gray-600">
-                显示第 {startIndex + 1} - {Math.min(endIndex, totalItems)} 项，共 {totalItems} 项
-              </div>
-              
-              {/* 分页控件 */}
-              <div className="flex items-center gap-4">
-                {/* 每页显示数量选择 */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">每页显示</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                    className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
-                
-                {/* 分页按钮 */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    上一页
-                  </button>
-                  
-                  {/* 页码显示 */}
-                  {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
-                    let pageNum: number;
-                    if (totalPages <= 7) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 4) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 3) {
-                      pageNum = totalPages - 6 + i;
-                    } else {
-                      pageNum = currentPage - 3 + i;
-                    }
-                    
-                    if (totalPages > 7 && i === 0 && currentPage > 4) {
-                      return (
-                        <div key="start-ellipsis" className="flex items-center gap-1">
-                          <button
-                            onClick={() => handlePageChange(1)}
-                            className="w-8 h-8 flex items-center justify-center text-sm font-medium border rounded bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                          >
-                            1
-                          </button>
-                          <span className="w-8 h-8 flex items-center justify-center text-sm text-gray-400">...</span>
-                        </div>
-                      );
-                    }
-                    
-                    if (totalPages > 7 && i === 6 && currentPage < totalPages - 3) {
-                      return (
-                        <div key="end-ellipsis" className="flex items-center gap-1">
-                          <span className="w-8 h-8 flex items-center justify-center text-sm text-gray-400">...</span>
-                          <button
-                            onClick={() => handlePageChange(totalPages)}
-                            className="w-8 h-8 flex items-center justify-center text-sm font-medium border rounded bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                          >
-                            {totalPages}
-                          </button>
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${
-                          currentPage === pageNum
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    下一页
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

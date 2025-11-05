@@ -1,5 +1,5 @@
 import { request, normalizeApiResponse } from '../apiClient';
-import type { ApiResponse, ApiEnvelope } from '../types';
+import type { ApiResponse, ApiEnvelope, SelectOption } from '../types';
 
 // 自助报名班级相关类型定义
 export interface SelfSignupClass {
@@ -61,11 +61,6 @@ export interface SelfSignupClassListResponse {
   };
   exams: Record<string, string>;
   campus_info: Record<string, string>;
-}
-
-export interface SelectOption {
-  id: number;
-  name: string;
 }
 
 export interface SelfSignupClassSelectResponse {

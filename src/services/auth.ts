@@ -23,5 +23,7 @@ export * from './modules/classroom';
 export * from './modules/subjects';
 export * from './modules/textbook';
 export * from './modules/library';
-export { type ApiEnvelope, type ApiResponse } from './types';
+export * from './modules/schoolInfo';
+export * from './modules/sales';
+export { type ApiEnvelope, type ApiResponse, type SelectOption } from './types';
 export { getAuthHeader } from './apiClient';

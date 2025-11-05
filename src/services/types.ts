@@ -12,3 +12,10 @@ export interface ApiEnvelope<T = unknown> {
   token?: string;
   [key: string]: unknown;
 }
+
+// 共享的 SelectOption 类型
+export interface SelectOption {
+  id: number;
+  name: string;
+  [key: string]: any;
+}

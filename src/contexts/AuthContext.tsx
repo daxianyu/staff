@@ -195,6 +195,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return operationRights.includes(OPERATION_RIGHTS.FEE_PROMOTION);
     }
     
+    // 需要 sales_core=1 或 core_user=1 的权限
+    const salesCorePermissions = [
+      PERMISSIONS.MANAGE_INTERVIEW_CONFIG,
+      PERMISSIONS.MANAGE_EXAM_CONFIG,
+    ];
+    if (salesCorePermissions.includes(permission as any)) {
+      const isSalesCore = Number((user as any).sales_core) === 1 || (user as any).sales_core === true;
+      return isSalesCore || isCoreUser;
+    }
+    
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,

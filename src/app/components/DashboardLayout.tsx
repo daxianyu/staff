@@ -202,7 +202,7 @@ export default function DashboardLayout({
               </button>
             </div>
             <div className="py-2">
-              <div className="space-y-1">
+              <div className="space-y-1 pb-[200px]">
                 {authorizedNavigation.map((item) => {
                   const isActive = isMenuActive(item);
                   const hasChildren = item.children && item.children.length > 0;
@@ -297,6 +297,12 @@ export default function DashboardLayout({
           </div>
         </div>
       </div>
+      
+      {/* 底部踢脚线 */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 h-[2px] z-20 shadow-[0_-2px_8px_rgba(0,0,0,0.1)]" 
+        style={{ background: 'var(--sidebar-bg)' }}
+      ></div>
     </div>
   );
 } 

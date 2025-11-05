@@ -145,6 +145,16 @@ export class MenuFilter {
       return this.userRights.includes('tool_user');
     }
     
+    // 需要 sales_core=1 或 core_user=1 的权限
+    const salesCorePermissions = [
+      PERMISSIONS.MANAGE_INTERVIEW_CONFIG,
+      PERMISSIONS.MANAGE_EXAM_CONFIG,
+    ];
+    if (salesCorePermissions.includes(permission as any)) {
+      const isSalesCore = Number((this.user as any).sales_core) === 1 || (this.user as any).sales_core === true;
+      return isSalesCore || isCoreUser;
+    }
+    
     // 需要 core_user=1 的权限
     const corePermissions = [
       PERMISSIONS.VIEW_CORE_RECORD,
@@ -971,6 +981,111 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/mentor/class-change',
         icon: 'calendar',
         requiredPermissions: [],
+      },
+    ],
+  },
+  {
+    key: 'school-info',
+    label: 'School Info',
+    icon: 'building-office',
+    requiredPermissions: [
+      PERMISSIONS.VIEW_TEACHING_HOURS_OVERVIEW,
+      PERMISSIONS.VIEW_LOG,
+      PERMISSIONS.EDIT_CLASSROOMS,
+      PERMISSIONS.ENTER_GRADES,
+      PERMISSIONS.STUDENT_PDFS,
+    ],
+    children: [
+      {
+        key: 'missing-feedback',
+        label: 'Missing Feedback',
+        path: '/school-info/missing-feedback',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_TEACHING_HOURS_OVERVIEW],
+      },
+      {
+        key: 'missing-absence',
+        label: 'Missing Absence',
+        path: '/school-info/missing-absence',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_TEACHING_HOURS_OVERVIEW],
+      },
+      {
+        key: 'logs',
+        label: 'Logs',
+        path: '/school-info/logs',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_LOG],
+      },
+      {
+        key: 'over-book-room',
+        label: 'Overbooked Rooms',
+        path: '/school-info/over-book-room',
+        icon: 'building',
+        requiredPermissions: [PERMISSIONS.EDIT_CLASSROOMS],
+      },
+      {
+        key: 'enter-exam-grades',
+        label: 'Enter Grades',
+        path: '/school-info/enter-exam-grades',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.ENTER_GRADES],
+      },
+      {
+        key: 'student-pdfs',
+        label: 'Student PDFs',
+        path: '/school-info/student-pdfs',
+        icon: 'document',
+        requiredPermissions: [PERMISSIONS.STUDENT_PDFS],
+      },
+    ],
+  },
+  {
+    key: 'admission-admin',
+    label: 'Admission Admin',
+    icon: 'user-group',
+    children: [
+      {
+        key: 'sales',
+        label: 'Sales',
+        path: '/admission-admin/sales',
+        icon: 'table',
+        requiredPermissions: [PERMISSIONS.VIEW_ADMISSION_MANAGE, PERMISSIONS.VIEW_SALES_INFO, PERMISSIONS.VIEW_CONTRACTS_INFO],
+      },
+      {
+        key: 'interview-config',
+        label: 'Interview Config',
+        path: '/admission-admin/interview-config',
+        icon: 'calendar',
+        requiredPermissions: [PERMISSIONS.MANAGE_INTERVIEW_CONFIG],
+      },
+      {
+        key: 'sales-exam-set',
+        label: 'Sales Exam Set',
+        path: '/admission-admin/sales-exam-set',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.MANAGE_EXAM_CONFIG],
+      },
+      {
+        key: 'sales-exam-config',
+        label: 'Sales Exam Config',
+        path: '/admission-admin/sales-exam-config',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.MANAGE_EXAM_CONFIG],
+      },
+      {
+        key: 'sales-pay-overview',
+        label: 'Sales Pay Overview',
+        path: '/admission-admin/sales-pay-overview',
+        icon: 'dollar-sign',
+        requiredPermissions: [PERMISSIONS.VIEW_PAYMENT_INFO],
+      },
+      {
+        key: 'my-sales-follow-ups',
+        label: 'My sales follow ups',
+        path: '/admission-admin/my-sales-follow-ups',
+        icon: 'user',
+        requiredPermissions: [PERMISSIONS.VIEW_SALES_INFO, PERMISSIONS.VIEW_CONTRACTS_INFO],
       },
     ],
   },
