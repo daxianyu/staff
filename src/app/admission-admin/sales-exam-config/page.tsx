@@ -10,16 +10,11 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import {
-  getExamConfigSelect,
-  getExamConfigTable,
-  addExamConfig,
-  deleteExamConfig,
-  getExamBaseSelect,
-  getExamBaseTable,
-  addExamBase,
-  deleteExamBase,
-  type ExamConfig,
-  type ExamBaseConfig,
+  getExamSessionSelect,
+  getExamSessionTable,
+  addExamSession,
+  deleteExamSession,
+  type ExamSession,
   type SelectOption,
 } from '@/services/auth';
 
@@ -27,25 +22,20 @@ export default function ExamConfigPage() {
   const { hasPermission } = useAuth();
   const canManage = hasPermission(PERMISSIONS.MANAGE_EXAM_CONFIG);
 
-  // 状态管理 - 考试配置
-  const [examConfigs, setExamConfigs] = useState<ExamConfig[]>([]);
-  const [examSelect, setExamSelect] = useState<SelectOption[]>([]);
-  
-  // 状态管理 - 考试基础配置
-  const [examBases, setExamBases] = useState<ExamBaseConfig[]>([]);
-  const [baseSelect, setBaseSelect] = useState<SelectOption[]>([]);
+  // 状态管理 - 考试场次配置
+  const [examSessions, setExamSessions] = useState<ExamSession[]>([]);
+  const [examSettingOptions, setExamSettingOptions] = useState<SelectOption[]>([]);
+  const [campusOptions, setCampusOptions] = useState<SelectOption[]>([]);
+  const [studyYearOptions, setStudyYearOptions] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [paperTypeOptions, setPaperTypeOptions] = useState<Array<{ id: string | number; name: string }>>([]);
   
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'config' | 'base'>('config');
   
   // 模态框状态
-  const [showAddConfigModal, setShowAddConfigModal] = useState(false);
-  const [showAddBaseModal, setShowAddBaseModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteType, setDeleteType] = useState<'config' | 'base'>('config');
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
-  const [baseFormData, setBaseFormData] = useState<Record<string, any>>({});
 
   // 权限检查页面
   if (!canManage) {
@@ -61,86 +51,65 @@ export default function ExamConfigPage() {
   }
 
   // 加载数据
-  const loadConfigs = async () => {
+  const loadSessions = async () => {
     try {
-      const [configResult, selectResult] = await Promise.all([
-        getExamConfigTable(),
-        getExamConfigSelect(),
+      const [sessionResult, selectResult] = await Promise.all([
+        getExamSessionTable(),
+        getExamSessionSelect(),
       ]);
-      if (configResult.code === 200 && configResult.data) {
-        setExamConfigs(configResult.data.rows);
+      if (sessionResult.code === 200 && sessionResult.data) {
+        setExamSessions(sessionResult.data.rows);
       }
       if (selectResult.code === 200 && selectResult.data) {
-        // exam_type 是 Record<number, string>，转换为 SelectOption[]
-        const examTypeOptions = Object.entries(selectResult.data.exam_type || {}).map(([value, name]) => ({
-          id: Number(value),
+        // 考试场次选项：exam_setting 是 { id: number, exam_desc: string }[]
+        const examSettingOpts = (selectResult.data.exam_setting || []).map((item: { id: number; exam_desc: string }) => ({
+          id: item.id,
+          name: item.exam_desc,
+        }));
+        setExamSettingOptions(examSettingOpts);
+        
+        // 校区选项：campus_info 是 Record<number, string>
+        const campusOpts = Object.entries(selectResult.data.campus_info || {}).map(([id, name]) => ({
+          id: Number(id),
           name: String(name),
         }));
-        setExamSelect(examTypeOptions);
-      }
-    } catch (error) {
-      console.error('加载考试配置失败:', error);
-    }
-  };
-
-
-  const loadBases = async () => {
-    try {
-      const [baseResult, selectResult] = await Promise.all([
-        getExamBaseTable(),
-        getExamBaseSelect(),
-      ]);
-      if (baseResult.code === 200 && baseResult.data) {
-        setExamBases(baseResult.data.rows);
-      }
-      if (selectResult.code === 200 && selectResult.data) {
-        // sales_exam_select 是 Record<number, string>，转换为 SelectOption[]
-        const baseSelectOptions = Object.entries(selectResult.data.sales_exam_select || {}).map(([value, name]) => ({
-          id: Number(value),
-          name: String(name),
+        setCampusOptions(campusOpts);
+        
+        // 年制选项：study_year 是 Array<{ value: string; name: string }>
+        const studyYearOpts = (selectResult.data.study_year || []).map((item: { value: string; name: string }) => ({
+          id: item.value,
+          name: item.name,
         }));
-        setBaseSelect(baseSelectOptions);
+        setStudyYearOptions(studyYearOpts);
+        
+        // 试卷类型选项：paper_type 是 Array<{ value: string; name: string }>
+        const paperTypeOpts = (selectResult.data.paper_type || []).map((item: { value: string; name: string }) => ({
+          id: item.value,
+          name: item.name,
+        }));
+        setPaperTypeOptions(paperTypeOpts);
       }
     } catch (error) {
-      console.error('加载考试基础配置失败:', error);
+      console.error('加载考试场次配置失败:', error);
     }
   };
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([loadConfigs(), loadBases()]).finally(() => {
+    loadSessions().finally(() => {
       setLoading(false);
     });
   }, []);
 
-  // 提交配置
-  const handleSubmitConfig = async () => {
+  // 提交场次配置
+  const handleSubmit = async () => {
     try {
-      const result = await addExamConfig(formData);
+      const result = await addExamSession(formData);
       if (result.code === 200) {
         alert('添加成功');
-        setShowAddConfigModal(false);
+        setShowAddModal(false);
         setFormData({});
-        loadConfigs();
-      } else {
-        alert('添加失败: ' + result.message);
-      }
-    } catch (error) {
-      console.error('提交失败:', error);
-      alert('提交失败');
-    }
-  };
-
-
-  // 提交基础配置
-  const handleSubmitBase = async () => {
-    try {
-      const result = await addExamBase(baseFormData);
-      if (result.code === 200) {
-        alert('添加成功');
-        setShowAddBaseModal(false);
-        setBaseFormData({});
-        loadBases();
+        loadSessions();
       } else {
         alert('添加失败: ' + result.message);
       }
@@ -155,19 +124,13 @@ export default function ExamConfigPage() {
     if (!selectedItem) return;
     
     try {
-      let result;
-      if (deleteType === 'config') {
-        result = await deleteExamConfig(selectedItem.record_id || selectedItem.id);
-      } else {
-        result = await deleteExamBase(selectedItem.record_id || selectedItem.id);
-      }
+      const result = await deleteExamSession(selectedItem.record_id || selectedItem.id);
       
       if (result.code === 200) {
         alert('删除成功');
         setShowDeleteModal(false);
         setSelectedItem(null);
-        if (deleteType === 'config') loadConfigs();
-        else loadBases();
+        loadSessions();
       } else {
         alert('删除失败: ' + result.message);
       }
@@ -183,45 +146,14 @@ export default function ExamConfigPage() {
         {/* 页面标题 */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Sales Exam Config</h1>
-          <p className="mt-2 text-sm text-gray-600">管理考试配置信息</p>
-        </div>
-
-        {/* 标签页 */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
-              <button
-                onClick={() => setActiveTab('config')}
-                className={`px-6 py-3 text-sm font-medium border-b-2 ${
-                  activeTab === 'config'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                考试配置
-              </button>
-              <button
-                onClick={() => setActiveTab('base')}
-                className={`px-6 py-3 text-sm font-medium border-b-2 ${
-                  activeTab === 'base'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                基础配置
-              </button>
-            </nav>
-          </div>
+          <p className="mt-2 text-sm text-gray-600">管理考试场次配置信息</p>
         </div>
 
         {/* 操作栏 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <button
-              onClick={() => {
-                if (activeTab === 'config') setShowAddConfigModal(true);
-                else setShowAddBaseModal(true);
-              }}
+              onClick={() => setShowAddModal(true)}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
@@ -238,158 +170,145 @@ export default function ExamConfigPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              {activeTab === 'config' && (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Record ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试描述</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试时间</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">开始日期</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">结束日期</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">价格</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Record ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试描述</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">校区</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">年制</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">试卷类型</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {examSessions.map((session) => (
+                    <tr key={session.record_id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{session.record_id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{session.exam_desc || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{session.campus_name || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{session.study_year || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{session.paper_type || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedItem(session);
+                            setShowDeleteModal(true);
+                          }}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {examConfigs.map((config) => (
-                      <tr key={config.record_id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{config.record_id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{config.exam_desc || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{config.exam_time || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{config.start_day || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{config.end_day || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{config.price || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{config.exam_type || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => {
-                              setDeleteType('config');
-                              setSelectedItem(config);
-                              setShowDeleteModal(true);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {examConfigs.length === 0 && (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">暂无数据</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              )}
-
-              {activeTab === 'base' && (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  ))}
+                  {examSessions.length === 0 && (
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Record ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">暂无数据</td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {examBases.map((base) => (
-                      <tr key={base.record_id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{base.record_id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{base.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{base.type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{base.create_time || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => {
-                              setDeleteType('base');
-                              setSelectedItem(base);
-                              setShowDeleteModal(true);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {examBases.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">暂无数据</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              )}
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
 
-        {/* 添加配置模态框 */}
-        {showAddConfigModal && (
+        {/* 添加场次配置模态框 */}
+        {showAddModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-              <div className="flex items-center justify-between p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">新增考试配置</h3>
-                <button onClick={() => setShowAddConfigModal(false)} className="text-gray-400 hover:text-gray-500">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
+                <h3 className="text-lg font-semibold text-gray-900">新增场次配置</h3>
+                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-500">
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
               <div className="p-6 space-y-4">
+                {/* 考试场次 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">名称</label>
-                  <input
-                    type="text"
-                    value={formData.name || ''}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    考试场次 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.exam_id || ''}
+                    onChange={(e) => setFormData({ ...formData, exam_id: e.target.value ? Number(e.target.value) : '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                     required
-                  />
+                  >
+                    <option value="">请选择考试场次</option>
+                    {examSettingOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-              <div className="flex items-center justify-end gap-3 p-6 border-t">
-                <button onClick={() => setShowAddConfigModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                  取消
-                </button>
-                <button onClick={handleSubmitConfig} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                  确认
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 添加基础配置模态框 */}
-        {showAddBaseModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-              <div className="flex items-center justify-between p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">新增基础配置</h3>
-                <button onClick={() => setShowAddBaseModal(false)} className="text-gray-400 hover:text-gray-500">
-                  <XMarkIcon className="h-6 w-6" />
-                </button>
-              </div>
-              <div className="p-6 space-y-4">
+                
+                {/* 校区 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">名称</label>
-                  <input
-                    type="text"
-                    value={baseFormData.name || ''}
-                    onChange={(e) => setBaseFormData({ ...baseFormData, name: e.target.value })}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    校区 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.campus_id || ''}
+                    onChange={(e) => setFormData({ ...formData, campus_id: e.target.value ? Number(e.target.value) : '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                     required
-                  />
+                  >
+                    <option value="">请选择校区</option>
+                    {campusOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* 年制 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    年制 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.study_year || ''}
+                    onChange={(e) => setFormData({ ...formData, study_year: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">请选择年制</option>
+                    {studyYearOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* 试卷类型 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    试卷类型 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.paper_type || ''}
+                    onChange={(e) => setFormData({ ...formData, paper_type: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">请选择试卷类型</option>
+                    {paperTypeOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 p-6 border-t">
-                <button onClick={() => setShowAddBaseModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+              <div className="flex items-center justify-end gap-3 p-6 border-t sticky bottom-0 bg-white">
+                <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   取消
                 </button>
-                <button onClick={handleSubmitBase} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                <button onClick={handleSubmit} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
                   确认
                 </button>
               </div>
@@ -409,7 +328,7 @@ export default function ExamConfigPage() {
                   <h3 className="text-lg font-medium text-gray-900">删除确认</h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">
-                      确定要删除 "{selectedItem.name || selectedItem.id}" 吗？此操作不可撤销。
+                      确定要删除 "{selectedItem.exam_desc || selectedItem.name || selectedItem.record_id}" 吗？此操作不可撤销。
                     </p>
                   </div>
                 </div>

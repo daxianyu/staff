@@ -40,6 +40,7 @@ import {
   addNormalExam,
   deleteNormalExam,
   getStudentInfoSelect,
+  updateSingle,
   type MenteeStudentInfo,
   type MenteeClassInfo,
   type AssignmentInfo,
@@ -705,6 +706,9 @@ export default function StudentDetailPage() {
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [showAddLanguageModal, setShowAddLanguageModal] = useState(false);
   const [showAddNormalModal, setShowAddNormalModal] = useState(false);
+  const [showEditNoteModal, setShowEditNoteModal] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<AssignmentInfo | null>(null);
+  const [noteText, setNoteText] = useState('');
 
   // 加载数据
   useEffect(() => {
@@ -858,11 +862,11 @@ export default function StudentDetailPage() {
           <div className="border-b border-gray-200 relative" style={{overflow: 'visible'}}>
             <nav className="flex space-x-8 px-6 md:overflow-visible overflow-x-auto scrollbar-hide touch-pan-x" aria-label="Tabs">
               {tabs.map((tab) => (
-                <>
+                <React.Fragment key={tab.id}>
                   {tab.children ? (
                     <>
                       {/* 桌面端下拉菜单 */}
-                      <div key={tab.id} className="relative hidden md:block">
+                      <div className="relative hidden md:block">
                         <button
                           onClick={() => {
                             console.log('Exam group clicked, current state:', examGroupExpanded);
@@ -945,7 +949,7 @@ export default function StudentDetailPage() {
                       </button>
                     </div>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </nav>
           </div>
@@ -1026,13 +1030,23 @@ export default function StudentDetailPage() {
                         <tr key={assignment.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.exam_name}</td>
                           <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.class_name}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.note}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.note}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.topic_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.note || '-'}</td>
                           <td className="px-6 py-4 text-sm text-gray-900 break-words">
                             {new Date(assignment.signup_time * 1000).toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button className="text-blue-600 hover:text-blue-900">编辑</button>
+                            <button
+                              onClick={() => {
+                                setSelectedAssignment(assignment);
+                                setNoteText(assignment.note || '');
+                                setShowEditNoteModal(true);
+                              }}
+                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                            >
+                              <PencilIcon className="h-4 w-4 mr-1" />
+                              编辑
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1773,6 +1787,89 @@ export default function StudentDetailPage() {
             }
           }}
         />
+
+        {/* 编辑备注模态框 */}
+        {showEditNoteModal && selectedAssignment && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="flex items-center justify-between p-6 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">编辑备注</h3>
+                <button
+                  onClick={() => {
+                    setShowEditNoteModal(false);
+                    setSelectedAssignment(null);
+                    setNoteText('');
+                  }}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="请输入备注"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-end gap-3 p-6 border-t">
+                <button
+                  onClick={() => {
+                    setShowEditNoteModal(false);
+                    setSelectedAssignment(null);
+                    setNoteText('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!selectedAssignment || !studentId) return;
+                    
+                    try {
+                      const result = await updateSingle({
+                        student_id: parseInt(studentId),
+                        record_id: selectedAssignment.id,
+                        note: noteText,
+                      });
+                      
+                      if (result.code === 200) {
+                        alert('更新成功');
+                        setShowEditNoteModal(false);
+                        setSelectedAssignment(null);
+                        setNoteText('');
+                        
+                        // 重新加载作业数据
+                        if (studentId) {
+                          const assignmentsResult = await getAssignment(studentId);
+                          if (assignmentsResult.code === 200 && assignmentsResult.data) {
+                            setAssignments(assignmentsResult.data);
+                          }
+                        }
+                      } else {
+                        alert('更新失败: ' + result.message);
+                      }
+                    } catch (error) {
+                      console.error('更新备注失败:', error);
+                      alert('更新备注失败');
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                >
+                  确认
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

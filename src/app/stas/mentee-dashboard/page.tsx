@@ -86,25 +86,41 @@ export default function MenteeDashboardPage() {
 
   const { mentors, drillDownData, valueData } = getCurrentCampusData();
 
-  // 获取毕业年份数据
-  const getGraduationYearData = () => {
-    if (!valueData || valueData.length === 0) return { year2027: 0, year2028: 0 };
-    
-    let year2027 = 0;
-    let year2028 = 0;
-    
-    valueData.forEach((yearData: any) => {
-      if (yearData.name === '2027') {
-        year2027 = yearData.data.reduce((sum: number, val: any) => sum + (val || 0), 0);
-      } else if (yearData.name === '2028') {
-        year2028 = yearData.data.reduce((sum: number, val: any) => sum + (val || 0), 0);
-      }
-    });
-    
-    return { year2027, year2028 };
+  // 获取所有年份列表
+  const getYearList = () => {
+    if (!valueData || valueData.length === 0) return [];
+    return valueData.map((yearData: any) => yearData.name).sort();
   };
 
-  const { year2027, year2028 } = getGraduationYearData();
+  // 获取毕业年份数据（动态）
+  const getGraduationYearData = () => {
+    if (!valueData || valueData.length === 0) return {};
+    
+    const yearDataMap: Record<string, number> = {};
+    
+    valueData.forEach((yearData: any) => {
+      const year = yearData.name;
+      yearDataMap[year] = yearData.data.reduce((sum: number, val: any) => sum + (val || 0), 0);
+    });
+    
+    return yearDataMap;
+  };
+
+  const yearList = getYearList();
+  const yearDataMap = getGraduationYearData();
+
+  // 年份颜色映射（支持多个年份）
+  const getYearColor = (year: string, index: number) => {
+    const colors = [
+      { bg: 'bg-green-400', hover: 'hover:bg-green-500', text: 'text-green-600', bgLight: 'bg-green-50', textDark: 'text-green-900' },
+      { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', text: 'text-blue-600', bgLight: 'bg-blue-50', textDark: 'text-blue-900' },
+      { bg: 'bg-orange-400', hover: 'hover:bg-orange-500', text: 'text-orange-600', bgLight: 'bg-orange-50', textDark: 'text-orange-900' },
+      { bg: 'bg-purple-400', hover: 'hover:bg-purple-500', text: 'text-purple-600', bgLight: 'bg-purple-50', textDark: 'text-purple-900' },
+      { bg: 'bg-pink-400', hover: 'hover:bg-pink-500', text: 'text-pink-600', bgLight: 'bg-pink-50', textDark: 'text-pink-900' },
+      { bg: 'bg-yellow-400', hover: 'hover:bg-yellow-500', text: 'text-yellow-600', bgLight: 'bg-yellow-50', textDark: 'text-yellow-900' },
+    ];
+    return colors[index % colors.length];
+  };
 
   // 获取导师的学生列表
   const getMentorStudents = (mentorName: string, year: string) => {
@@ -224,7 +240,7 @@ export default function MenteeDashboardPage() {
         {data && (
           <div className="mt-6 mb-6 bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">汇总信息</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="text-sm font-medium text-blue-600">总校区数</div>
                 <div className="text-2xl font-bold text-blue-900">{data.div_ids.length}</div>
@@ -233,14 +249,15 @@ export default function MenteeDashboardPage() {
                 <div className="text-sm font-medium text-green-600">当前校区导师数</div>
                 <div className="text-2xl font-bold text-green-900">{mentors.length}</div>
               </div>
-              <div className="bg-orange-50 rounded-lg p-4">
-                <div className="text-sm font-medium text-orange-600">2027届学员</div>
-                <div className="text-2xl font-bold text-orange-900">{year2027}人</div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-4">
-                <div className="text-sm font-medium text-purple-600">2028届学员</div>
-                <div className="text-2xl font-bold text-purple-900">{year2028}人</div>
-              </div>
+              {yearList.map((year, index) => {
+                const color = getYearColor(year, index);
+                return (
+                  <div key={year} className={`${color.bgLight} rounded-lg p-4`}>
+                    <div className={`text-sm font-medium ${color.text}`}>{year}届学员</div>
+                    <div className={`text-2xl font-bold ${color.textDark}`}>{yearDataMap[year] || 0}人</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -254,15 +271,16 @@ export default function MenteeDashboardPage() {
             {/* 图例 */}
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-400 rounded"></div>
-                    <span className="text-sm text-gray-600">2027届: {year2027}人</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                    <span className="text-sm text-gray-600">2028届: {year2028}人</span>
-                  </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {yearList.map((year, index) => {
+                    const color = getYearColor(year, index);
+                    return (
+                      <div key={year} className="flex items-center gap-2">
+                        <div className={`w-4 h-4 ${color.bg} rounded`}></div>
+                        <span className="text-sm text-gray-600">{year}届: {yearDataMap[year] || 0}人</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="text-sm text-gray-500">
                   {selectedCampus ? data?.campus_value[selectedCampus] : '选择校区查看数据'}
@@ -278,22 +296,20 @@ export default function MenteeDashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {mentors.map((mentor, index) => {
-                    // 从API数据获取每个导师的毕业年份数据
-                    let mentorYear2027 = 0;
-                    let mentorYear2028 = 0;
+                  {mentors.map((mentor, mentorIndex) => {
+                    // 从API数据获取每个导师的毕业年份数据（动态）
+                    const mentorYearData: Record<string, number> = {};
                     
                     if (valueData && valueData.length > 0) {
                       valueData.forEach((yearData: any) => {
-                        if (yearData.name === '2027' && yearData.data[index] !== undefined) {
-                          mentorYear2027 = yearData.data[index] || 0;
-                        } else if (yearData.name === '2028' && yearData.data[index] !== undefined) {
-                          mentorYear2028 = yearData.data[index] || 0;
+                        const year = yearData.name;
+                        if (yearData.data[mentorIndex] !== undefined) {
+                          mentorYearData[year] = yearData.data[mentorIndex] || 0;
                         }
                       });
                     }
                     
-                    const total = mentorYear2027 + mentorYear2028;
+                    const total = Object.values(mentorYearData).reduce((sum, val) => sum + val, 0);
                     const maxValue = Math.max(...mentors.map((_, idx) => {
                       let max = 0;
                       if (valueData && valueData.length > 0) {
@@ -308,7 +324,7 @@ export default function MenteeDashboardPage() {
                     
                     return (
                       <div
-                        key={`${mentor}-${index}`}
+                        key={`${mentor}-${mentorIndex}`}
                         className="flex items-center gap-4"
                       >
                         {/* 导师名称 */}
@@ -319,29 +335,23 @@ export default function MenteeDashboardPage() {
                         {/* 柱状图容器 */}
                         <div className="flex-1 relative">
                           <div className="h-8 bg-gray-100 rounded-lg overflow-hidden flex">
-                            {/* 2027届 - 绿色 */}
-                            {mentorYear2027 > 0 && (
-                              <div
-                                className="bg-green-400 flex items-center justify-end pr-2 cursor-pointer hover:bg-green-500 transition-colors relative group"
-                                style={{ width: `${(mentorYear2027 / maxValue) * 100}%` }}
-                                onMouseEnter={(e) => handleMentorHover(e, mentor, index, '2027')}
-                                onMouseLeave={handleMentorLeave}
-                              >
-                                <span className="text-xs font-medium text-white">{mentorYear2027}</span>
-                              </div>
-                            )}
-
-                            {/* 2028届 - 蓝色 */}
-                            {mentorYear2028 > 0 && (
-                              <div
-                                className="bg-blue-500 flex items-center justify-end pr-2 cursor-pointer hover:bg-blue-600 transition-colors relative group"
-                                style={{ width: `${(mentorYear2028 / maxValue) * 100}%` }}
-                                onMouseEnter={(e) => handleMentorHover(e, mentor, index, '2028')}
-                                onMouseLeave={handleMentorLeave}
-                              >
-                                <span className="text-xs font-medium text-white">{mentorYear2028}</span>
-                              </div>
-                            )}
+                            {yearList.map((year, yearIndex) => {
+                              const yearValue = mentorYearData[year] || 0;
+                              if (yearValue <= 0) return null;
+                              
+                              const color = getYearColor(year, yearIndex);
+                              return (
+                                <div
+                                  key={year}
+                                  className={`${color.bg} ${color.hover} flex items-center justify-end pr-2 cursor-pointer transition-colors relative group`}
+                                  style={{ width: `${(yearValue / maxValue) * 100}%` }}
+                                  onMouseEnter={(e) => handleMentorHover(e, mentor, mentorIndex, year)}
+                                  onMouseLeave={handleMentorLeave}
+                                >
+                                  <span className="text-xs font-medium text-white">{yearValue}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                         
@@ -399,10 +409,18 @@ export default function MenteeDashboardPage() {
           >
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-2">
-                <div className={`w-3 h-3 rounded ${hoveredMentor.year === '2027' ? 'bg-green-400' : 'bg-blue-500'}`}></div>
-                <h4 className="text-sm font-semibold text-gray-900">
-                  {hoveredMentor.name} - {hoveredMentor.year}届学生
-                </h4>
+                {(() => {
+                  const yearIndex = yearList.indexOf(hoveredMentor.year);
+                  const color = getYearColor(hoveredMentor.year, yearIndex >= 0 ? yearIndex : 0);
+                  return (
+                    <>
+                      <div className={`w-3 h-3 rounded ${color.bg}`}></div>
+                      <h4 className="text-sm font-semibold text-gray-900">
+                        {hoveredMentor.name} - {hoveredMentor.year}届学生
+                      </h4>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 

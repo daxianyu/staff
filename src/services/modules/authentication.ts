@@ -181,11 +181,12 @@ export const handleUserRedirect = async (userData: BasicUser, router: RouterLike
     // 根据用户类型进行不同的跳转处理
     switch (userData.type) {
       case USER_STUDENT: // 学生 - 跳转到学生系统
-      case USER_STUDENT_CANDIDATE: // 预备学生 - 跳转到学生系统
         // 直接跳转到学生系统网站
-        window.location.href = 'https://www.huayaopudong.com/student/notification';
+        window.location.href = '/student/notification';
         break;
-        
+      case USER_STUDENT_CANDIDATE: // 预备学生 - 跳转到学生系统
+        window.location.href = '/student/my-test';
+        break;
       case USER_PARENT: // 家长 - 暂时保持现状，跳转到dashboard
         if (useWindowLocation) {
           window.location.href = '/staff/dashboard';

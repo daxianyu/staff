@@ -74,6 +74,7 @@ export interface AssignmentInfo {
   topic_id: number;
   exam_name: string;
   class_name: string;
+  topic_name: string;
   note: string;
   signup_time: number;
 }

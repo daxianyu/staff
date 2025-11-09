@@ -425,6 +425,7 @@ export interface StudentPdfData {
   fix_course: string[];
   school_year_list: string[];
   transaction_list: string[];
+  transcript_grade_list?: string[]; // 新增字段，用于Transcript成绩单的成绩选项
 }
 
 export const getStudentPdf = async (): Promise<ApiResponse<StudentPdfData>> => {
@@ -448,6 +449,7 @@ export const getStudentPdf = async (): Promise<ApiResponse<StudentPdfData>> => {
         fix_course: [],
         school_year_list: [],
         transaction_list: [],
+        transcript_grade_list: [],
       },
     };
   }
@@ -680,6 +682,37 @@ export const genViewReport = async (params: ReportParams): Promise<ApiResponse<D
     return {
       code: 500,
       message: error instanceof Error ? error.message : '生成成绩单失败',
+      data: { file_path: '' },
+    };
+  }
+};
+
+// Gen Certificate Report 接口（待后端实现）
+export interface GenCertificateReportParams {
+  student_id: number;
+  name: string;
+  id: string;
+  gender: string; // "Male" or "Female"
+  birthday: number;
+  studied_from: number;
+  graduation_date: number;
+}
+
+export const genCertificateReport = async (
+  params: GenCertificateReportParams
+): Promise<ApiResponse<DownloadWishesData>> => {
+  try {
+    const url = `/api/school/info/gen_certificate_report`; // 待后端实现后修改URL
+    const { data } = await request<ApiEnvelope<DownloadWishesData>>(url, {
+      method: 'POST',
+      body: params,
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('生成Certificate Report失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '生成Certificate Report失败',
       data: { file_path: '' },
     };
   }

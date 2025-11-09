@@ -57,7 +57,7 @@ export default function SelfSignupClassesPage() {
   
   // 表单数据
   const [formData, setFormData] = useState({
-    exam_id: 0,
+    exam_id: -1,
     topic_id: 0,
     class_name: '',
     disable_time: Math.floor(Date.now() / 1000) + 86400 * 30, // 默认30天后
@@ -109,9 +109,9 @@ export default function SelfSignupClassesPage() {
 
   // 过滤数据
   const filteredClasses = classes.filter(cls =>
-    cls.topic_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cls.exam_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cls.class_name.toLowerCase().includes(searchTerm.toLowerCase())
+    (cls.topic_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (cls.exam_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (cls.class_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // 分页计算
@@ -130,7 +130,7 @@ export default function SelfSignupClassesPage() {
   // 处理新增
   const handleAdd = () => {
     setFormData({
-      exam_id: 0,
+      exam_id: -1,
       topic_id: 0,
       class_name: '',
       disable_time: Math.floor(Date.now() / 1000) + 86400 * 30,
@@ -153,7 +153,7 @@ export default function SelfSignupClassesPage() {
         if (tab === 'edit') {
           setFormData({
             exam_id: response.data?.record.exam_id ? 
-              examOptions.find(e => e.id.toString() === response.data?.record.exam_id)?.id || 0 : 0,
+              examOptions.find(e => e.id.toString() === response.data?.record.exam_id)?.id || -1 : -1,
             topic_id: response.data?.record.topic_id || 0,
             class_name: response.data?.record.class_name || '',
             disable_time: response.data?.record.disable_time || 0,
@@ -179,7 +179,7 @@ export default function SelfSignupClassesPage() {
 
   // 提交新增
   const handleSubmitAdd = async () => {
-    if (!formData.exam_id || !formData.topic_id || !formData.class_name || !formData.campus_id) {
+    if (!formData.topic_id || !formData.class_name || !formData.campus_id) {
       alert('请填写完整信息');
       return;
     }
@@ -200,7 +200,7 @@ export default function SelfSignupClassesPage() {
 
   // 提交编辑
   const handleSubmitEdit = async () => {
-    if (!selectedClass || !formData.exam_id || !formData.topic_id || !formData.class_name || !formData.campus_id) {
+    if (!selectedClass || !formData.topic_id || !formData.class_name || !formData.campus_id) {
       alert('请填写完整信息');
       return;
     }
@@ -519,7 +519,7 @@ export default function SelfSignupClassesPage() {
                           {cls.class_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {cls.exam_name}
+                          {cls.exam_name || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {cls.topic_name}
@@ -674,7 +674,7 @@ export default function SelfSignupClassesPage() {
                     onChange={(e) => setFormData(prev => ({ ...prev, exam_id: Number(e.target.value) }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value={0}>请选择考试</option>
+                    <option value={-1}>请选择考试</option>
                     {examOptions.map(exam => (
                       <option key={exam.id} value={exam.id}>{exam.name}</option>
                     ))}
@@ -838,7 +838,7 @@ export default function SelfSignupClassesPage() {
                         onChange={(e) => setFormData(prev => ({ ...prev, exam_id: Number(e.target.value) }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value={0}>请选择考试</option>
+                        <option value={-1}>请选择考试</option>
                         {editInfo.exams.map(exam => (
                           <option key={exam.id} value={exam.id}>{exam.name}</option>
                         ))}

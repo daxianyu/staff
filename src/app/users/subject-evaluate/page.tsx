@@ -26,6 +26,7 @@ export default function SubjectEvaluatePage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<SubjectEvaluateItem | null>(null);
 
   const canView = hasPermission(PERMISSIONS.VIEW_SUBJECT_EVALUATE);
   const canEdit = hasPermission(PERMISSIONS.EDIT_SUBJECT_EVALUATE);
@@ -59,12 +60,33 @@ export default function SubjectEvaluatePage() {
 
   const handleEdit = (item: SubjectEvaluateItem) => {
     setEditingId(item.evaluate_id);
-    setEditContent(item.evaluate);
+    setEditContent(item.evaluate || '');
+    setEditingItem(item);
     setShowEditModal(true);
+  };
+
+  // 计算汉字字符数（中文字符算1个，其他字符也算1个）
+  const getCharCount = (text: string): number => {
+    return text.length;
+  };
+
+  // 获取最大字数限制
+  const getMaxCharLimit = (): number => {
+    if (!editingItem) return 250;
+    const title = editingItem.evaluate_title || '';
+    return title.includes('模考') ? 450 : 250;
   };
 
   const handleSaveEdit = async () => {
     if (!editingId || !canEdit) return;
+
+    const charCount = getCharCount(editContent);
+    const maxLimit = getMaxCharLimit();
+
+    if (charCount > maxLimit) {
+      alert(`字数不能超过${maxLimit}个字符，当前${charCount}个字符`);
+      return;
+    }
 
     try {
       const result = await changeEvaluate({
@@ -87,6 +109,7 @@ export default function SubjectEvaluatePage() {
         setShowEditModal(false);
         setEditingId(null);
         setEditContent('');
+        setEditingItem(null);
       } else {
         alert(result.message || '保存失败');
       }
@@ -259,7 +282,12 @@ export default function SubjectEvaluatePage() {
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">编辑评价</h3>
                 <button
-                  onClick={() => setShowEditModal(false)}
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingItem(null);
+                    setEditContent('');
+                    setEditingId(null);
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <XMarkIcon className="h-6 w-6" />
@@ -276,16 +304,45 @@ export default function SubjectEvaluatePage() {
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       rows={8}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="请输入评价内容..."
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        getCharCount(editContent) > getMaxCharLimit()
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                          : 'border-gray-300'
+                      }`}
+                      placeholder={
+                        editingItem?.evaluate_title?.includes('模考')
+                          ? '请输入评价内容...（模考评价字数不能超过450个字符）'
+                          : '请输入评价内容...（期中期末评价字数不能超过250个字符）'
+                      }
                     />
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-xs text-gray-500">
+                        {editingItem?.evaluate_title?.includes('模考') 
+                          ? '模考评价：字数不能超过450个字符'
+                          : '期中期末评价：字数不能超过250个字符'}
+                      </p>
+                      <span
+                        className={`text-xs font-medium ${
+                          getCharCount(editContent) > getMaxCharLimit()
+                            ? 'text-red-600'
+                            : 'text-gray-500'
+                        }`}
+                      >
+                        {getCharCount(editContent)} / {getMaxCharLimit()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
               
               <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
                 <button
-                  onClick={() => setShowEditModal(false)}
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingItem(null);
+                    setEditContent('');
+                    setEditingId(null);
+                  }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                 >
                   取消
