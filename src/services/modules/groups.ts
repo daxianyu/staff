@@ -155,6 +155,9 @@ export interface ScheduleResult {
     schedule_lessons_data: any[];
     students_data: any[];
     time_slots: string[];
+    group_num: number;
+    illegal_num: number;
+    weekend_illegal_num: number;
     return_time_count: Array<{
       time: string;
       count: number;

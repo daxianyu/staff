@@ -15,18 +15,32 @@ import {
   deletePaymentRecord,
   getPaymentDetail,
   sendInterviewEmail,
+  sendRejectEmail,
+  changeExamDate,
+  changeSalesApply,
   type PaymentInfo,
   type PaymentDetail,
 } from '@/services/auth';
+import ChangeExamDateModal from './components/ChangeExamDateModal';
+import ChangeApplyModal from './components/ChangeApplyModal';
 
 export default function PaymentInfoPage() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const canView = hasPermission(PERMISSIONS.VIEW_PAYMENT_INFO);
   const canDelete = hasPermission(PERMISSIONS.MANAGE_EXAM_CONFIG); // 需要sales_core或core_user
+  
+  // 检查是否有修改权限（sales_core=1 或 core_user=1）
+  const canModify = useMemo(() => {
+    if (!user) return false;
+    const isSalesCore = Number((user as any).sales_core) === 1 || (user as any).sales_core === true;
+    const isCoreUser = Number((user as any).core_user) === 1 || (user as any).core_user === true;
+    return isSalesCore || isCoreUser;
+  }, [user]);
 
   // 状态管理
   const [payments, setPayments] = useState<PaymentInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false); // 详情加载状态
   const [searchTerm, setSearchTerm] = useState('');
   
   // 模态框状态
@@ -34,6 +48,10 @@ export default function PaymentInfoPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentInfo | null>(null);
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail | null>(null);
+  
+  // 修改模态框状态
+  const [showChangeExamDateModal, setShowChangeExamDateModal] = useState(false);
+  const [showChangeApplyModal, setShowChangeApplyModal] = useState(false);
 
   // 权限检查页面
   if (!canView) {
@@ -86,7 +104,7 @@ export default function PaymentInfoPage() {
   // 打开详情模态框
   const handleViewDetail = async (item: PaymentInfo) => {
     setSelectedPayment(item);
-    setLoading(true);
+    setDetailLoading(true);
     try {
       const result = await getPaymentDetail(item.record_id);
       if (result.code === 200 && result.data) {
@@ -99,7 +117,72 @@ export default function PaymentInfoPage() {
       console.error('获取详情失败:', error);
       alert('获取详情失败');
     } finally {
-      setLoading(false);
+      setDetailLoading(false);
+    }
+  };
+
+  // 打开修改考试日期模态框
+  const handleOpenChangeExamDateModal = () => {
+    setShowChangeExamDateModal(true);
+  };
+
+  // 确认修改考试日期
+  const handleConfirmChangeExamDate = async (params: {
+    sales_id: number;
+    old_exam_id: number;
+    new_exam_id: number;
+  }) => {
+    try {
+      const result = await changeExamDate(params);
+      if (result.code === 200) {
+        alert('修改成功');
+        setShowChangeExamDateModal(false);
+        // 重新加载详情
+        if (selectedPayment) {
+          await handleViewDetail(selectedPayment);
+        }
+        // 重新加载列表
+        await loadData();
+      } else {
+        alert('修改失败: ' + result.message);
+      }
+    } catch (error) {
+      console.error('修改考试日期失败:', error);
+      alert('修改考试日期失败');
+    }
+  };
+
+  // 打开修改报考信息模态框
+  const handleOpenChangeApplyModal = () => {
+    setShowChangeApplyModal(true);
+  };
+
+  // 确认修改报考信息
+  const handleConfirmChangeApply = async (params: {
+    sales_id: number;
+    pay_id: number;
+    campus_id: number;
+    study_year: string;
+    paper_type: string;
+    math_type: string;
+  }) => {
+    try {
+      const result = await changeSalesApply(params);
+      if (result.code === 200) {
+        alert('修改成功');
+        setShowChangeApplyModal(false);
+        // 重新加载详情
+        if (selectedPayment) {
+          await handleViewDetail(selectedPayment);
+        }
+        // 重新加载列表
+        await loadData();
+      } else {
+        alert('修改失败: ' + result.message);
+      }
+    } catch (error) {
+      console.error('修改报考信息失败:', error);
+      alert('修改报考信息失败');
     }
   };
 
@@ -109,12 +192,30 @@ export default function PaymentInfoPage() {
     setShowDeleteModal(true);
   };
 
-  // 发送操作
-  const handleSend = async (item: PaymentInfo) => {
-    if (!confirm('确定要发送成绩通知吗？')) return;
+  // 发送面试邀请
+  const handleSendInterview = async (item: PaymentInfo) => {
+    if (!confirm('确定要发送面试邀请吗？')) return;
     
     try {
-      const result = await sendInterviewEmail(item.sales_id);
+      const result = await sendInterviewEmail(item.record_id);
+      if (result.code === 200) {
+        alert('发送成功');
+        loadData();
+      } else {
+        alert('发送失败: ' + result.message);
+      }
+    } catch (error) {
+      console.error('发送失败:', error);
+      alert('发送失败');
+    }
+  };
+
+  // 发送拒信
+  const handleSendReject = async (item: PaymentInfo) => {
+    if (!confirm('确定要发送拒信吗？')) return;
+    
+    try {
+      const result = await sendRejectEmail(item.record_id);
       if (result.code === 200) {
         alert('发送成功');
         loadData();
@@ -235,17 +336,34 @@ export default function PaymentInfoPage() {
                         {item.create_time || '-'}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleSend(item)}
-                          className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                            item.send_status === 1
-                              ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                              : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                          }`}
-                          title={item.send_status === 1 ? '已发送' : '发送'}
-                        >
-                          {item.send_status === 1 ? '已发送' : '发送'}
-                        </button>
+                        {item.send_status === 0 || item.sales_interview === undefined || item.sales_interview === null ? (
+                          // 未发送：显示两个按钮
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => handleSendInterview(item)}
+                              className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                              title="发送面试邀请"
+                            >
+                              发送面试邀请
+                            </button>
+                            <button
+                              onClick={() => handleSendReject(item)}
+                              className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                              title="发送拒信"
+                            >
+                              发送拒信
+                            </button>
+                          </div>
+                        ) : (
+                          // 已发送：显示状态
+                          <div className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md ${
+                            item.sales_interview === 1
+                              ? 'text-green-600 bg-green-50'
+                              : 'text-orange-600 bg-orange-50'
+                          }`}>
+                            {item.sales_interview === 1 ? '已发送面试邀请' : '已发送拒信'}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
@@ -324,10 +442,10 @@ export default function PaymentInfoPage() {
         )}
 
         {/* 详情模态框 */}
-        {showDetailModal && paymentDetail && (
+        {showDetailModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-6 border-b">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
                 <h3 className="text-lg font-semibold text-gray-900">支付详情</h3>
                 <button
                   onClick={() => {
@@ -340,18 +458,84 @@ export default function PaymentInfoPage() {
                 </button>
               </div>
               
-              <div className="p-6 space-y-4">
-                {Object.entries(paymentDetail).map(([key, value]) => (
-                  <div key={key}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{key}</label>
-                    <div className="text-sm text-gray-900">
-                      {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+              {detailLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : paymentDetail ? (
+                <div className="p-6 space-y-6">
+                  {/* 基本信息 */}
+                  {paymentDetail.detail && (
+                    <div>
+                      <h4 className="text-md font-semibold text-gray-900 mb-3">基本信息</h4>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">考试场次描述</label>
+                            <div className="text-sm text-gray-900">{paymentDetail.detail.exam_desc || '-'}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">考试类型</label>
+                            <div className="text-sm text-gray-900">{paymentDetail.detail.online || '-'}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">合同号(考生ID)</label>
+                            <div className="text-sm text-gray-900">{paymentDetail.detail.sales_id || '-'}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">订单号</label>
+                            <div className="text-sm text-gray-900">{paymentDetail.detail.order_num || '-'}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">考试费用</label>
+                            <div className="text-sm text-gray-900">¥{paymentDetail.detail.price || 0}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">考试时间</label>
+                            <div className="text-sm text-gray-900">{paymentDetail.detail.exam_day || '-'}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">订单发起时间</label>
+                            <div className="text-sm text-gray-900">{paymentDetail.detail.book_time || '-'}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">最后更新时间</label>
+                            <div className="text-sm text-gray-900">{paymentDetail.detail.update_time || '-'}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">订单状态</label>
+                            <div className="text-sm text-gray-900">{paymentDetail.detail.status || '-'}</div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  )}
+
+                  {/* 修改功能按钮 */}
+                  {canModify && (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleOpenChangeExamDateModal}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                      >
+                        修改招生报名的考试日期
+                      </button>
+                      <button
+                        onClick={handleOpenChangeApplyModal}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                      >
+                        修改报考信息
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-6 text-center text-gray-500">
+                  暂无详情数据
+                </div>
+              )}
               
-              <div className="flex items-center justify-end gap-3 p-6 border-t">
+              <div className="flex items-center justify-end gap-3 p-6 border-t sticky bottom-0 bg-white">
                 <button
                   onClick={() => {
                     setShowDetailModal(false);
@@ -365,6 +549,23 @@ export default function PaymentInfoPage() {
             </div>
           </div>
         )}
+
+        {/* 修改考试日期模态框 */}
+        <ChangeExamDateModal
+          isOpen={showChangeExamDateModal}
+          onClose={() => setShowChangeExamDateModal(false)}
+          paymentDetail={paymentDetail}
+          onConfirm={handleConfirmChangeExamDate}
+        />
+
+        {/* 修改报考信息模态框 */}
+        <ChangeApplyModal
+          isOpen={showChangeApplyModal}
+          onClose={() => setShowChangeApplyModal(false)}
+          paymentDetail={paymentDetail}
+          payId={selectedPayment?.record_id || 0}
+          onConfirm={handleConfirmChangeApply}
+        />
       </div>
     </div>
   );

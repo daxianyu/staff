@@ -140,9 +140,10 @@ export class MenuFilter {
     // 需要 tool_user 权限
     const toolUserPermissions = [
       PERMISSIONS.VIEW_FREE_SEARCH,
+      PERMISSIONS.VIEW_TOOLS_OVERVIEW,
     ];
     if (toolUserPermissions.includes(permission as any)) {
-      return this.userRights.includes('tool_user');
+      return (this.user as any).tool_user === true || (this.user as any).tool_user === 1;
     }
     
     // 需要 sales_core=1 或 core_user=1 的权限
@@ -1080,13 +1081,13 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'dollar-sign',
         requiredPermissions: [PERMISSIONS.VIEW_PAYMENT_INFO],
       },
-      {
-        key: 'my-sales-follow-ups',
-        label: 'My sales follow ups',
-        path: '/admission-admin/my-sales-follow-ups',
-        icon: 'user',
-        requiredPermissions: [PERMISSIONS.VIEW_SALES_INFO, PERMISSIONS.VIEW_CONTRACTS_INFO],
-      },
+      // {
+      //   key: 'my-sales-follow-ups',
+      //   label: 'My sales follow ups',
+      //   path: '/admission-admin/my-sales-follow-ups',
+      //   icon: 'user',
+      //   requiredPermissions: [PERMISSIONS.VIEW_SALES_INFO, PERMISSIONS.VIEW_CONTRACTS_INFO],
+      // },
     ],
   },
   {
@@ -1143,6 +1144,13 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/core/tools',
         icon: 'calculator',
         requiredPermissions: [PERMISSIONS.VIEW_TOOLS],
+      },
+      {
+        key: 'tools-overview',
+        label: 'Tools',
+        path: '/tools',
+        icon: 'wrench-screwdriver',
+        requiredPermissions: [PERMISSIONS.VIEW_TOOLS_OVERVIEW],
       },
       {
         key: 'promotion',

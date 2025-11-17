@@ -1355,15 +1355,18 @@ export const getMyProfile = async (): Promise<ApiResponse<MyProfile>> => {
 
 export const changeMyPassword = async (params: ChangePasswordParams): Promise<ApiResponse<string>> => {
   try {
-    void params; // legacy signature compatibility
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
     };
     
     const response = await fetch('/api/user/change_my_password', {
-      method: 'GET',
+      method: 'POST',
       headers,
+      body: JSON.stringify({
+        old_password: params.old_password,
+        new_password: params.new_password,
+      }),
     });
     
     const data = await response.json();

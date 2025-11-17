@@ -118,7 +118,15 @@ export default function MySalesFollowUpsPage() {
     if (!confirm('确定要发送录取通知邮件吗？')) return;
     
     try {
-      const result = await sendEntranceAdmission(item.sales_id);
+      const result = await sendEntranceAdmission({
+        contract_id: item.sales_id,
+        english_score: item.english_score,
+        math_score: item.math_score,
+        school_year: item.school_year,
+        campuses: item.campuses,
+        semester: item.semester,
+        year_num: item.year_num,
+      });
       if (result.code === 200) {
         alert('发送成功');
       } else {
@@ -135,7 +143,12 @@ export default function MySalesFollowUpsPage() {
     if (!confirm('确定要发送拒信邮件吗？')) return;
     
     try {
-      const result = await sendEntranceReject(item.sales_id);
+      const result = await sendEntranceReject({
+        contract_id: item.sales_id,
+        school_year: (item as any).school_year || '',
+        english_score: (item as any).english_score || '',
+        math_score: (item as any).math_score || '',
+      });
       if (result.code === 200) {
         alert('发送成功');
       } else {

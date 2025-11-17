@@ -205,6 +205,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return isSalesCore || isCoreUser;
     }
     
+    // 需要 tool_user 权限
+    const toolUserPermissions = [
+      PERMISSIONS.VIEW_FREE_SEARCH,
+      PERMISSIONS.VIEW_TOOLS_OVERVIEW,
+    ];
+    if (toolUserPermissions.includes(permission as any)) {
+      return (user as any).tool_user === true || (user as any).tool_user === 1;
+    }
+    
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,

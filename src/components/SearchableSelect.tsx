@@ -98,24 +98,40 @@ export default function SearchableSelect({
           <div className="flex-1 text-left">
             {multiple && (selectedOptions as Option[]).length > 0 ? (
               <div className="flex flex-wrap gap-1">
-                {(selectedOptions as Option[]).map(option => (
-                  <span
-                    key={toNum(option.id)}
-                    className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
-                  >
-                    {option.name}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeSelected(toNum(option.id));
-                      }}
-                      className="ml-1 hover:text-blue-600"
-                    >
-                      <CheckIcon className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
+                {(() => {
+                  const selected = selectedOptions as Option[];
+                  const maxDisplay = 3;
+                  const displayOptions = selected.slice(0, maxDisplay);
+                  const remainingCount = selected.length - maxDisplay;
+                  
+                  return (
+                    <>
+                      {displayOptions.map(option => (
+                        <span
+                          key={toNum(option.id)}
+                          className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
+                        >
+                          {option.name}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeSelected(toNum(option.id));
+                            }}
+                            className="ml-1 hover:text-blue-600"
+                          >
+                            <CheckIcon className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                      {remainingCount > 0 && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-md">
+                          +{remainingCount} 更多
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             ) : (
               <span className="truncate">{getDisplayText()}</span>

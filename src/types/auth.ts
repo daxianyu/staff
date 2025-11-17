@@ -195,6 +195,9 @@ export const PERMISSIONS = {
   // 空闲搜索权限 (tool_user)
   VIEW_FREE_SEARCH: 'view_free_search',
   
+  // 工具概览权限 (tool_user)
+  VIEW_TOOLS_OVERVIEW: 'view_tools_overview',
+  
   // 自助报名班级权限 (edit_classes or sales_admin)
   VIEW_SELF_SIGNUP_CLASSES: 'view_self_signup_classes',
   EDIT_SELF_SIGNUP_CLASSES: 'edit_self_signup_classes',

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
@@ -19,6 +20,7 @@ import {
 } from '@/services/auth';
 
 export default function AdmissionManagePage() {
+  const router = useRouter();
   const { hasPermission, user } = useAuth();
   const canView = hasPermission(PERMISSIONS.VIEW_ADMISSION_MANAGE) || 
                   hasPermission(PERMISSIONS.VIEW_SALES_INFO) || 
@@ -36,7 +38,6 @@ export default function AdmissionManagePage() {
   
   // 模态框状态
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSales, setSelectedSales] = useState<SalesRecord | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -145,11 +146,9 @@ export default function AdmissionManagePage() {
     setShowAddModal(true);
   };
 
-  // 打开编辑模态框
+  // 跳转到编辑页面
   const handleEdit = (item: SalesRecord) => {
-    setSelectedSales(item);
-    setFormData({ ...item });
-    setShowEditModal(true);
+    router.push(`/admission-admin/sales/edit?id=${item.sales_id}`);
   };
 
   // 打开删除确认模态框
@@ -161,7 +160,6 @@ export default function AdmissionManagePage() {
   // 提交表单
   const handleSubmit = async () => {
     try {
-      if (showAddModal) {
         if (!formData.student_name) {
           alert('请输入学生姓名');
           return;
@@ -174,10 +172,6 @@ export default function AdmissionManagePage() {
           loadData();
         } else {
           alert('操作失败: ' + result.message);
-        }
-      } else {
-        // 编辑功能需要调用更新接口，暂时不实现
-        alert('编辑功能待实现');
       }
     } catch (error) {
       console.error('提交失败:', error);
@@ -470,18 +464,15 @@ export default function AdmissionManagePage() {
           </div>
         )}
 
-        {/* 添加/编辑模态框 */}
-        {(showAddModal || showEditModal) && (
+        {/* 添加模态框 */}
+        {showAddModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {showAddModal ? '新增Sales记录' : '编辑Sales记录'}
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900">新增Sales记录</h3>
                 <button
                   onClick={() => {
                     setShowAddModal(false);
-                    setShowEditModal(false);
                     setFormData({});
                   }}
                   className="text-gray-400 hover:text-gray-500"
@@ -507,7 +498,6 @@ export default function AdmissionManagePage() {
                 <button
                   onClick={() => {
                     setShowAddModal(false);
-                    setShowEditModal(false);
                     setFormData({});
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"

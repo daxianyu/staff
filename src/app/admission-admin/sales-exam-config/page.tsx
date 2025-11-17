@@ -14,8 +14,12 @@ import {
   getExamSessionTable,
   addExamSession,
   deleteExamSession,
+  getExamBaseTable,
+  addExamBase,
+  deleteExamBase,
   type ExamSession,
   type SelectOption,
+  type ExamBaseConfig,
 } from '@/services/auth';
 
 export default function ExamConfigPage() {
@@ -36,6 +40,13 @@ export default function ExamConfigPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  
+  // 二级弹出窗口状态（配置年制和试卷类型）
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [configType, setConfigType] = useState<'study_year' | 'paper_type' | null>(null); // 'study_year' 对应年制(0), 'paper_type' 对应试卷类型(1)
+  const [baseConfigList, setBaseConfigList] = useState<ExamBaseConfig[]>([]);
+  const [configLoading, setConfigLoading] = useState(false);
+  const [newConfigName, setNewConfigName] = useState('');
 
   // 权限检查页面
   if (!canManage) {
@@ -137,6 +148,87 @@ export default function ExamConfigPage() {
     } catch (error) {
       console.error('删除失败:', error);
       alert('删除失败');
+    }
+  };
+
+  // 打开配置窗口
+  const handleOpenConfigModal = async (type: 'study_year' | 'paper_type') => {
+    setConfigType(type);
+    setShowConfigModal(true);
+    setConfigLoading(true);
+    setNewConfigName('');
+    
+    try {
+      const result = await getExamBaseTable();
+      if (result.code === 200 && result.data) {
+        // 根据类型筛选：年制(type=0) 或 试卷类型(type=1)
+        const typeName = type === 'study_year' ? '年制' : '试卷类型';
+        const filtered = result.data.rows.filter(item => item.type === typeName);
+        setBaseConfigList(filtered);
+      }
+    } catch (error) {
+      console.error('加载配置列表失败:', error);
+      alert('加载配置列表失败');
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  // 添加新配置
+  const handleAddNewConfig = async () => {
+    if (!newConfigName.trim()) {
+      alert('请输入配置名称');
+      return;
+    }
+    if (!configType) return;
+    
+    const examType = configType === 'study_year' ? 0 : 1;
+    
+    try {
+      const result = await addExamBase({
+        value: newConfigName.trim(),
+        exam_type: examType,
+      });
+      
+      if (result.code === 200) {
+        alert('添加成功');
+        setNewConfigName('');
+        // 重新加载配置列表
+        const listResult = await getExamBaseTable();
+        if (listResult.code === 200 && listResult.data) {
+          const typeName = configType === 'study_year' ? '年制' : '试卷类型';
+          const filtered = listResult.data.rows.filter(item => item.type === typeName);
+          setBaseConfigList(filtered);
+        }
+        // 重新加载下拉选项数据
+        loadSessions();
+      } else {
+        alert('添加失败: ' + result.message);
+      }
+    } catch (error) {
+      console.error('添加配置失败:', error);
+      alert('添加配置失败');
+    }
+  };
+
+  // 删除配置项
+  const handleDeleteConfig = async (recordId: number) => {
+    if (!confirm('确定要删除这个配置项吗？')) return;
+    
+    try {
+      const result = await deleteExamBase(recordId);
+      if (result.code === 200) {
+        alert('删除成功');
+        // 从列表中移除
+        setBaseConfigList(prev => prev.filter(item => item.record_id !== recordId));
+        // 重新加载下拉选项数据
+        loadSessions();
+      } else {
+        alert('删除失败: ' + result.message);
+      }
+    } catch (error) {
+      console.error('删除配置失败:', error);
+      alert('删除配置失败');
     }
   };
 
@@ -266,9 +358,18 @@ export default function ExamConfigPage() {
                 
                 {/* 年制 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    年制 <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      年制 <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenConfigModal('study_year')}
+                      className="text-xs text-blue-600 hover:text-blue-800 underline"
+                    >
+                      配置
+                    </button>
+                  </div>
                   <select
                     value={formData.study_year || ''}
                     onChange={(e) => setFormData({ ...formData, study_year: e.target.value })}
@@ -286,9 +387,18 @@ export default function ExamConfigPage() {
                 
                 {/* 试卷类型 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    试卷类型 <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      试卷类型 <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenConfigModal('paper_type')}
+                      className="text-xs text-blue-600 hover:text-blue-800 underline"
+                    >
+                      配置
+                    </button>
+                  </div>
                   <select
                     value={formData.paper_type || ''}
                     onChange={(e) => setFormData({ ...formData, paper_type: e.target.value })}
@@ -310,6 +420,106 @@ export default function ExamConfigPage() {
                 </button>
                 <button onClick={handleSubmit} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
                   确认
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 配置年制和试卷类型的二级弹出窗口 */}
+        {showConfigModal && configType && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  配置{configType === 'study_year' ? '年制' : '试卷类型'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowConfigModal(false);
+                    setConfigType(null);
+                    setNewConfigName('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                {/* 添加新配置 */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newConfigName}
+                    onChange={(e) => setNewConfigName(e.target.value)}
+                    placeholder={`输入新的${configType === 'study_year' ? '年制' : '试卷类型'}名称`}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddNewConfig();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleAddNewConfig}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  >
+                    添加
+                  </button>
+                </div>
+                
+                {/* 配置列表 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    配置列表
+                  </label>
+                  {configLoading ? (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <div className="border border-gray-300 rounded-md max-h-64 overflow-y-auto">
+                      {baseConfigList.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-sm text-gray-500">
+                          暂无配置项
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-gray-200">
+                          {baseConfigList.map((item) => (
+                            <div
+                              key={item.record_id}
+                              className="flex items-center px-4 py-3 hover:bg-gray-50"
+                            >
+                              <span className="flex-1 text-sm text-gray-900">{item.name}</span>
+                              <span className="text-xs text-gray-500 mr-4">{item.create_time}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteConfig(item.record_id)}
+                                className="text-red-600 hover:text-red-800"
+                                title="删除"
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-end gap-3 p-6 border-t sticky bottom-0 bg-white">
+                <button
+                  onClick={() => {
+                    setShowConfigModal(false);
+                    setConfigType(null);
+                    setNewConfigName('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  关闭
                 </button>
               </div>
             </div>

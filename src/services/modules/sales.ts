@@ -98,6 +98,7 @@ export interface SalesInfo {
   apply_data: any[];
   can_add_students: number;
   staff_info: Record<number, string>;
+  channel_list?: Array<{ key: number; name: string }>;
   [key: string]: any;
 }
 
@@ -186,12 +187,45 @@ export interface PaymentInfo {
 }
 
 export interface PaymentDetail {
-  id: number;
-  contract_id: number;
-  amount: number;
-  payment_date: string;
-  payment_method?: string;
-  [key: string]: any;
+  detail: {
+    exam_id: number;
+    order_num: string;
+    sales_id: number;
+    price: number;
+    exam_day: string; // 格式: "YYYY-MM-DD HH:mm:ss"
+    online: string; // "线上考试" 或 "线下考试"
+    status: string; // 状态名称
+    book_time: string; // 格式: "YYYY-MM-DD HH:mm:ss"
+    update_time: string; // 格式: "YYYY-MM-DD HH:mm:ss"
+    exam_desc: string;
+  };
+  exam_info: Array<{
+    test_name: string;
+    finished: string; // "已完成" 或 "未开始"
+    score: number; // 分数（0-100）
+    points: number;
+    sales_id: number;
+    assigned_id: number;
+    test_id: number;
+  }>;
+  exam_setting?: Array<{
+    id: number;
+    exam_desc: string;
+  }>;
+  study_year_list?: string[];
+  paper_type_list?: string[];
+  math_type_list?: string[];
+  apply_info?: {
+    exam_id: number;
+    campus_id: number;
+    study_year: string;
+    paper_type: string;
+    math_type: string;
+  } | null;
+  campus_list?: Array<{
+    id: number;
+    name: string;
+  }>;
 }
 
 // ============= Sales 相关API函数 =============
@@ -272,13 +306,27 @@ export const getSalesInfo = async (contractId: number): Promise<ApiResponse<Sale
   }
 };
 
+// 发送录取通知的邮件参数
+export interface AdmissionMailParams {
+  contract_id: number;
+  school_year: string;      // 学年
+  semester: string;          // 学期
+  english_score: string;     // 英语成绩
+  math_score: string;        // 数学成绩
+  campuses: string;           // 校区
+  year_num: string;           // Enrollment Year
+  year_of_study?: string;     // Year of Study (数字类型)
+}
+
 // 发送录取通知的邮件
-export const sendEntranceAdmission = async (contractId: number): Promise<ApiResponse<void>> => {
+export const sendEntranceAdmission = async (
+  params: AdmissionMailParams
+): Promise<ApiResponse<void>> => {
   try {
     const url = `/api/sales/send_entrance_admission`;
     const { data } = await request<ApiEnvelope<void>>(url, {
       method: 'POST',
-      body: { contract_id: contractId },
+      body: params,
     });
     return normalizeApiResponse(data);
   } catch (error) {
@@ -290,13 +338,23 @@ export const sendEntranceAdmission = async (contractId: number): Promise<ApiResp
   }
 };
 
+// 发送reject的邮件参数
+export interface RejectMailParams {
+  contract_id: number;
+  school_year: string;       // 学年
+  english_score: string;     // 英语成绩
+  math_score: string;        // 数学成绩
+}
+
 // 发送reject的邮件
-export const sendEntranceReject = async (contractId: number): Promise<ApiResponse<void>> => {
+export const sendEntranceReject = async (
+  params: RejectMailParams
+): Promise<ApiResponse<void>> => {
   try {
     const url = `/api/sales/send_entrance_reject`;
     const { data } = await request<ApiEnvelope<void>>(url, {
       method: 'POST',
-      body: { contract_id: contractId },
+      body: params,
     });
     return normalizeApiResponse(data);
   } catch (error) {
@@ -322,6 +380,107 @@ export const addSalesToStudent = async (contractId: number): Promise<ApiResponse
     return {
       code: 500,
       message: error instanceof Error ? error.message : '添加sales到students失败',
+    };
+  }
+};
+
+// 更新sales信息
+export interface UpdateSalesParams {
+  contract_id: number;
+  assigned_staff?: number;
+  follow_up_1?: string;
+  follow_up_2?: string;
+  follow_up_3?: string;
+  wechat?: string;
+  current_school?: string;
+  grade?: string;
+  sales_status?: number;
+  student_name?: string;
+  student_first_name_pinyin?: string;
+  student_last_name_pinyin?: string;
+  student_sfz?: string;
+  guardian_name?: string;
+  address?: string;
+  phone?: string;
+  gender?: number;
+  source?: string;
+  relationship?: string;
+  fee?: number;
+  registration_time?: number;
+  email?: string;
+  birthday?: number;
+  course?: number;
+  channel?: number;
+  campus_id?: number;
+  enrolment_date?: number;
+  sales_pay_date?: number;
+  graduation_date?: number;
+  year_fee?: number;
+  year_fee_reminder_time_1?: number;
+  year_fee_reminder_time_2?: number;
+  year_fee_reminder_time_3?: number;
+  guardian_sfz?: string;
+  id_front_path?: string;
+  id_back_path?: string;
+  id_card_recent?: string;
+  current_lesson?: string;
+  province?: string;
+  city?: string;
+  apply_course?: number;
+  hobbies?: string;
+  awards?: string;
+  evaluation?: string;
+  password?: string;
+  study_year?: string;
+  math_type?: string;
+  signing_request_state?: number;
+}
+
+export const updateSalesInfo = async (params: UpdateSalesParams): Promise<ApiResponse<string>> => {
+  try {
+    const url = `/api/sales/staff_sales_info/${params.contract_id}`;
+    const { data } = await request<ApiEnvelope<string>>(url, {
+      method: 'POST',
+      body: params,
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('更新sales信息失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新sales信息失败',
+    };
+  }
+};
+
+// 上传sales图片
+export const uploadSalesImage = async (field: 'sfz_front' | 'sfz_back' | 'recent_front_photo', file: File): Promise<ApiResponse<string>> => {
+  try {
+    const formData = new FormData();
+    formData.append(field, file);
+    
+    const headers: HeadersInit = {
+      ...getAuthHeader(),
+      // 不要设置Content-Type，让浏览器自动设置
+    };
+    
+    const response = await fetch('/api/sales/upload_sales_image', {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data?.file_path || '',
+    };
+  } catch (error) {
+    console.error('上传图片失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '上传图片失败',
     };
   }
 };
@@ -839,54 +998,17 @@ export const getPaymentDetail = async (recordId: number): Promise<ApiResponse<Pa
   }
 };
 
-// ============= 邮件发送相关API =============
-
-// 发送面试通知
-export const sendInterviewEmail = async (contractId: number): Promise<ApiResponse<void>> => {
-  try {
-    const url = `/api/sales/send_interview_email`;
-    const { data } = await request<ApiEnvelope<void>>(url, {
-      method: 'POST',
-      body: { contract_id: contractId },
-    });
-    return normalizeApiResponse(data);
-  } catch (error) {
-    console.error('发送面试通知失败:', error);
-    return {
-      code: 500,
-      message: error instanceof Error ? error.message : '发送面试通知失败',
-    };
-  }
-};
-
-// 发送拒信
-export const sendRejectEmail = async (contractId: number): Promise<ApiResponse<void>> => {
-  try {
-    const url = `/api/sales/send_reject_email`;
-    const { data } = await request<ApiEnvelope<void>>(url, {
-      method: 'POST',
-      body: { contract_id: contractId },
-    });
-    return normalizeApiResponse(data);
-  } catch (error) {
-    console.error('发送拒信失败:', error);
-    return {
-      code: 500,
-      message: error instanceof Error ? error.message : '发送拒信失败',
-    };
-  }
-};
-
-// ============= 其他操作API =============
-
 // 修改招生报名的考试日期
-export const changeExamDate = async (params: {
-  contract_id: number;
-  exam_date: string;
-}): Promise<ApiResponse<void>> => {
+export interface ChangeExamDateParams {
+  sales_id: number;
+  old_exam_id: number;
+  new_exam_id: number;
+}
+
+export const changeExamDate = async (params: ChangeExamDateParams): Promise<ApiResponse<string>> => {
   try {
     const url = `/api/sales/change_exam_date`;
-    const { data } = await request<ApiEnvelope<void>>(url, {
+    const { data } = await request<ApiEnvelope<string>>(url, {
       method: 'POST',
       body: params,
     });
@@ -901,10 +1023,19 @@ export const changeExamDate = async (params: {
 };
 
 // 修改报考信息
-export const changeSalesApply = async (params: Record<string, any>): Promise<ApiResponse<void>> => {
+export interface ChangeSalesApplyParams {
+  sales_id: number;
+  pay_id: number;
+  campus_id: number;
+  study_year: string;
+  paper_type: string;
+  math_type: string;
+}
+
+export const changeSalesApply = async (params: ChangeSalesApplyParams): Promise<ApiResponse<string>> => {
   try {
     const url = `/api/sales/change_sales_apply`;
-    const { data } = await request<ApiEnvelope<void>>(url, {
+    const { data } = await request<ApiEnvelope<string>>(url, {
       method: 'POST',
       body: params,
     });
@@ -917,4 +1048,44 @@ export const changeSalesApply = async (params: Record<string, any>): Promise<Api
     };
   }
 };
+
+// ============= 邮件发送相关API =============
+
+// 发送面试通知
+export const sendInterviewEmail = async (recordId: number): Promise<ApiResponse<void>> => {
+  try {
+    const url = `/api/sales/send_interview_email`;
+    const { data } = await request<ApiEnvelope<void>>(url, {
+      method: 'POST',
+      body: { record_id: recordId },
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('发送面试通知失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '发送面试通知失败',
+    };
+  }
+};
+
+// 发送拒信
+export const sendRejectEmail = async (recordId: number): Promise<ApiResponse<void>> => {
+  try {
+    const url = `/api/sales/send_reject_email`;
+    const { data } = await request<ApiEnvelope<void>>(url, {
+      method: 'POST',
+      body: { record_id: recordId },
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('发送拒信失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '发送拒信失败',
+    };
+  }
+};
+
+// ============= 其他操作API =============
 

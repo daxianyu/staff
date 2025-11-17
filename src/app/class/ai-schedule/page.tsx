@@ -51,7 +51,7 @@ export default function AISchedulePage() {
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
   const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'time' | 'teachers' | 'students' | 'classes'>('time');
+  const [activeSection, setActiveSection] = useState<string>('time');
   
   // 弹窗堆叠管理
   type ModalItem = 
@@ -102,6 +102,70 @@ export default function AISchedulePage() {
       handleRefreshStatus();
     }
   }, [selectedCampusId]);
+
+  // 监听滚动，更新活动导航项
+  useEffect(() => {
+    if (!scheduleResult) return;
+
+    const sections = ['time', 'teachers', 'students', 'classes'];
+    let observer: IntersectionObserver | null = null;
+    let rafId: number | null = null;
+
+    const setupObserver = () => {
+      const elements = sections
+        .map(id => {
+          const element = document.getElementById(`section-${id}`);
+          return element ? { id, element } : null;
+        })
+        .filter(Boolean) as Array<{ id: string; element: HTMLElement }>;
+
+      if (elements.length === 0) {
+        // DOM 尚未渲染完成，下一帧再尝试
+        rafId = window.requestAnimationFrame(setupObserver);
+        return;
+      }
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          const visibleEntries = entries
+            .filter(entry => entry.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+          if (visibleEntries.length > 0) {
+            const sectionId = visibleEntries[0].target.id.replace('section-', '');
+            setActiveSection(prev => (prev === sectionId ? prev : sectionId));
+          } else {
+            // 如果没有可见的 entry，使用当前位置计算
+            const scrollPosition = window.scrollY + 200;
+            for (let i = elements.length - 1; i >= 0; i--) {
+              const { element, id } = elements[i];
+              const elementTop = element.offsetTop;
+              if (scrollPosition >= elementTop) {
+                setActiveSection(prev => (prev === id ? prev : id));
+                break;
+              }
+            }
+          }
+        },
+        {
+          root: null,
+          rootMargin: '-20% 0px -70% 0px',
+          threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+        }
+      );
+
+      elements.forEach(({ element }) => observer?.observe(element));
+    };
+
+    setupObserver();
+
+    return () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+      observer?.disconnect();
+    };
+  }, [scheduleResult]);
 
   // 开始排课
   const handleStartSchedule = async () => {
@@ -331,217 +395,261 @@ export default function AISchedulePage() {
                 <div className="bg-purple-50 rounded-lg p-4">
                   <p className="text-sm text-purple-600 font-medium">Teachers</p>
                   <p className="text-2xl font-bold text-purple-900">
-                    {scheduleResult.result?.teacher_info?.length || 0}
+                    {scheduleResult.result?.teacher_class ? Object.keys(scheduleResult.result.teacher_class).length : 0}
                   </p>
                 </div>
                 <div className="bg-orange-50 rounded-lg p-4">
                   <p className="text-sm text-orange-600 font-medium">Students</p>
                   <p className="text-2xl font-bold text-orange-900">
-                    {scheduleResult.result?.students_data?.length || 0}
+                    {scheduleResult.result?.student_class ? Object.keys(scheduleResult.result.student_class).length : 0}
+                  </p>
+                </div>
+
+                <div className='bg-yellow-50 rounded-lg p-4'>
+                  <p className="text-sm text-gray-600 font-medium">Group Num</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {scheduleResult.result?.group_num || 0}
+                  </p>
+                </div>
+
+                <div className='bg-red-50 rounded-lg p-4'>
+                  <p className="text-sm text-gray-600 font-medium">Illegal Num</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {scheduleResult.result?.illegal_num || 0}
+                  </p>
+                </div>
+
+                <div className='bg-red-50 rounded-lg p-4'>
+                  <p className="text-sm text-gray-600 font-medium">Weekend Illegal Num</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {scheduleResult.result?.weekend_illegal_num || 0}
                   </p>
                 </div>
               </div>
             </div>
             
-            {/* Tab 导航 */}
-            <div className="px-6">
-              <nav className="flex space-x-8" aria-label="Tabs">
-                <button
-                  onClick={() => setActiveTab('time')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'time'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  时间汇总
-                </button>
-                <button
-                  onClick={() => setActiveTab('teachers')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'teachers'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  教师统计
-                </button>
-                <button
-                  onClick={() => setActiveTab('students')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'students'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  学生统计
-                </button>
-                <button
-                  onClick={() => setActiveTab('classes')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'classes'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  课程统计
-                </button>
-              </nav>
-            </div>
+            {/* 内容区域：左侧导航 + 右侧内容 */}
+            <div className="flex flex-col lg:flex-row">
+              {/* 左侧导航栏 */}
+              <div className="lg:w-28 lg:flex-shrink-0 border-r border-gray-200 bg-gray-50">
+                <nav className="sticky top-6 p-2 space-y-1">
+                  <button
+                    onClick={() => {
+                      setActiveSection('time');
+                      document.getElementById('section-time')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`w-full text-left px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      activeSection === 'time'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    时间汇总
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveSection('teachers');
+                      document.getElementById('section-teachers')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`w-full text-left px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      activeSection === 'teachers'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    教师统计
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveSection('students');
+                      document.getElementById('section-students')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`w-full text-left px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      activeSection === 'students'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    学生统计
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveSection('classes');
+                      document.getElementById('section-classes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`w-full text-left px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      activeSection === 'classes'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    课程统计
+                  </button>
+                </nav>
+              </div>
 
-            {/* Tab 内容 */}
-            <div className="p-6">
-              {activeTab === 'time' && (
-                <div className="overflow-x-auto max-h-128 overflow-y-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">时间段</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">课程数</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">教师课时</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生课时</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {scheduleResult.result?.return_time_count?.map((item: any, index: number) => (
-                        <tr key={index} className={item.illegal ? 'bg-red-50' : 'hover:bg-gray-50'}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.time}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.count}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.teacher_hours}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.student_hours}</td>
+              {/* 右侧内容区域 */}
+              <div className="flex-1 space-y-8 p-6">
+                {/* 时间汇总 */}
+                <div id="section-time" className="scroll-mt-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">时间汇总</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">时间段</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">课程数</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">教师课时</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生课时</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {activeTab === 'teachers' && (
-                <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">教师</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Classes</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lessons</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">课时</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">忙碌度</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {scheduleResult.result?.teacher_return_list?.map((teacher: any, index: number) => {
-                        const teacherName = scheduleResult.result.teacher_info?.find((t: any) => t.id === teacher.teacher_id)?.name || `Teacher #${teacher.teacher_id}`;
-                        return (
-                          <tr key={index} className={teacher.illegal ? 'bg-red-50' : 'hover:bg-gray-50'}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <button
-                                onClick={() => openModal('teacher', teacher)}
-                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                              >
-                                {teacherName}
-                              </button>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.class_num}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.lesson_num}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.lesson_hours}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.busy_degree}</td>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {scheduleResult.result?.return_time_count?.map((item: any, index: number) => (
+                          <tr key={index} className={item.illegal ? 'bg-red-50' : 'hover:bg-gray-50'}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.time}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.count}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.teacher_hours}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.student_hours}</td>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              )}
 
-              {activeTab === 'students' && (
-                <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">导师</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Classes</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lessons</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">忙碌度</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">毕业日期</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {scheduleResult.result?.student_return_list?.map((student: any, index: number) => {
-                        const studentName = scheduleResult.result.student_info?.find((s: any) => s.id === student.student_id)?.name || `Student #${student.student_id}`;
-                        return (
-                          <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <button
-                                onClick={() => openModal('student', student)}
-                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                              >
-                                {studentName}
-                              </button>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <button
-                                onClick={() => openTeacherModal(student.mentor_id)}
-                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                              >
-                                {student.mentor_name}
-                              </button>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.lesson_num}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.lesson_hours}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.busy_degree}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.graduation_date}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                {/* 教师统计 */}
+                <div id="section-teachers" className="scroll-mt-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">教师统计</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">教师</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Classes</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lessons</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">课时</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">忙碌度</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {scheduleResult.result?.teacher_return_list?.map((teacher: any, index: number) => {
+                          const teacherName = scheduleResult.result.teacher_info?.find((t: any) => t.id === teacher.teacher_id)?.name || `Teacher #${teacher.teacher_id}`;
+                          return (
+                            <tr key={index} className={teacher.illegal ? 'bg-red-50' : 'hover:bg-gray-50'}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <button
+                                  onClick={() => openModal('teacher', teacher)}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                >
+                                  {teacherName}
+                                </button>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.class_num}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.lesson_num}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.lesson_hours}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{teacher.busy_degree}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              )}
 
-              {activeTab === 'classes' && (
-                <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">课程名称</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">教师</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生数量</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {scheduleResult.result?.schedule_classes_data?.map((classItem: any, index: number) => {
-                        const teacherName = scheduleResult.result.teacher_info?.find((t: any) => t.id === classItem.teacher_id)?.name || 'Unknown';
-                        const campusName = scheduleResult.result.campus_info?.find((c: any) => c.id === classItem.campus_id)?.name || 'Unknown';
-                        const studentCount = scheduleResult.result.schedule_class_students_data?.filter((s: any) => s.class_id === classItem.id)?.length || 0;
-                        const topicName = classItem.topic_name || classItem[1] || 'Unknown Topic';
-                        
-                        return (
-                          <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <button
-                                onClick={() => openModal('class', classItem)}
-                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                              >
-                                {topicName}
-                              </button>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <button
-                                onClick={() => openTeacherModal(classItem.teacher_id)}
-                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                              >
-                                {teacherName}
-                              </button>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{studentCount}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                {/* 学生统计 */}
+                <div id="section-students" className="scroll-mt-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">学生统计</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">导师</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Classes</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lessons</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">忙碌度</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">毕业日期</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {scheduleResult.result?.student_return_list?.map((student: any, index: number) => {
+                          const studentName = scheduleResult.result.student_info?.find((s: any) => s.id === student.student_id)?.name || `Student #${student.student_id}`;
+                          return (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <button
+                                  onClick={() => openModal('student', student)}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                >
+                                  {studentName}
+                                </button>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <button
+                                  onClick={() => openTeacherModal(student.mentor_id)}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                >
+                                  {student.mentor_name}
+                                </button>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.lesson_num}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.lesson_hours}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.busy_degree}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.graduation_date}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              )}
+
+                {/* 课程统计 */}
+                <div id="section-classes" className="scroll-mt-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">课程统计</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">课程名称</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">教师</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">学生数量</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {scheduleResult.result?.schedule_classes_data?.map((classItem: any, index: number) => {
+                          const teacherName = scheduleResult.result.teacher_info?.find((t: any) => t.id === classItem.teacher_id)?.name || 'Unknown';
+                          const campusName = scheduleResult.result.campus_info?.find((c: any) => c.id === classItem.campus_id)?.name || 'Unknown';
+                          const studentCount = scheduleResult.result.schedule_class_students_data?.filter((s: any) => s.class_id === classItem.id)?.length || 0;
+                          const topicName = classItem.topic_name || classItem[1] || 'Unknown Topic';
+                          
+                          return (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <button
+                                  onClick={() => openModal('class', classItem)}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                >
+                                  {topicName}
+                                </button>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <button
+                                  onClick={() => openTeacherModal(classItem.teacher_id)}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                >
+                                  {teacherName}
+                                </button>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{studentCount}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
