@@ -100,6 +100,7 @@ export interface ScheduleSettings {
 // Group类型定义 (对应 schedule_groups 表)
 export interface Group {
   id?: number;
+  group_id?: number;
   topic_id: number;
   topic_name?: string;
   max_students: number;
@@ -116,6 +117,8 @@ export interface Group {
   update_time?: string | number;
   assign_name?: string;
   assigning_name?: string;
+  teacher_ids?: string; // 教师ID列表
+  student_ids?: string; // 学生ID列表
   teacher?: string; // 教师ID列表
   students?: string; // 学生ID列表
 }

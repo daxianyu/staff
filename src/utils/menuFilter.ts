@@ -1143,13 +1143,6 @@ export const defaultMenuConfig: MenuItem[] = [
         label: 'Tools',
         path: '/core/tools',
         icon: 'calculator',
-        requiredPermissions: [PERMISSIONS.VIEW_TOOLS],
-      },
-      {
-        key: 'tools-overview',
-        label: 'Tools',
-        path: '/tools',
-        icon: 'wrench-screwdriver',
         requiredPermissions: [PERMISSIONS.VIEW_TOOLS_OVERVIEW],
       },
       {

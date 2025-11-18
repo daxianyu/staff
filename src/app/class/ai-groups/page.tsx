@@ -1407,6 +1407,7 @@ function GroupModal({
 
     const payload: Group = {
       ...(group || {}),
+      group_id: group?.id,
       campus_id: group?.campus_id ?? campusId,
       topic_id: Number(topicId) || 0,
       week_lessons: Number(lessons) || 0,
@@ -1414,6 +1415,8 @@ function GroupModal({
       max_students: normalizedMax,
       prefer_students: group?.prefer_students ?? normalizedMax,
       double_lesson: isTripleLesson ? 1 : 0,
+      teacher_ids: selectedTeachers.join(','),
+      student_ids: selectedStudents.join(','),
     };
 
     if (fixedRoom) {
@@ -1424,7 +1427,7 @@ function GroupModal({
         delete payload.fix_room;
       }
     } else {
-      delete payload.fix_room;
+      payload.fix_room = -1;
     }
 
     if (fixedTimeSlots.trim()) {
