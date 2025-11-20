@@ -12,11 +12,14 @@ import {
     updateSalesInfo,
     getAllCampus,
     uploadSalesImage,
+    generateContractPreview,
+    finalizeSigningRequest,
     type SalesInfo,
     type UpdateSalesParams,
     type Campus,
     type AdmissionMailParams,
     type RejectMailParams,
+    type ContractPreviewData,
 } from '@/services/auth';
 import {
     ArrowLeftIcon,
@@ -51,6 +54,24 @@ function toTimestamp(dateInput: string): number {
         return Math.floor(date.getTime() / 1000);
     } catch {
         return -1;
+    }
+}
+
+// 格式化时间戳为可读的日期时间格式
+function formatTimestamp(timestamp: number): string {
+    if (!timestamp || timestamp === -1) return '';
+    try {
+        const date = new Date(timestamp * 1000);
+        if (isNaN(date.getTime())) return '';
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const h = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        const s = String(date.getSeconds()).padStart(2, '0');
+        return `${y}-${m}-${d} ${h}:${min}:${s}`;
+    } catch {
+        return '';
     }
 }
 
@@ -91,6 +112,11 @@ export default function SalesEditPage() {
     const [sendingAdmission, setSendingAdmission] = useState(false);
     const [sendingReject, setSendingReject] = useState(false);
     const [addingToStudent, setAddingToStudent] = useState(false);
+    const [showContractPreviewModal, setShowContractPreviewModal] = useState(false);
+    const [contractPreviewData, setContractPreviewData] = useState<ContractPreviewData | null>(null);
+    const [loadingContractPreview, setLoadingContractPreview] = useState(false);
+    const [sendingContract, setSendingContract] = useState(false);
+    const [contractError, setContractError] = useState<string | null>(null);
 
     // 确认模态框状态
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
@@ -312,9 +338,19 @@ export default function SalesEditPage() {
         }
     };
 
-    // 获取当前签署状态
+    // 获取当前签署状态（服务协议）
     const getSigningState = (): number => {
         return formData.signing_request_state ?? salesInfo?.info?.signing_request_state ?? 0;
+    };
+
+    // 获取咨询协议签署状态
+    const getSigningState2 = (): number => {
+        return salesInfo?.info?.signing_request_state_2 ?? 0;
+    };
+
+    // 判断是否可以请求签署合同（两个状态都为0）
+    const canRequestSigning = (): boolean => {
+        return getSigningState() === 0 && getSigningState2() === 0;
     };
 
     // 获取状态文本
@@ -349,32 +385,78 @@ export default function SalesEditPage() {
 
     // 判断字段是否需要校验（当 signing_request_state = 0 时）
     const isFieldRequired = (fieldName: string): boolean => {
-        const state = getSigningState();
-        if (state === 2) return false; // 已签署完成，不校验
+        if (!canRequestSigning()) return false; // 不是待签署状态，不校验
 
-        if (state === 0) {
-            // 需要校验的字段列表
-            const requiredFields = [
-                'email',
-                'gender',
-                'student_sfz',
-                'grade',
-                'guardian_name',
-                'relationship',
-                'guardian_sfz',
-                'address',
-                'phone',
-                'student_name',
-                'student_first_name_pinyin',
-                'student_last_name_pinyin',
-                'campus_id',
-                'id_back_path',
-                'id_front_path',
-            ];
-            return requiredFields.includes(fieldName);
+        // 需要校验的字段列表
+        const requiredFields = [
+            'email',
+            'gender',
+            'student_sfz',
+            'grade',
+            'guardian_name',
+            'relationship',
+            'guardian_sfz',
+            'address',
+            'phone',
+            'student_name',
+            'student_first_name_pinyin',
+            'student_last_name_pinyin',
+            'campus_id',
+            'id_back_path',
+            'id_front_path',
+        ];
+        return requiredFields.includes(fieldName);
+    };
+
+    // 判断字段是否有错误（待签署状态且字段为空）
+    const isFieldError = (fieldName: string): boolean => {
+        if (!canRequestSigning()) return false; // 不是待签署状态，不显示错误
+        
+        if (!isFieldRequired(fieldName)) return false;
+        
+        const value = formData[fieldName as keyof UpdateSalesParams];
+        return !value || value === '' || value === 0 || value === -1;
+    };
+
+    // 获取缺失的必填字段列表（用于显示错误提示）
+    const getMissingFields = (): string[] => {
+        if (!canRequestSigning()) return [];
+        
+        const fieldMap: Record<string, string> = {
+            'email': '邮箱',
+            'gender': '性别',
+            'student_sfz': '学生身份证号',
+            'grade': '年级',
+            'guardian_name': '监护人姓名',
+            'relationship': '关系',
+            'guardian_sfz': '监护人身份证号',
+            'address': '地址',
+            'phone': '电话',
+            'student_name': '学生姓名',
+            'student_first_name_pinyin': '姓名拼音（名）',
+            'student_last_name_pinyin': '姓名拼音（姓）',
+            'campus_id': '校区',
+            'id_back_path': '身份证反面',
+            'id_front_path': '身份证正面',
+        };
+
+        const missingFields: string[] = [];
+        Object.keys(fieldMap).forEach(field => {
+            if (isFieldError(field)) {
+                missingFields.push(fieldMap[field]);
+            }
+        });
+
+        return missingFields;
+    };
+
+    // 获取输入框的样式类名（根据是否有错误）
+    const getInputClassName = (fieldName: string, baseClassName: string = 'w-full px-3 py-2 border rounded-md focus:ring-2 focus:border-blue-500'): string => {
+        const hasError = isFieldError(fieldName);
+        if (hasError) {
+            return `${baseClassName} border-red-500 focus:ring-red-500 focus:border-red-500`;
         }
-
-        return false;
+        return `${baseClassName} border-gray-300 focus:ring-blue-500`;
     };
 
     // 校验必填字段
@@ -591,6 +673,84 @@ export default function SalesEditPage() {
         router.push('/admission-admin/sales');
     };
 
+    // 打开合同预览模态框
+    const handleRequestSigning = async () => {
+        if (!contractId) return;
+
+        // 校验必填字段
+        const validationError = validateRequiredFields(true);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
+        setLoadingContractPreview(true);
+        setError(null);
+        setContractError(null);
+        try {
+            const result = await generateContractPreview(Number(contractId));
+            if (result.code === 200 && result.data) {
+                setContractPreviewData(result.data);
+                setShowContractPreviewModal(true);
+            } else {
+                setError('生成合同预览失败: ' + result.message);
+            }
+        } catch (err) {
+            console.error('生成合同预览失败:', err);
+            setError('生成合同预览失败');
+        } finally {
+            setLoadingContractPreview(false);
+        }
+    };
+
+    // 发送合同
+    const handleSendContract = async () => {
+        if (!contractId || !contractPreviewData) return;
+
+        // 从link中解析fileIds和subCompany
+        // link格式: /api/sales/finalize_signing_request/<contract_id>/<file_ids>/<version>?sub_company=<sub_company>
+        const link = contractPreviewData.link;
+        const match = link.match(/\/finalize_signing_request\/(\d+)\/([^\/]+)\/(\d+)(?:\?sub_company=(.+))?/);
+        
+        if (!match) {
+            setContractError('合同链接格式错误');
+            return;
+        }
+
+        const fileIds = match[2];
+        const version = parseInt(match[3], 10);
+        const subCompany = match[4] || undefined;
+
+        setSendingContract(true);
+        setContractError(null);
+        try {
+            const result = await finalizeSigningRequest({
+                contractId: Number(contractId),
+                fileIds,
+                version,
+                subCompany,
+            });
+            if (result.code === 200) {
+                alert('合同发送成功');
+                setShowContractPreviewModal(false);
+                setContractPreviewData(null);
+                setContractError(null);
+                // 重新加载数据
+                const refreshResult = await getSalesInfo(Number(contractId));
+                if (refreshResult.code === 200 && refreshResult.data) {
+                    setSalesInfo(refreshResult.data);
+                }
+            } else {
+                setContractError(result.message || '发送合同失败');
+            }
+        } catch (err) {
+            console.error('发送合同失败:', err);
+            setContractError('发送合同失败');
+        } finally {
+            setSendingContract(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -635,11 +795,11 @@ export default function SalesEditPage() {
                 <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Sales信息编辑</h1>
-                        <div className="mt-2 flex items-center gap-4">
+                        {/* <div className="mt-2 flex items-center gap-4">
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getSigningStateColor()}`}>
                                 {getSigningStateText()}
                             </span>
-                        </div>
+                        </div> */}
                     </div>
                     <div className="flex gap-3">
                         <button
@@ -674,10 +834,37 @@ export default function SalesEditPage() {
                         {error}
                     </div>
                 )}
+                {/* 待签署状态下的必填字段提示 */}
+                {canRequestSigning() && getMissingFields().length > 0 && (
+                    <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+                        <div className="flex items-start">
+                            <ExclamationTriangleIcon className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-medium mb-1">请填写以下必填字段后才能请求签署合同：</p>
+                                <ul className="list-disc list-inside text-sm">
+                                    {getMissingFields().map((field, index) => (
+                                        <li key={index} className="text-red-700">{field}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 操作按钮区域 */}
                 <div className="bg-white rounded-lg shadow mb-6 p-6">
                     <div className="flex flex-col sm:flex-row gap-3">
+                        {/* 请求签署合同按钮 - 只在校验通过且两个状态都为0时显示 */}
+                        {canRequestSigning() && validateRequiredFields(true) === null && (
+                            <button
+                                onClick={handleRequestSigning}
+                                disabled={loadingContractPreview}
+                                className="inline-flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <CheckCircleIcon className="h-5 w-5 mr-2" />
+                                {loadingContractPreview ? '生成中...' : '请求签署合同'}
+                            </button>
+                        )}
                         <button
                             onClick={() => setShowAdmissionModal(true)}
                             disabled={sendingAdmission}
@@ -706,6 +893,98 @@ export default function SalesEditPage() {
                         )}
                     </div>
                 </div>
+
+                {/* 邮件发送记录 */}
+                {salesInfo.mail_result &&
+                    ((salesInfo.mail_result[0] && salesInfo.mail_result[0].length > 0) ||
+                        (salesInfo.mail_result[1] && salesInfo.mail_result[1].length > 0)) && (
+                    <div className="bg-white rounded-lg shadow mb-6 p-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">邮件发送记录</h2>
+                        <div className="space-y-4">
+                            {/* 录取通知记录 */}
+                            {salesInfo.mail_result[0] && salesInfo.mail_result[0].length > 0 && (
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-700 mb-2">录取通知</h3>
+                                    <div className="space-y-2">
+                                        {salesInfo.mail_result[0].map((record, index) => {
+                                            const [status, sendTime] = record;
+                                            const isSuccess = status === 1;
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                                                        isSuccess
+                                                            ? 'bg-green-50 border border-green-200'
+                                                            : 'bg-red-50 border border-red-200'
+                                                    }`}
+                                                >
+                                                    {isSuccess ? (
+                                                        <CheckCircleIcon className="h-5 w-5 text-green-600 flex-shrink-0" />
+                                                    ) : (
+                                                        <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
+                                                    )}
+                                                    <div className="flex-1">
+                                                        <span
+                                                            className={`text-sm font-medium ${
+                                                                isSuccess ? 'text-green-800' : 'text-red-800'
+                                                            }`}
+                                                        >
+                                                            {isSuccess ? '发送成功' : '发送失败'} {sendTime}
+                                                        </span>
+                                                        <span className="text-sm text-gray-600 ml-2">
+                                                            {formatTimestamp(sendTime)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 拒信通知记录 */}
+                            {salesInfo.mail_result[1] && salesInfo.mail_result[1].length > 0 && (
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-700 mb-2">拒信通知</h3>
+                                    <div className="space-y-2">
+                                        {salesInfo.mail_result[1].map((record, index) => {
+                                            const [status, sendTime] = record;
+                                            const isSuccess = status === 1;
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                                                        isSuccess
+                                                            ? 'bg-green-50 border border-green-200'
+                                                            : 'bg-red-50 border border-red-200'
+                                                    }`}
+                                                >
+                                                    {isSuccess ? (
+                                                        <CheckCircleIcon className="h-5 w-5 text-green-600 flex-shrink-0" />
+                                                    ) : (
+                                                        <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
+                                                    )}
+                                                    <div className="flex-1">
+                                                        <span
+                                                            className={`text-sm font-medium ${
+                                                                isSuccess ? 'text-green-800' : 'text-red-800'
+                                                            }`}
+                                                        >
+                                                            {isSuccess ? '发送成功' : '发送失败'} {sendTime}
+                                                        </span>
+                                                        <span className="text-sm text-gray-600 ml-2">
+                                                            {formatTimestamp(sendTime)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {salesInfo.student_repeat_info && (<div className="bg-white rounded-lg shadow mb-6 p-6">
                     <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg">
@@ -740,7 +1019,7 @@ export default function SalesEditPage() {
                                 type="text"
                                 value={formData.student_last_name_pinyin || ''}
                                 onChange={(e) => handleInputChange('student_last_name_pinyin', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('student_last_name_pinyin')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -753,7 +1032,7 @@ export default function SalesEditPage() {
                                 type="text"
                                 value={formData.student_first_name_pinyin || ''}
                                 onChange={(e) => handleInputChange('student_first_name_pinyin', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('student_first_name_pinyin')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -766,7 +1045,7 @@ export default function SalesEditPage() {
                                 type="text"
                                 value={formData.student_sfz || ''}
                                 onChange={(e) => handleInputChange('student_sfz', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('student_sfz')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -781,7 +1060,7 @@ export default function SalesEditPage() {
                                 身份证正面
                                 {isFieldRequired('id_front_path') && <RequiredMark />}
                             </label>
-                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                            <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${isFieldError('id_front_path') ? 'border-red-500' : 'border-gray-300'}`}>
                                 <div className="space-y-1 text-center">
                                     {idCardFrontPreview ? (
                                         <div className="relative w-full flex justify-center items-center max-h-80 overflow-hidden">
@@ -820,7 +1099,7 @@ export default function SalesEditPage() {
                                 身份证反面
                                 {isFieldRequired('id_back_path') && <RequiredMark />}
                             </label>
-                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                            <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${isFieldError('id_back_path') ? 'border-red-500' : 'border-gray-300'}`}>
                                 <div className="space-y-1 text-center">
                                     {idCardBackPreview ? (
                                         <div className="relative w-full flex justify-center items-center max-h-80 overflow-hidden">
@@ -890,15 +1169,52 @@ export default function SalesEditPage() {
                                 </div>
                             </div>
                         </div>
+                        {/* 标化成绩单 */}
+                        {salesInfo.sales_standard_score_data && salesInfo.sales_standard_score_data.length > 0 && (
+                            <div className="md:col-span-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">标化成绩单</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {salesInfo.sales_standard_score_data.map((item, index) => (
+                                        <div key={index} className="border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
+                                            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+                                                <p className="text-sm font-medium text-gray-700">
+                                                    考试日期: {item.exam_day || '-'}
+                                                </p>
+                                            </div>
+                                            <div className="relative w-full bg-gray-100 flex items-center justify-center" style={{ minHeight: '200px', maxHeight: '400px' }}>
+                                                <img
+                                                    src={item.link_url}
+                                                    alt={`标化成绩单 ${index + 1}`}
+                                                    className="w-full h-auto max-h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                                    onClick={() => window.open(item.link_url, '_blank')}
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.style.display = 'none';
+                                                        const parent = target.parentElement;
+                                                        if (parent) {
+                                                            const errorDiv = document.createElement('div');
+                                                            errorDiv.className = 'text-gray-400 text-sm p-4 text-center';
+                                                            errorDiv.textContent = '图片加载失败';
+                                                            parent.innerHTML = '';
+                                                            parent.appendChild(errorDiv);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 性别
-                                <RequiredMark />
+                                {isFieldRequired('gender') && <RequiredMark />}
                             </label>
                             <select
                                 value={formData.gender || 2}
                                 onChange={(e) => handleInputChange('gender', Number(e.target.value))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('gender')}
                                 disabled={!canEdit}
                             >
                                 <option value={1}>男</option>
@@ -924,7 +1240,7 @@ export default function SalesEditPage() {
                                 type="email"
                                 value={formData.email || ''}
                                 onChange={(e) => handleInputChange('email', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('email')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -937,7 +1253,7 @@ export default function SalesEditPage() {
                                 type="tel"
                                 value={formData.phone || ''}
                                 onChange={(e) => handleInputChange('phone', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('phone')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -960,7 +1276,7 @@ export default function SalesEditPage() {
                                 type="text"
                                 value={formData.address || ''}
                                 onChange={(e) => handleInputChange('address', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('address')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -1010,7 +1326,7 @@ export default function SalesEditPage() {
                                 type="text"
                                 value={formData.grade || ''}
                                 onChange={(e) => handleInputChange('grade', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('grade')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -1060,7 +1376,7 @@ export default function SalesEditPage() {
                                 type="text"
                                 value={formData.guardian_name || ''}
                                 onChange={(e) => handleInputChange('guardian_name', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('guardian_name')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -1073,7 +1389,7 @@ export default function SalesEditPage() {
                                 type="text"
                                 value={formData.guardian_sfz || ''}
                                 onChange={(e) => handleInputChange('guardian_sfz', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('guardian_sfz')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -1086,7 +1402,7 @@ export default function SalesEditPage() {
                                 type="text"
                                 value={formData.relationship || ''}
                                 onChange={(e) => handleInputChange('relationship', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('relationship')}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -1205,7 +1521,7 @@ export default function SalesEditPage() {
                             <select
                                 value={formData.campus_id || 0}
                                 onChange={(e) => handleInputChange('campus_id', Number(e.target.value))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={getInputClassName('campus_id')}
                                 disabled={!canEdit}
                             >
                                 <option value={0}>请选择校区</option>
@@ -1748,6 +2064,88 @@ export default function SalesEditPage() {
                                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
                                 >
                                     {addingToStudent ? '添加中...' : '确认添加'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 合同预览模态框 */}
+                {showContractPreviewModal && contractPreviewData && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+                            <div className="p-6 border-b">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold text-gray-900">合同预览</h3>
+                                    <button
+                                        onClick={() => {
+                                            setShowContractPreviewModal(false);
+                                            setContractPreviewData(null);
+                                            setContractError(null);
+                                        }}
+                                        className="text-gray-400 hover:text-gray-500"
+                                    >
+                                        <XMarkIcon className="h-6 w-6" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 错误提示 */}
+                            {contractError && (
+                                <div className="px-6 pt-4">
+                                    <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center">
+                                        <ExclamationTriangleIcon className="h-5 w-5 mr-2 flex-shrink-0" />
+                                        <span>{contractError}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="space-y-6">
+                                    {/* 服务协议预览 */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2">服务协议</h4>
+                                        <div className="border border-gray-300 rounded-lg overflow-hidden" style={{ height: '600px' }}>
+                                            <iframe
+                                                src={contractPreviewData.iframe1}
+                                                className="w-full h-full"
+                                                title="服务协议预览"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* 咨询协议预览 */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2">咨询协议</h4>
+                                        <div className="border border-gray-300 rounded-lg overflow-hidden" style={{ height: '600px' }}>
+                                            <iframe
+                                                src={contractPreviewData.iframe2}
+                                                className="w-full h-full"
+                                                title="咨询协议预览"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 p-6 border-t">
+                                <button
+                                    onClick={() => {
+                                        setShowContractPreviewModal(false);
+                                        setContractPreviewData(null);
+                                        setContractError(null);
+                                    }}
+                                    disabled={sendingContract}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleSendContract}
+                                    disabled={sendingContract}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
+                                >
+                                    {sendingContract ? '发送中...' : '发送合同'}
                                 </button>
                             </div>
                         </div>

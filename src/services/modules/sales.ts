@@ -100,6 +100,30 @@ export interface SalesInfo {
   staff_info: Record<number, string>;
   channel_list?: Array<{ key: number; name: string }>;
   [key: string]: any;
+  /**
+   * mail_result 字段结构:
+   * {
+   *   0: Array<[1 | 0, number]>;   // 录取通知: 0=失败, 1=成功; number为发送时间戳
+   *   1: Array<[1 | 0, number]>;   // 拒信通知: 0=失败, 1=成功; number为发送时间戳
+   * }
+   * 其中 [0, send_time] 表示发送失败及该时间, [1, send_time] 表示发送成功及该时间.
+   */
+  mail_result: {
+    0: Array<[1 | 0, number]>; // Admission notice
+    1: Array<[1 | 0, number]>; // Rejection notice
+    [type: number]: Array<[1 | 0, number]>; // 可扩展
+  };
+  /**
+   * sales_standard_score_data 字段结构:
+   * Array<{
+   *   exam_day: string;    // 考试日期，格式: "YYYY-MM-DD"
+   *   link_url: string;    // 图片链接
+   * }>
+   */
+  sales_standard_score_data?: Array<{
+    exam_day: string;
+    link_url: string;
+  }>;
 }
 
 export interface InterviewConfig {
@@ -1083,6 +1107,116 @@ export const sendRejectEmail = async (recordId: number): Promise<ApiResponse<voi
     return {
       code: 500,
       message: error instanceof Error ? error.message : '发送拒信失败',
+    };
+  }
+};
+
+// 下载支付报考信息
+export const downloadPaymentInfo = async (params: {
+  start_day: string;
+  end_day: string;
+}): Promise<ApiResponse<{ file_url?: string; url?: string; file_path?: string }>> => {
+  try {
+    const queryString = buildQueryString(params);
+    const url = `/api/sales/download_payment_info${queryString}`;
+    const { data } = await request<ApiEnvelope<{ file_url?: string; url?: string; file_path?: string }>>(url, {
+      method: 'GET',
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('获取下载链接失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取下载链接失败',
+    };
+  }
+};
+
+// ============= 合同检查相关API =============
+
+// 检查合同签署状态
+export const checkContractStatus = async (checkUrl: string): Promise<ApiResponse<string>> => {
+  try {
+    // checkUrl 格式: /api/site/check_contract/<contract_id>/<version>/<file_type>
+    // 这个接口返回 JSON 格式: { status: 0, message: "...", data: "..." }
+    const { data } = await request<ApiEnvelope<string>>(checkUrl, {
+      method: 'GET',
+      auth: true, // 需要认证
+    });
+    
+    const normalized = normalizeApiResponse(data);
+    
+    // 如果返回成功且包含 "contract downloaded"，表示已签署
+    if (normalized.code === 200 && normalized.data && normalized.data.includes('contract downloaded')) {
+      return {
+        code: 200,
+        message: '合同已签署',
+        data: normalized.data,
+      };
+    } else {
+      return {
+        code: 400,
+        message: normalized.message || '合同未签署',
+        data: normalized.data,
+      };
+    }
+  } catch (error) {
+    console.error('检查合同状态失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '检查合同状态失败',
+    };
+  }
+};
+
+// ============= 合同签署相关API =============
+
+// 生成合同预览
+export interface ContractPreviewData {
+  link: string;      // 发送合同的链接
+  iframe1: string;   // 服务协议预览URL
+  iframe2: string;   // 咨询协议预览URL
+}
+
+export const generateContractPreview = async (contractId: number): Promise<ApiResponse<ContractPreviewData>> => {
+  try {
+    const url = `/api/sales/generate_sales_contract/${contractId}`;
+    const { data } = await request<ApiEnvelope<ContractPreviewData>>(url, {
+      method: 'GET',
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('生成合同预览失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '生成合同预览失败',
+    };
+  }
+};
+
+// 发送合同签署请求
+export interface FinalizeSigningParams {
+  contractId: number;
+  fileIds: string;  // 格式: "fileId1--fileId2"
+  version: number; // 版本号，通常是4
+  subCompany?: string; // 子公司参数，格式: "subCompany1-subCompany2"
+}
+
+export const finalizeSigningRequest = async (params: FinalizeSigningParams): Promise<ApiResponse<string>> => {
+  try {
+    let url = `/api/sales/finalize_signing_request/${params.contractId}/${params.fileIds}/${params.version}`;
+    if (params.subCompany) {
+      url += `?sub_company=${params.subCompany}`;
+    }
+    const { data } = await request<ApiEnvelope<string>>(url, {
+      method: 'GET',
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('发送合同签署请求失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '发送合同签署请求失败',
     };
   }
 };

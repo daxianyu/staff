@@ -11,11 +11,15 @@ import {
   TrashIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
+  ArrowPathIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import {
   getAllSales,
   addSalesRecord,
   deleteSalesRecord,
+  checkContractStatus,
+  getSalesInfo,
   type SalesRecord,
 } from '@/services/auth';
 
@@ -34,13 +38,16 @@ export default function AdmissionManagePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(50); // 每页显示50条
+  const [pageSize] = useState(200); // 每页显示50条
   
   // 模态框状态
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSales, setSelectedSales] = useState<SalesRecord | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  
+  // 合同检查状态 - 使用 Map 存储每个记录的检查状态
+  const [checkingContracts, setCheckingContracts] = useState<Map<number, 'service' | 'consult' | null>>(new Map());
 
   // 权限检查页面
   if (!canView) {
@@ -206,6 +213,108 @@ export default function AdmissionManagePage() {
     return false;
   };
 
+  // 检查服务协议状态（刷新）
+  const handleCheckServiceContract = async (item: SalesRecord) => {
+    if (!item.service_tail || !item.sales_id) return;
+
+    setCheckingContracts(prev => new Map(prev).set(item.sales_id, 'service'));
+    try {
+      const result = await checkContractStatus(item.service_tail);
+      if (result.code === 200) {
+        // 检查成功，重新获取该记录的数据
+        const refreshResult = await getSalesInfo(item.sales_id);
+        if (refreshResult.code === 200 && refreshResult.data) {
+          const updatedInfo = refreshResult.data;
+          
+          // 更新列表中的数据
+          setSales(prev => prev.map(s => {
+            if (s.sales_id === item.sales_id) {
+              return {
+                ...s,
+                signing_request_state: updatedInfo.info?.signing_request_state || s.signing_request_state,
+                service_file: updatedInfo.service_file || s.service_file,
+              };
+            }
+            return s;
+          }));
+          
+          alert('合同状态已更新');
+        }
+      } else {
+        alert('检查合同状态失败: ' + result.message);
+      }
+    } catch (err) {
+      console.error('检查服务协议状态失败:', err);
+      alert('检查合同状态失败');
+    } finally {
+      setCheckingContracts(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(item.sales_id);
+        return newMap;
+      });
+    }
+  };
+
+  // 检查咨询协议状态（刷新）
+  const handleCheckConsultContract = async (item: SalesRecord) => {
+    if (!item.consult_tail || !item.sales_id) return;
+
+    setCheckingContracts(prev => new Map(prev).set(item.sales_id, 'consult'));
+    try {
+      const result = await checkContractStatus(item.consult_tail);
+      if (result.code === 200) {
+        // 检查成功，重新获取该记录的数据
+        const refreshResult = await getSalesInfo(item.sales_id);
+        if (refreshResult.code === 200 && refreshResult.data) {
+          const updatedInfo = refreshResult.data;
+          
+          // 更新列表中的数据
+          setSales(prev => prev.map(s => {
+            if (s.sales_id === item.sales_id) {
+              return {
+                ...s,
+                signing_request_state_2: updatedInfo.info?.signing_request_state_2 || s.signing_request_state_2,
+                consult_file: updatedInfo.consult_file || s.consult_file,
+              };
+            }
+            return s;
+          }));
+          
+          alert('合同状态已更新');
+        }
+      } else {
+        alert('检查合同状态失败: ' + result.message);
+      }
+    } catch (err) {
+      console.error('检查咨询协议状态失败:', err);
+      alert('检查合同状态失败');
+    } finally {
+      setCheckingContracts(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(item.sales_id);
+        return newMap;
+      });
+    }
+  };
+
+  // 下载服务协议
+  const handleDownloadServiceContract = (item: SalesRecord) => {
+    if (!item.service_file) {
+      alert('服务协议文件不存在');
+      return;
+    }
+    window.open(item.service_file, '_blank');
+  };
+
+  // 下载咨询协议
+  const handleDownloadConsultContract = (item: SalesRecord) => {
+    if (!item.consult_file) {
+      alert('咨询协议文件不存在');
+      return;
+    }
+    window.open(item.consult_file, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -326,6 +435,54 @@ export default function AdmissionManagePage() {
                               删除
                             </button>
                           )}
+                          {/* 服务协议按钮 */}
+                          {item.signing_request_state === 1 && (
+                            <button
+                              onClick={() => handleCheckServiceContract(item)}
+                              disabled={checkingContracts.get(item.sales_id) === 'service'}
+                              className="inline-flex items-center justify-center w-8 h-8 text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="服务协议"
+                            >
+                              {checkingContracts.get(item.sales_id) === 'service' ? (
+                                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <ArrowPathIcon className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
+                          {item.signing_request_state === 2 && item.service_file && (
+                            <button
+                              onClick={() => handleDownloadServiceContract(item)}
+                              className="inline-flex items-center justify-center w-8 h-8 text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
+                              title="下载服务协议"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                            </button>
+                          )}
+                          {/* 咨询协议按钮 */}
+                          {item.signing_request_state_2 === 1 && (
+                            <button
+                              onClick={() => handleCheckConsultContract(item)}
+                              disabled={checkingContracts.get(item.sales_id) === 'consult'}
+                              className="inline-flex items-center justify-center w-8 h-8 text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="咨询协议"
+                            >
+                              {checkingContracts.get(item.sales_id) === 'consult' ? (
+                                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <ArrowPathIcon className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
+                          {item.signing_request_state_2 === 2 && item.consult_file && (
+                            <button
+                              onClick={() => handleDownloadConsultContract(item)}
+                              className="inline-flex items-center justify-center w-8 h-8 text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
+                              title="下载咨询协议"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -355,7 +512,6 @@ export default function AdmissionManagePage() {
                 {/* 每页显示数量选择器 */}
                 <select
                   value={pageSize}
-                  disabled
                   className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                 >
                   <option value={50}>50 条/页</option>

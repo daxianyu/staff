@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
@@ -9,6 +9,7 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   EyeIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import {
   getPaymentInfo,
@@ -18,6 +19,7 @@ import {
   sendRejectEmail,
   changeExamDate,
   changeSalesApply,
+  downloadPaymentInfo,
   type PaymentInfo,
   type PaymentDetail,
 } from '@/services/auth';
@@ -42,6 +44,9 @@ export default function PaymentInfoPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false); // 详情加载状态
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDay, setStartDay] = useState('');
+  const [endDay, setEndDay] = useState('');
+  const [downloading, setDownloading] = useState(false);
   
   // 模态框状态
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -66,11 +71,19 @@ export default function PaymentInfoPage() {
     );
   }
 
-  // 加载数据 - 一次性获取所有数据
-  const loadData = async () => {
+  // 加载数据 - 根据日期范围获取数据
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getPaymentInfo();
+      const params: { start_day?: string; end_day?: string } = {};
+      if (startDay) {
+        params.start_day = startDay;
+      }
+      if (endDay) {
+        params.end_day = endDay;
+      }
+      
+      const result = await getPaymentInfo(Object.keys(params).length > 0 ? params : undefined);
       if (result.code === 200 && result.data) {
         setPayments(result.data.rows || []);
       } else {
@@ -83,11 +96,11 @@ export default function PaymentInfoPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDay, endDay]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   // 前端搜索过滤
   const filteredPayments = useMemo(() => {
@@ -248,6 +261,58 @@ export default function PaymentInfoPage() {
     }
   };
 
+  // 下载支付报考信息
+  const handleDownload = async () => {
+    if (!startDay || !endDay) {
+      alert('请选择日期范围');
+      return;
+    }
+    
+    if (new Date(startDay) > new Date(endDay)) {
+      alert('开始日期不能大于结束日期');
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      const result = await downloadPaymentInfo({
+        start_day: startDay,
+        end_day: endDay,
+      });
+      
+      if (result.code === 200 && result.data) {
+        // 支持多种返回格式：file_url, url, file_path
+        const fileUrl = result.data.file_url || result.data.url || result.data.file_path;
+        
+        if (fileUrl) {
+          // 如果是相对路径，需要添加基础URL
+          const downloadUrl = fileUrl.startsWith('http') 
+            ? fileUrl 
+            : `https://www.huayaopudong.com${fileUrl}`;
+          
+          // 创建临时链接下载文件
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = `payment_info_${startDay}_${endDay}.csv`;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          alert('下载成功');
+        } else {
+          alert('下载失败: 未获取到文件链接');
+        }
+      } else {
+        alert('下载失败: ' + (result.message || '未知错误'));
+      }
+    } catch (error) {
+      console.error('下载失败:', error);
+      alert('下载失败');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -259,20 +324,64 @@ export default function PaymentInfoPage() {
 
         {/* 搜索栏 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            {/* 搜索框 */}
-            <div className="relative flex-1 w-full sm:w-auto">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="搜索学生姓名、销售ID、记录ID或校区..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+          <div className="flex flex-col gap-4">
+            {/* 第一行：搜索框和记录数 */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+              {/* 搜索框 */}
+              <div className="relative flex-1 w-full sm:w-auto">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="搜索学生姓名、销售ID、记录ID或校区..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="text-sm text-gray-600">
+                共 {filteredPayments.length} 条记录
+              </div>
             </div>
-            <div className="text-sm text-gray-600">
-              共 {filteredPayments.length} 条记录
+            
+            {/* 第二行：日期选择和下载按钮 */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <div className="flex flex-col sm:flex-row gap-4 items-center flex-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">开始日期:</label>
+                  <input
+                    type="date"
+                    value={startDay}
+                    onChange={(e) => setStartDay(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">结束日期:</label>
+                  <input
+                    type="date"
+                    value={endDay}
+                    onChange={(e) => setEndDay(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={handleDownload}
+                disabled={downloading || !startDay || !endDay}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {downloading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    下载中...
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                    下载支付报考信息
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
