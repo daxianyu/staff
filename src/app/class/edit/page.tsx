@@ -45,6 +45,19 @@ export default function ClassEditPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // 错误详情状态
+  const [errorDetail, setErrorDetail] = useState<{
+    class_student_dict?: Record<string, number>;
+    error_lesson?: Record<string, Array<{
+      subject_id: number;
+      start_time: number;
+      end_time: number;
+      class_id: number;
+    }>>;
+    student_flag?: number;
+    teacher_flag?: number;
+  } | null>(null);
 
   // 表单状态
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
@@ -98,7 +111,7 @@ export default function ClassEditPage() {
           return {
             ...student,
             name: studentInfo?.name || 'Unknown',
-            isTransfer: student.start_time !== -1 || student.end_time !== -1
+            isTransfer: student.start_time !== -1 && student.end_time !== -1
           };
         });
         setStudents(studentsWithNames);
@@ -151,6 +164,19 @@ export default function ClassEditPage() {
   const parseDate = (dateString: string): number => {
     if (!dateString) return -1;
     return Math.floor(new Date(dateString).getTime() / 1000);
+  };
+
+  // 格式化日期时间（用于错误详情显示）
+  const formatDateTime = (timestamp: number) => {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
   };
 
   // 学生管理
@@ -221,6 +247,15 @@ export default function ClassEditPage() {
         start_time: value ? parseDate('') : -1,
         end_time: value ? parseDate('') : -1
       };
+    } else if (field === 'start_time' || field === 'end_time') {
+      // 更新时间字段
+      const updatedStudent = {
+        ...newStudents[index],
+        [field]: value
+      };
+      // 自动更新 isTransfer 状态：只有当 start_time 和 end_time 都不为 -1 时才是插班生
+      updatedStudent.isTransfer = updatedStudent.start_time !== -1 && updatedStudent.end_time !== -1;
+      newStudents[index] = updatedStudent;
     } else {
       newStudents[index] = {
         ...newStudents[index],
@@ -361,7 +396,48 @@ export default function ClassEditPage() {
           setShowSuccess(false);
         }, 2000);
       } else {
-        setErrorMessage(response.message || '保存失败');
+        // 尝试解析错误详情
+        let errorData = null;
+        try {
+          if (typeof response.message === 'string') {
+            // 尝试解析JSON字符串
+            try {
+              errorData = JSON.parse(response.message);
+            } catch {
+              // 不是JSON，使用原始字符串
+              errorData = null;
+            }
+          } else if (typeof response.message === 'object' && response.message !== null) {
+            // 已经是对象
+            errorData = response.message;
+          }
+          
+          // 检查是否包含错误详情字段
+          if (errorData && (
+            errorData.class_student_dict || 
+            errorData.error_lesson || 
+            errorData.student_flag !== undefined || 
+            errorData.teacher_flag !== undefined
+          )) {
+            // 包含错误详情，显示详情弹框
+            setErrorDetail(errorData);
+            setErrorMessage('保存失败，存在冲突课程');
+          } else {
+            // 普通错误信息
+            const message = typeof response.message === 'string' 
+              ? response.message 
+              : JSON.stringify(response.message);
+            setErrorMessage(message || '保存失败');
+            setErrorDetail(null);
+          }
+        } catch (err) {
+          // 解析失败，使用普通错误提示
+          console.error('解析错误信息失败:', err);
+          setErrorMessage(typeof response.message === 'string' 
+            ? response.message 
+            : '保存失败');
+          setErrorDetail(null);
+        }
         setShowError(true);
       }
     } catch (error) {
@@ -884,6 +960,146 @@ export default function ClassEditPage() {
                   <p className="text-xs text-gray-500 mt-1">
                     已选择 {selectedStudentIds.length} 名学生
                   </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Detail Modal */}
+        {errorDetail && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mr-2" />
+                  保存失败 - 冲突详情
+                </h3>
+                <button
+                  onClick={() => {
+                    setErrorDetail(null);
+                    setShowError(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* 错误类型提示 */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                  <div className="flex items-start">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-yellow-800 mb-2">检测到以下冲突：</p>
+                      <ul className="text-sm text-yellow-700 space-y-1">
+                        {errorDetail.teacher_flag === 1 && (
+                          <li>• 老师课表存在冲突</li>
+                        )}
+                        {errorDetail.student_flag === 1 && (
+                          <li>• 学生课表存在冲突</li>
+                        )}
+                        {errorDetail.error_lesson && Object.keys(errorDetail.error_lesson).length > 0 && (
+                          <li>• 存在冲突的课程安排</li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Class列表 */}
+                {errorDetail.class_student_dict && Object.keys(errorDetail.class_student_dict).length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">相关Class列表：</h4>
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {Object.entries(errorDetail.class_student_dict).map(([studentId, classId]) => (
+                          <button
+                            key={`${studentId}-${classId}`}
+                            onClick={() => router.push(`/class/edit?id=${classId}`)}
+                            className="text-left px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                          >
+                            <div className="text-sm font-medium text-gray-900">Class ID: {classId}</div>
+                            <div className="text-xs text-gray-500">Student ID: {studentId}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 冲突课程详情 */}
+                {errorDetail.error_lesson && Object.keys(errorDetail.error_lesson).length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">冲突课程详情：</h4>
+                    <div className="space-y-4">
+                      {Object.entries(errorDetail.error_lesson).map(([subjectId, lessons]) => (
+                        <div key={subjectId} className="border border-gray-200 rounded-md p-4 bg-white">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="text-sm font-medium text-gray-900">
+                              Subject ID: {subjectId}
+                            </h5>
+                            <span className="text-xs text-gray-500">
+                              共 {lessons.length} 个冲突课程
+                            </span>
+                          </div>
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {lessons.map((lesson, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                              >
+                                <div className="flex-1">
+                                  <div className="text-xs text-gray-600 space-y-1">
+                                    <div>
+                                      <span className="font-medium">开始时间：</span>
+                                      {formatDateTime(lesson.start_time)}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">结束时间：</span>
+                                      {formatDateTime(lesson.end_time)}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Class ID：</span>
+                                      {lesson.class_id}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2 ml-4">
+                                  <button
+                                    onClick={() => router.push(`/class/edit?id=${lesson.class_id}`)}
+                                    className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                                  >
+                                    查看Class
+                                  </button>
+                                  <button
+                                    onClick={() => router.push(`/class/schedule?class_id=${lesson.class_id}`)}
+                                    className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded hover:bg-indigo-100 transition-colors"
+                                  >
+                                    查看课表
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setErrorDetail(null);
+                      setShowError(false);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    关闭
+                  </button>
                 </div>
               </div>
             </div>

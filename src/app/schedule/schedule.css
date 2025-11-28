@@ -234,3 +234,68 @@
 .rbc-time-view .rbc-time-gutter {
   text-align: left;
 }
+
+/* ===== 移动端横向滚动适配 ===== */
+
+/* 确保日历容器在移动端可以横向滚动 */
+@media (max-width: 640px) {
+  /* 周视图和日视图的最小宽度，确保内容不被压缩 */
+  .rbc-time-view {
+    min-width: 600px !important;
+  }
+  
+  /* 日期列的最小宽度 */
+  .rbc-day-slot {
+    min-width: 120px !important;
+  }
+  
+  /* 时间列保持固定宽度 */
+  .rbc-time-view .rbc-time-gutter {
+    width: 80px !important;
+    min-width: 80px !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* 日期头部的最小宽度 */
+  .rbc-header {
+    min-width: 120px !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* 确保时间内容区域可以横向滚动 */
+  .rbc-time-content {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* 时间头部也可以横向滚动 */
+  .rbc-time-header-content {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* 优化滚动条样式 */
+  .rbc-time-content::-webkit-scrollbar,
+  .rbc-time-header-content::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .rbc-time-content::-webkit-scrollbar-track,
+  .rbc-time-header-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+  
+  .rbc-time-content::-webkit-scrollbar-thumb,
+  .rbc-time-header-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  
+  .rbc-time-content::-webkit-scrollbar-thumb:hover,
+  .rbc-time-header-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}

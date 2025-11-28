@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BaseModal from './BaseModal';
 import { studentUniversityChange } from '@/services/modules/tools';
+import { getStudentList, type StudentInfo } from '@/services/auth';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import SearchableSelect from '@/components/SearchableSelect';
 
 interface StudentUniversityChangeModalProps {
   isOpen: boolean;
@@ -13,15 +15,48 @@ interface StudentUniversityChangeModalProps {
 export default function StudentUniversityChangeModal({ isOpen, onClose }: StudentUniversityChangeModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
+
+  // Student list state
+  const [studentList, setStudentList] = useState<{ id: number; name: string }[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
   const [formData, setFormData] = useState({
     student_id: 0,
     university_status: 0,
   });
 
+  // Load student list when modal opens
+  useEffect(() => {
+    if (isOpen && studentList.length === 0) {
+      loadStudents();
+    }
+  }, [isOpen]);
+
+  const loadStudents = async () => {
+    try {
+      setLoadingStudents(true);
+      // Get all students (including disabled ones if needed, or just active)
+      // Here we fetch active students by default (disabled=0)
+      const response = await getStudentList({ disabled: 0 });
+
+      if (response.code === 200) {
+        const listInfo = (response.data as any)?.list_info || [];
+        const formattedList = listInfo.map((student: StudentInfo) => ({
+          id: student.student_id,
+          name: `${student.student_name} (ID: ${student.student_id})`
+        }));
+        setStudentList(formattedList);
+      }
+    } catch (error) {
+      console.error('Failed to load students:', error);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.student_id || formData.university_status === 0) {
       setMessage({ type: 'error', text: '请填写所有必填字段' });
       return;
@@ -61,15 +96,16 @@ export default function StudentUniversityChangeModal({ isOpen, onClose }: Studen
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            学生ID <span className="text-red-500">*</span>
+            学生 <span className="text-red-500">*</span>
           </label>
-          <input
-            type="number"
-            value={formData.student_id || ''}
-            onChange={(e) => setFormData({ ...formData, student_id: Number(e.target.value) })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required
-            placeholder="请输入学生ID"
+          <SearchableSelect
+            options={studentList}
+            value={formData.student_id}
+            onValueChange={(val) => setFormData({ ...formData, student_id: Number(val) })}
+            placeholder={loadingStudents ? "加载中..." : "搜索并选择学生"}
+            searchPlaceholder="输入姓名或ID搜索..."
+            disabled={loadingStudents}
+            className="w-full"
           />
         </div>
 
@@ -90,9 +126,8 @@ export default function StudentUniversityChangeModal({ isOpen, onClose }: Studen
         </div>
 
         {message && (
-          <div className={`flex items-center gap-2 p-3 rounded-md ${
-            message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}>
+          <div className={`flex items-center gap-2 p-3 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+            }`}>
             {message.type === 'success' ? (
               <CheckCircleIcon className="h-5 w-5" />
             ) : (

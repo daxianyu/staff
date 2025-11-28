@@ -55,7 +55,7 @@ export default function ClassesPage() {
   
   // 分页和搜索状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(100);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,10 +102,11 @@ export default function ClassesPage() {
   const loadClasses = async (page?: number, search?: string, showDisable?: number, newPageSize?: number) => {
     try {
       setLoading(true);
+      const searchParam = search !== undefined ? search : searchQuery;
       const params: ClassListParams = {
         page: page !== undefined ? page : currentPage, // 后端页码从1开始
         page_size: newPageSize !== undefined ? newPageSize : pageSize,
-        search: search !== undefined ? search : searchQuery,
+        search: searchParam ? searchParam.trim() : '',
         show_disable: showDisable !== undefined ? showDisable : showDisabled,
       };
       
@@ -223,9 +224,10 @@ export default function ClassesPage() {
   };
 
   const handleSearch = async (query: string) => {
-    setSearchQuery(query);
+    const trimmedQuery = query.trim();
+    setSearchQuery(trimmedQuery);
     setCurrentPage(1);
-    await loadClasses(1, query, showDisabled);
+    await loadClasses(1, trimmedQuery, showDisabled);
   };
 
   const handlePageChange = async (page: number) => {
@@ -526,6 +528,7 @@ export default function ClassesPage() {
               <option value={10}>10 per page</option>
               <option value={20}>20 per page</option>
               <option value={50}>50 per page</option>
+              <option value={100}>100 per page</option>
             </select>
           </div>
         </div>
@@ -628,8 +631,8 @@ export default function ClassesPage() {
                   {classes.map((classItem) => (
                     <tr key={classItem.id} className="hover:bg-gray-50">
                       {/* Name */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="w-32 sm:w-48 lg:w-56 xl:w-64 text-sm font-medium text-gray-900 truncate" title={classItem.name}>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900 break-words max-w-md" title={classItem.name}>
                           {classItem.name}
                         </div>
                       </td>

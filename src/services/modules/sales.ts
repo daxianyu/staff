@@ -1115,11 +1115,11 @@ export const sendRejectEmail = async (recordId: number): Promise<ApiResponse<voi
 export const downloadPaymentInfo = async (params: {
   start_day: string;
   end_day: string;
-}): Promise<ApiResponse<{ file_url?: string; url?: string; file_path?: string }>> => {
+}): Promise<ApiResponse<string>> => {
   try {
     const queryString = buildQueryString(params);
     const url = `/api/sales/download_payment_info${queryString}`;
-    const { data } = await request<ApiEnvelope<{ file_url?: string; url?: string; file_path?: string }>>(url, {
+    const { data } = await request<ApiEnvelope<string>>(url, {
       method: 'GET',
     });
     return normalizeApiResponse(data);
@@ -1138,28 +1138,15 @@ export const downloadPaymentInfo = async (params: {
 export const checkContractStatus = async (checkUrl: string): Promise<ApiResponse<string>> => {
   try {
     // checkUrl 格式: /api/site/check_contract/<contract_id>/<version>/<file_type>
-    // 这个接口返回 JSON 格式: { status: 0, message: "...", data: "..." }
+    // 这个接口返回 JSON 格式: { status: 0, message: "...", data: "下载地址" } 或 { status: 1, ... }
     const { data } = await request<ApiEnvelope<string>>(checkUrl, {
       method: 'GET',
       auth: true, // 需要认证
     });
     
-    const normalized = normalizeApiResponse(data);
-    
-    // 如果返回成功且包含 "contract downloaded"，表示已签署
-    if (normalized.code === 200 && normalized.data && normalized.data.includes('contract downloaded')) {
-      return {
-        code: 200,
-        message: '合同已签署',
-        data: normalized.data,
-      };
-    } else {
-      return {
-        code: 400,
-        message: normalized.message || '合同未签署',
-        data: normalized.data,
-      };
-    }
+    // 直接返回原始状态，不做特殊处理
+    // status=0 表示有下载地址，status=1 表示没有
+    return normalizeApiResponse(data);
   } catch (error) {
     console.error('检查合同状态失败:', error);
     return {

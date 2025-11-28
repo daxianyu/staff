@@ -1,7 +1,8 @@
 'use client';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Calendar, momentLocalizer, Views, View } from 'react-big-calendar';
-import moment from 'moment';
+// import moment from 'moment';
+import moment from 'moment-timezone';
 import 'moment/locale/zh-cn';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './schedule.css';
@@ -17,6 +18,8 @@ import { PERMISSIONS } from '@/types/auth';
 import { type ScheduleEvent } from './hooks/useScheduleData';
 import { EventItem } from './components/EventItem';
 
+moment.tz.setDefault("Asia/Shanghai");
+// moment.tz.setDefault("UTC");
 moment.locale('zh-cn');
 const localizer = momentLocalizer(moment);
 
@@ -33,7 +36,7 @@ export default function SchedulePage() {
   const router = useRouter();
   
   const [view, setView] = useState<View>(Views.WEEK);
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState<moment.Moment>(moment());
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
 
@@ -47,23 +50,22 @@ export default function SchedulePage() {
 
   // week num（从 1970-01-01 + 偏移到周一）
   const weekNum = useMemo(() => {
-    const startEpoch = new Date(1970, 0, 1);
-    const diff = date.getTime() - startEpoch.getTime();
-    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-    const adjustedDays = days - 4; // align Monday
+    const startEpoch = moment('1970-01-01');
+    const diff = date.diff(startEpoch, 'days');
+    const adjustedDays = diff - 4; // align Monday
     return String(adjustedDays < 0 ? 0 : Math.floor(adjustedDays / 7));
   }, [date]);
 
   // 头部标题
   const title = useMemo(() => {
     if (view === Views.WEEK) {
-      const s = moment(date).startOf('week');
-      const e = moment(date).endOf('week');
+      const s = date.clone().startOf('week');
+      const e = date.clone().endOf('week');
       if (s.year() === e.year() && s.month() === e.month()) return `${s.format('YYYY年MM月DD日')} - ${e.format('DD日')}`;
       if (s.year() === e.year()) return `${s.format('YYYY年MM月DD日')} - ${e.format('MM月DD日')}`;
       return `${s.format('YYYY年MM月DD日')} - ${e.format('YYYY年MM月DD日')}`;
     }
-    return moment(date).format('YYYY年MM月DD日 dddd');
+    return date.format('YYYY年MM月DD日 dddd');
   }, [date, view]);
 
   // 拉取教室课表数据
@@ -75,12 +77,12 @@ export default function SchedulePage() {
       const resp = await getClassroomSchedule(roomId, weekNum);
       console.log('getClassroomSchedule response:', resp);
       if (resp.status === 200 && resp.data) {
-        // 转换课程数据为ScheduleEvent格式
+        // 转换课程数据为ScheduleEvent格式（使用默认时区：东八区）
         const lessonEvents: ScheduleEvent[] = resp.data.map((lesson: ClassroomLessonInfo) => ({
           id: `lesson_${lesson.id}`,
           title: lesson.subject_info.topic_name,
-          start: new Date(lesson.start_time * 1000),
-          end: new Date(lesson.end_time * 1000),
+          start: moment.unix(lesson.start_time).toDate(),
+          end: moment.unix(lesson.end_time).toDate(),
           type: 'lesson' as const,
           room_name: lesson.room_name,
           room_id: lesson.room_id,
@@ -122,8 +124,8 @@ export default function SchedulePage() {
   }, [fetchClassroomSchedule]);
 
   // RBC min/max：用当天时间
-  const dayMin = useMemo(() => moment(date).hour(9).minute(0).second(0).toDate(), [date]);
-  const dayMax = useMemo(() => moment(date).hour(22).minute(0).second(0).toDate(), [date]);
+  const dayMin = useMemo(() => date.clone().hour(9).minute(0).second(0).toDate(), [date]);
+  const dayMax = useMemo(() => date.clone().hour(22).minute(0).second(0).toDate(), [date]);
 
   // 点击事件处理 - 显示课程详细信息
   const handleSelectEvent = useCallback((event: ScheduleEvent) => {
@@ -135,17 +137,25 @@ export default function SchedulePage() {
   // 导航：只改日期
   const navigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
     setDate(prev => {
-      const d = new Date(prev);
-      if (action === 'PREV') d.setDate(prev.getDate() - (view === Views.WEEK ? 7 : 1));
-      if (action === 'NEXT') d.setDate(prev.getDate() + (view === Views.WEEK ? 7 : 1));
-      if (action === 'TODAY') return new Date();
+      const d = prev.clone();
+      if (action === 'PREV') {
+        if (view === Views.WEEK) {
+          d.subtract(7, 'days');
+        } else {
+          d.subtract(1, 'day');
+        }
+      } else if (action === 'NEXT') {
+        if (view === Views.WEEK) {
+          d.add(7, 'days');
+        } else {
+          d.add(1, 'day');
+        }
+      } else if (action === 'TODAY') {
+        return moment();
+      }
       return d;
     });
   }, [view]);
-
-
-
-
 
   // 样式
   const eventStyleGetter = useCallback((event: ScheduleEvent) => {
@@ -241,8 +251,8 @@ export default function SchedulePage() {
             style={{ padding: '0 20px 20px 20px' }}
             view={view}
             onView={setView}
-            date={date}
-            onNavigate={setDate}
+            date={date.toDate()}
+            onNavigate={(newDate) => setDate(moment(newDate))}
             onSelectEvent={handleSelectEvent}
             selectable={false}
             eventPropGetter={eventStyleGetter}

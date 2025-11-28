@@ -259,6 +259,13 @@ export const OPERATION_RIGHTS = {
   
   // 课时费晋升权限
   FEE_PROMOTION: 7,
+  
+  // 导师晋升权限
+  MENTOR_PROMOTION: 10,
+  
+  // 档案管理权限
+  ARCHIVES_MANAGEMENT_VIEW: 5,  // 查看权限
+  ARCHIVES_MANAGEMENT_EDIT: 6,  // 编辑权限
 } as const;
 
 // 预定义角色常量（向后兼容）

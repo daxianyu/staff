@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import 'moment/locale/zh-cn';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './schedule.css';
@@ -14,7 +14,8 @@ import { addStaffLesson, editStaffLesson, deleteStaffLesson, updateStaffUnavaila
   type UnavailableEventAPI, type AddLessonParams, type EditLessonParams, type DeleteLessonParams 
 } from '@/services/auth';
 
-// 设置中文
+// 设置默认时区和中文
+moment.tz.setDefault("Asia/Shanghai");
 moment.locale('zh-cn');
 const localizer = momentLocalizer(moment);
 
@@ -127,7 +128,7 @@ export default function SchedulePage() {
   const staffId = getCurrentStaffId();
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [view, setView] = useState<View>(Views.WEEK);
-  const [date, setDate] = useState(new Date()); // 默认显示当天
+  const [date, setDate] = useState<moment.Moment>(moment()); // 默认显示当天
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [modalPosition, setModalPosition] = useState<{ x: number; y: number; slideDirection?: 'left' | 'right' | 'center' }>();
@@ -208,13 +209,13 @@ export default function SchedulePage() {
       setScheduleData(resp.data);
       const allEvents: ScheduleEvent[] = [];
       
-      // 处理课程数据
+      // 处理课程数据（使用默认时区：东八区）
       if (Array.isArray(resp.data.lessons)) {
         const lessonEvents = resp.data.lessons.map((lesson: any) => ({
           id: String(lesson.lesson_id) || String(Math.random()),
           title: lesson.subject_name || '课程',
-          start: new Date(lesson.start_time * 1000),
-          end: new Date(lesson.end_time * 1000),
+          start: moment.unix(lesson.start_time).toDate(),
+          end: moment.unix(lesson.end_time).toDate(),
           // teacherId: lesson.teacherId || staffId,
           teacher: lesson.teacher || '',
           type: 'lesson' as const,
@@ -251,8 +252,8 @@ export default function SchedulePage() {
           return {
             id: `invigilate_${invigilate.id || String(Math.random())}`,
             title,
-            start: new Date(invigilate.start_time * 1000),
-            end: new Date(invigilate.end_time * 1000),
+            start: moment.unix(invigilate.start_time).toDate(),
+            end: moment.unix(invigilate.end_time).toDate(),
             type: 'invigilate' as const,
             topic_id: invigilate.topic_id || '', // 保存topic_id用于编辑
             note: invigilate.note || '', // 保存note用于编辑
@@ -267,8 +268,8 @@ export default function SchedulePage() {
       if (Array.isArray(resp.data.unavailable)) {
         // 转换时间段并合并重叠的时间段
         const timeRanges = resp.data.unavailable.map((unavailable: any) => ({
-          start: new Date(unavailable.start_time * 1000),
-          end: new Date(unavailable.end_time * 1000)
+          start: moment.unix(unavailable.start_time).toDate(),
+          end: moment.unix(unavailable.end_time).toDate()
         }));
         
         const mergedTimeRanges = mergeOverlappingTimeRanges(timeRanges);
@@ -375,7 +376,7 @@ export default function SchedulePage() {
     setSelectedDate(start);
     
     // 保存选中的时间范围，用于创建虚拟选中事件
-    const actualEnd = end || new Date(start.getTime() + 30 * 60 * 1000); // 默认30分钟
+    const actualEnd = end || moment(start).add(30, 'minutes').toDate(); // 默认30分钟
 
     // 新增：选区后立即检测重叠
     const conflicts = checkAllEventConflict(start, actualEnd);
@@ -515,37 +516,39 @@ export default function SchedulePage() {
           alert(`保存失败: ${response.message}`);
         }
       } else {
-        // 不可用事件 - 前端计算差值，全量更新
-        const startTime = start ? start.getTime() : 0;
-        const endTime = end ? end.getTime() : 0;
+        // 不可用事件 - 前端计算差值，全量更新（转换为秒级时间戳）
+        const startTime = start ? Math.floor(start.getTime() / 1000) : 0;
+        const endTime = end ? Math.floor(end.getTime() / 1000) : 0;
         let newTimeList: Array<{ start_time: number; end_time: number }> = [];
         
         if (repeat === 'weekly' && start && end) {
           // 周内重复：生成从当前日期开始到本周周五的所有工作日时间段
           const startMoment = moment(start);
-          const [startHour, startMin] = [start.getHours(), start.getMinutes()];
-          const [endHour, endMin] = [end.getHours(), end.getMinutes()];
+          const startHour = startMoment.hour();
+          const startMin = startMoment.minute();
+          const endHour = moment(end).hour();
+          const endMin = moment(end).minute();
           for (let d = startMoment.clone(); d.day() <= 5; d.add(1, 'day')) {
             if (d.day() === 0 || d.day() === 6) continue;
             const dayStart = d.clone().hour(startHour).minute(startMin).toDate();
             const dayEnd = d.clone().hour(endHour).minute(endMin).toDate();
             newTimeList.push({
-              start_time: dayStart.getTime(),
-              end_time: dayEnd.getTime()
+              start_time: Math.floor(dayStart.getTime() / 1000),
+              end_time: Math.floor(dayEnd.getTime() / 1000)
             });
           }
         } else {
-          // 不重复：只添加当前时间段
+          // 不重复：只添加当前时间段（已经是秒级时间戳）
           newTimeList.push({
             start_time: startTime,
             end_time: endTime
           });
         }
         
-        // 合并现有的不可用时间段
+        // 合并现有的不可用时间段（转换为秒级时间戳）
         const existingTimeList = unavailableTimeRanges.map(slot => ({
-          start_time: slot.start.getTime(),
-          end_time: slot.end.getTime()
+          start_time: Math.floor(slot.start.getTime() / 1000),
+          end_time: Math.floor(slot.end.getTime() / 1000)
         }));
         
         // 全量更新：现有时间段 + 新时间段
@@ -640,15 +643,15 @@ export default function SchedulePage() {
             const dayStart = d.clone().hour(newStartTime.hour()).minute(newStartTime.minute()).toDate();
             const dayEnd = d.clone().hour(newEndTime.hour()).minute(newEndTime.minute()).toDate();
             newTimeList.push({
-              start_time: dayStart.getTime(),
-              end_time: dayEnd.getTime()
+              start_time: Math.floor(dayStart.getTime() / 1000),
+              end_time: Math.floor(dayEnd.getTime() / 1000)
             });
           }
         } else {
-          // 不重复：只更新当前时间段
+          // 不重复：只更新当前时间段（转换为秒级时间戳）
           newTimeList.push({
-            start_time: newStartTime.toDate().getTime(),
-            end_time: newEndTime.toDate().getTime()
+            start_time: Math.floor(newStartTime.toDate().getTime() / 1000),
+            end_time: Math.floor(newEndTime.toDate().getTime() / 1000)
           });
         }
         
@@ -667,8 +670,8 @@ export default function SchedulePage() {
             return !isRelated;
           })
           .map(slot => ({
-            start_time: slot.start.getTime(),
-            end_time: slot.end.getTime()
+            start_time: Math.floor(slot.start.getTime() / 1000),
+            end_time: Math.floor(slot.end.getTime() / 1000)
           }));
         
         // 全量更新：过滤后的现有时间段 + 新时间段
@@ -746,8 +749,8 @@ export default function SchedulePage() {
             return !isRelated;
           })
           .map(slot => ({
-            start_time: slot.start.getTime(),
-            end_time: slot.end.getTime()
+            start_time: Math.floor(slot.start.getTime() / 1000),
+            end_time: Math.floor(slot.end.getTime() / 1000)
           }));
         
         const response = await updateStaffUnavailable(staffId, {
@@ -865,14 +868,13 @@ export default function SchedulePage() {
   }, [events, selectedTimeRange]);
 
   // 获取当前周编号（从1970年1月1日开始的周数，以周一为每周第一天）
-  function getWeekNum(date: Date) {
-    const start = new Date(1970, 0, 1); // 1970年1月1日
-    const diff = date.getTime() - start.getTime();
-    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+  function getWeekNum(date: moment.Moment) {
+    const start = moment('1970-01-01');
+    const diff = date.diff(start, 'days');
     
     // 1970年1月1日是周四，我们需要调整到周一
     // 后端逻辑：减去4天，前端保持一致
-    const adjustedDays = days - 4;
+    const adjustedDays = diff - 4;
     
     // 如果调整后的天数小于0，说明在第一周内
     if (adjustedDays < 0) {
@@ -884,25 +886,25 @@ export default function SchedulePage() {
 
   // 导航函数
   const navigate = useCallback(async (action: 'PREV' | 'NEXT' | 'TODAY') => {
-    let newDate = new Date(date);
+    let newDate = date.clone();
 
     switch (action) {
       case 'PREV':
         if (view === Views.WEEK) {
-          newDate.setDate(date.getDate() - 7);
+          newDate.subtract(7, 'days');
         } else if (view === Views.DAY) {
-          newDate.setDate(date.getDate() - 1);
+          newDate.subtract(1, 'day');
         }
         break;
       case 'NEXT':
         if (view === Views.WEEK) {
-          newDate.setDate(date.getDate() + 7);
+          newDate.add(7, 'days');
         } else if (view === Views.DAY) {
-          newDate.setDate(date.getDate() + 1);
+          newDate.add(1, 'day');
         }
         break;
       case 'TODAY':
-        newDate = new Date();
+        newDate = moment();
         break;
     }
 
@@ -919,8 +921,8 @@ export default function SchedulePage() {
   // 格式化日期标题
   const getDateTitle = useCallback(() => {
     if (view === Views.WEEK) {
-      const start = moment(date).startOf('week');
-      const end = moment(date).endOf('week');
+      const start = date.clone().startOf('week');
+      const end = date.clone().endOf('week');
       if (start.year() === end.year() && start.month() === end.month()) {
         return `${start.format('YYYY年MM月DD日')} - ${end.format('DD日')}`;
       } else if (start.year() === end.year()) {
@@ -929,7 +931,7 @@ export default function SchedulePage() {
         return `${start.format('YYYY年MM月DD日')} - ${end.format('YYYY年MM月DD日')}`;
       }
     } else if (view === Views.DAY) {
-      return moment(date).format('YYYY年MM月DD日 dddd');
+      return date.format('YYYY年MM月DD日 dddd');
     }
     return '';
   }, [date, view]);
@@ -1167,10 +1169,10 @@ export default function SchedulePage() {
       </div>
 
       {/* 日历主体 */}
-      <div className="flex-1 pt-3 sm:pt-6">
+      <div className="flex-1 pt-3 sm:pt-6 overflow-x-auto">
         <div 
           ref={calendarRef} 
-          className="bg-white rounded-lg shadow-sm border border-gray-200"
+          className="bg-white rounded-lg shadow-sm border border-gray-200 min-w-[600px] sm:min-w-0"
         >
           {/* 日期导航和标题 */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -1213,12 +1215,13 @@ export default function SchedulePage() {
             startAccessor="start"
             endAccessor="end"
             style={{ 
-              padding: '0 20px 20px 20px'
+              padding: '0 20px 20px 20px',
+              minWidth: '600px'
             }}
             view={view}
             onView={setView}
-            date={date}
-            onNavigate={setDate}
+            date={date.toDate()}
+            onNavigate={(newDate) => setDate(moment(newDate))}
             onSelectSlot={handleSelectSlot}
             onSelectEvent={handleSelectEvent}
             selectable={!isClosingModal}
@@ -1309,8 +1312,6 @@ export default function SchedulePage() {
           }}
         />
       )}
-      
-
     </div>
   );
 } 

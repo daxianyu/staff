@@ -44,7 +44,7 @@ export default function TeacherMonthlyHoursPage() {
   });
   const [selectedCampus, setSelectedCampus] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(1000);
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_TEACHER_MONTHLY_HOURS) || hasPermission('finance') || hasPermission('core_admin');
@@ -95,7 +95,7 @@ export default function TeacherMonthlyHoursPage() {
     const options = [];
     const now = new Date();
     
-    for (let i = -12; i <= 0; i++) {
+    for (let i = -12; i <= 6; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
@@ -377,10 +377,9 @@ export default function TeacherMonthlyHoursPage() {
                     onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                     className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
                     <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={1000}>1000</option>
                   </select>
                 </div>
 

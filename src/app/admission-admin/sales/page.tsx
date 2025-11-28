@@ -220,28 +220,34 @@ export default function AdmissionManagePage() {
     setCheckingContracts(prev => new Map(prev).set(item.sales_id, 'service'));
     try {
       const result = await checkContractStatus(item.service_tail);
-      if (result.code === 200) {
-        // 检查成功，重新获取该记录的数据
-        const refreshResult = await getSalesInfo(item.sales_id);
-        if (refreshResult.code === 200 && refreshResult.data) {
-          const updatedInfo = refreshResult.data;
-          
-          // 更新列表中的数据
-          setSales(prev => prev.map(s => {
-            if (s.sales_id === item.sales_id) {
-              return {
-                ...s,
-                signing_request_state: updatedInfo.info?.signing_request_state || s.signing_request_state,
-                service_file: updatedInfo.service_file || s.service_file,
-              };
-            }
-            return s;
-          }));
-          
-          alert('合同状态已更新');
-        }
+      // status=0 (code=200) 且有 data，直接赋值并更新状态为 2
+      if (result.code === 200 && result.data) {
+        const downloadUrl = result.data.startsWith('http') 
+          ? result.data 
+          : `https://www.huayaopudong.com${result.data}`;
+        
+        // 更新列表中的数据：赋值下载地址，状态改为 2
+        setSales(prev => prev.map(s => {
+          if (s.sales_id === item.sales_id) {
+            return {
+              ...s,
+              signing_request_state: 2,
+              service_file: downloadUrl,
+            };
+          }
+          return s;
+        }));
       } else {
-        alert('检查合同状态失败: ' + result.message);
+        // status=1 (code=400)，更新状态为 1
+        setSales(prev => prev.map(s => {
+          if (s.sales_id === item.sales_id) {
+            return {
+              ...s,
+              signing_request_state: 1,
+            };
+          }
+          return s;
+        }));
       }
     } catch (err) {
       console.error('检查服务协议状态失败:', err);
@@ -262,28 +268,34 @@ export default function AdmissionManagePage() {
     setCheckingContracts(prev => new Map(prev).set(item.sales_id, 'consult'));
     try {
       const result = await checkContractStatus(item.consult_tail);
-      if (result.code === 200) {
-        // 检查成功，重新获取该记录的数据
-        const refreshResult = await getSalesInfo(item.sales_id);
-        if (refreshResult.code === 200 && refreshResult.data) {
-          const updatedInfo = refreshResult.data;
-          
-          // 更新列表中的数据
-          setSales(prev => prev.map(s => {
-            if (s.sales_id === item.sales_id) {
-              return {
-                ...s,
-                signing_request_state_2: updatedInfo.info?.signing_request_state_2 || s.signing_request_state_2,
-                consult_file: updatedInfo.consult_file || s.consult_file,
-              };
-            }
-            return s;
-          }));
-          
-          alert('合同状态已更新');
-        }
+      // status=0 (code=200) 且有 data，直接赋值并更新状态为 2
+      if (result.code === 200 && result.data) {
+        const downloadUrl = result.data.startsWith('http') 
+          ? result.data 
+          : `https://www.huayaopudong.com${result.data}`;
+        
+        // 更新列表中的数据：赋值下载地址，状态改为 2
+        setSales(prev => prev.map(s => {
+          if (s.sales_id === item.sales_id) {
+            return {
+              ...s,
+              signing_request_state_2: 2,
+              consult_file: downloadUrl,
+            };
+          }
+          return s;
+        }));
       } else {
-        alert('检查合同状态失败: ' + result.message);
+        // status=1 (code=400)，更新状态为 1
+        setSales(prev => prev.map(s => {
+          if (s.sales_id === item.sales_id) {
+            return {
+              ...s,
+              signing_request_state_2: 1,
+            };
+          }
+          return s;
+        }));
       }
     } catch (err) {
       console.error('检查咨询协议状态失败:', err);
@@ -381,14 +393,14 @@ export default function AdmissionManagePage() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales person</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Channel</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operation</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50">Operation</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedSales.map((item, index) => {
                     const globalIndex = (currentPage - 1) * pageSize + index;
                     return (
-                      <tr key={item.sales_id || item.id || `sales-${globalIndex}`} className="hover:bg-gray-50 transition-colors">
+                      <tr key={item.sales_id || item.id || `sales-${globalIndex}`} className="hover:bg-gray-50 transition-colors group">
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                           {globalIndex + 1}
                         </td>
@@ -413,8 +425,8 @@ export default function AdmissionManagePage() {
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {item.channel_name || '-'}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-2">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white group-hover:bg-gray-50">
+                        <div className="flex items-center gap-2 justify-end">
                           {canEdit && (
                             <button
                               onClick={() => handleEdit(item)}

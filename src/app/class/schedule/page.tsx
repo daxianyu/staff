@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Calendar, momentLocalizer, Views, View } from 'react-big-calendar';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import 'moment/locale/zh-cn';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './schedule.css';
@@ -22,6 +22,7 @@ import { UnavailableStrategy } from './strategies/unavailable';
 import { LessonStrategy } from './strategies/lesson';
 import type { EventTypeStrategy } from './strategies/types';
 
+moment.tz.setDefault("Asia/Shanghai");
 moment.locale('zh-cn');
 const localizer = momentLocalizer(moment);
 
@@ -44,7 +45,7 @@ export default function SchedulePage() {
   const classId = getCurrentClassId();
   
   const [view, setView] = useState<View>(Views.WEEK);
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState<moment.Moment>(moment());
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTimeRange, setSelectedTimeRange] = useState<{ start: Date; end: Date } | null>(null);
@@ -73,23 +74,22 @@ export default function SchedulePage() {
 
   // week num（从 1970-01-01 + 偏移到周一）
   const weekNum = useMemo(() => {
-    const startEpoch = new Date(1970, 0, 1);
-    const diff = date.getTime() - startEpoch.getTime();
-    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-    const adjustedDays = days - 4; // align Monday
+    const startEpoch = moment('1970-01-01');
+    const diff = date.diff(startEpoch, 'days');
+    const adjustedDays = diff - 4; // align Monday
     return String(adjustedDays < 0 ? 0 : Math.floor(adjustedDays / 7));
   }, [date]);
 
   // 头部标题
   const title = useMemo(() => {
     if (view === Views.WEEK) {
-      const s = moment(date).startOf('week');
-      const e = moment(date).endOf('week');
+      const s = date.clone().startOf('week');
+      const e = date.clone().endOf('week');
       if (s.year() === e.year() && s.month() === e.month()) return `${s.format('YYYY年MM月DD日')} - ${e.format('DD日')}`;
       if (s.year() === e.year()) return `${s.format('YYYY年MM月DD日')} - ${e.format('MM月DD日')}`;
       return `${s.format('YYYY年MM月DD日')} - ${e.format('YYYY年MM月DD日')}`;
     }
-    return moment(date).format('YYYY年MM月DD日 dddd');
+    return date.format('YYYY年MM月DD日 dddd');
   }, [date, view]);
 
   // 拉取班级课表数据
@@ -106,12 +106,12 @@ export default function SchedulePage() {
       if (resp.status === 200 && resp.data) {
         setClassInfo(resp.data);
         
-        // 转换课程数据为ScheduleEvent格式
+        // 转换课程数据为ScheduleEvent格式（使用默认时区：东八区）
         const lessonEvents: ScheduleEvent[] = resp.data.lessons.map((lesson: ClassScheduleLesson) => ({
           id: `lesson_${lesson.id}`,
           title: lesson.topic_name,
-          start: new Date(lesson.start_time * 1000),
-          end: new Date(lesson.end_time * 1000),
+          start: moment.unix(lesson.start_time).toDate(),
+          end: moment.unix(lesson.end_time).toDate(),
           type: 'lesson' as const,
           room_name: lesson.room_name,
           room_id: lesson.room_id,
@@ -126,8 +126,8 @@ export default function SchedulePage() {
         // 解析 lesson_data 为占用的时间范围
         if (resp.data.lesson_data && resp.data.lesson_data.length > 0) {
           const occupied = resp.data.lesson_data.map(ld => ({
-            start: new Date(ld.start_time * 1000),
-            end: new Date(ld.end_time * 1000)
+            start: moment.unix(ld.start_time).toDate(),
+            end: moment.unix(ld.end_time).toDate()
           }));
           console.log('Parsed occupied ranges from lesson_data:', occupied);
           setOccupiedRanges(occupied);
@@ -173,16 +173,13 @@ export default function SchedulePage() {
       console.log('Found date columns:', dateColumns.length);
       
       // 获取当前周的日期信息
-      const currentDate = new Date(date);
-      const startOfWeek = new Date(currentDate);
-      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1); // 周一
+      const startOfWeek = date.clone().startOf('week');
       
       // 为每个日期列匹配对应的日期
       dateColumns.forEach((column, colIndex) => {
-        const columnDate = new Date(startOfWeek);
-        columnDate.setDate(startOfWeek.getDate() + colIndex);
+        const columnDate = startOfWeek.clone().add(colIndex, 'days');
         
-        console.log(`Column ${colIndex} represents date: ${columnDate.toDateString()}`);
+        console.log(`Column ${colIndex} represents date: ${columnDate.format('YYYY-MM-DD')}`);
         
         // 在这个日期列中查找时间槽
         const slots = column.querySelectorAll('.rbc-time-slot');
@@ -204,14 +201,14 @@ export default function SchedulePage() {
           if (hour >= 9 && hour < 22) {
             // 检查这个时间槽是否在占用范围内
             occupiedRanges.forEach(range => {
-              const rangeDate = new Date(range.start);
-              const rangeHour = range.start.getHours();
-              const rangeMin = range.start.getMinutes();
-              const rangeEndHour = range.end.getHours();
-              const rangeEndMin = range.end.getMinutes();
+              const rangeMoment = moment(range.start);
+              const rangeHour = rangeMoment.hour();
+              const rangeMin = rangeMoment.minute();
+              const rangeEndHour = moment(range.end).hour();
+              const rangeEndMin = moment(range.end).minute();
               
               // 检查日期是否匹配
-              const isSameDate = columnDate.toDateString() === rangeDate.toDateString();
+              const isSameDate = columnDate.isSame(rangeMoment, 'day');
               
               if (isSameDate) {
                 const slotStart = hour * 60 + minute;
@@ -219,7 +216,7 @@ export default function SchedulePage() {
                 const rangeStart = rangeHour * 60 + rangeMin;
                 const rangeEnd = rangeEndHour * 60 + rangeEndMin;
                 
-                console.log(`Checking slot ${hour}:${minute} (${slotStart}-${slotEnd}) on ${columnDate.toDateString()}, Range: ${rangeStart}-${rangeEnd}`);
+                console.log(`Checking slot ${hour}:${minute} (${slotStart}-${slotEnd}) on ${columnDate.format('YYYY-MM-DD')}, Range: ${rangeStart}-${rangeEnd}`);
                 
                 // 如果时间槽与占用范围有重叠，添加样式
                 if (slotStart < rangeEnd && slotEnd > rangeStart) {
@@ -244,8 +241,8 @@ export default function SchedulePage() {
   }, [fetchClassSchedule]);
 
   // RBC min/max：用当天时间
-  const dayMin = useMemo(() => moment(date).hour(9).minute(0).second(0).toDate(), [date]);
-  const dayMax = useMemo(() => moment(date).hour(22).minute(0).second(0).toDate(), [date]);
+  const dayMin = useMemo(() => date.clone().hour(9).minute(0).second(0).toDate(), [date]);
+  const dayMax = useMemo(() => date.clone().hour(22).minute(0).second(0).toDate(), [date]);
 
   // 冲突检查：课程和占用时间范围
   const hasConflict = useCallback((start: Date, end: Date) => {
@@ -280,7 +277,7 @@ export default function SchedulePage() {
   const handleSelectSlot = useCallback(
     ({ start, end, box }: any) => {
       setShowEditModal(false);
-      const actualEnd = end || new Date(start.getTime() + 30 * 60 * 1000);
+      const actualEnd = end || moment(start).add(30, 'minutes').toDate();
       if (hasConflict(start, actualEnd)) {
         alert('所选时间段与已有课程或占用时间重叠！');
         return;
@@ -311,10 +308,22 @@ export default function SchedulePage() {
   // 导航：只改日期
   const navigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
     setDate(prev => {
-      const d = new Date(prev);
-      if (action === 'PREV') d.setDate(prev.getDate() - (view === Views.WEEK ? 7 : 1));
-      if (action === 'NEXT') d.setDate(prev.getDate() + (view === Views.WEEK ? 7 : 1));
-      if (action === 'TODAY') return new Date();
+      const d = prev.clone();
+      if (action === 'PREV') {
+        if (view === Views.WEEK) {
+          d.subtract(7, 'days');
+        } else {
+          d.subtract(1, 'day');
+        }
+      } else if (action === 'NEXT') {
+        if (view === Views.WEEK) {
+          d.add(7, 'days');
+        } else {
+          d.add(1, 'day');
+        }
+      } else if (action === 'TODAY') {
+        return moment();
+      }
       return d;
     });
   }, [view]);
@@ -438,8 +447,8 @@ export default function SchedulePage() {
             style={{ padding: '0 20px 20px 20px' }}
             view={view}
             onView={setView}
-            date={date}
-            onNavigate={setDate}
+            date={date.toDate()}
+            onNavigate={(newDate) => setDate(moment(newDate))}
             onSelectSlot={handleSelectSlot}
             onSelectEvent={handleSelectEvent}
             selectable={!isClosingModal}
@@ -539,7 +548,7 @@ export default function SchedulePage() {
         api={{
           classId,
           weekNum,
-          date,
+          date: date.toDate(),
           addClassLesson: (p: any) => addClassLesson(p),
           editClassLesson: (p: any) => editClassLesson({ record_id: p.record_id, start_time: p.start_time, end_time: p.end_time, room_id: p.room_id, repeat_num: p.repeat_num } as any),
           deleteClassLesson: (p: any) => deleteClassLesson({ record_id: p.record_id, repeat_num: p.repeat_num } as any)
@@ -573,7 +582,7 @@ export default function SchedulePage() {
           api={{
             classId,
             weekNum,
-            date,
+            date: date.toDate(),
             addClassLesson: (p: any) => addClassLesson(p),
             editClassLesson: (p: any) => editClassLesson({ record_id: p.record_id, start_time: p.start_time, end_time: p.end_time, room_id: p.room_id, repeat_num: p.repeat_num } as any),
             deleteClassLesson: (p: any) => deleteClassLesson({ record_id: p.record_id, repeat_num: p.repeat_num } as any)

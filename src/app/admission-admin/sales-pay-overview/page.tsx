@@ -281,19 +281,21 @@ export default function PaymentInfoPage() {
       });
       
       if (result.code === 200 && result.data) {
-        // 支持多种返回格式：file_url, url, file_path
-        const fileUrl = result.data.file_url || result.data.url || result.data.file_path;
+        // result.data 是字符串路径，例如：/static/gen_path/payment_info_2025-11-19_2025-11-20_1763638375.csv
+        const filePath = typeof result.data === 'string' ? result.data : '';
         
-        if (fileUrl) {
+        if (filePath) {
           // 如果是相对路径，需要添加基础URL
-          const downloadUrl = fileUrl.startsWith('http') 
-            ? fileUrl 
-            : `https://www.huayaopudong.com${fileUrl}`;
+          const downloadUrl = filePath.startsWith('http') 
+            ? filePath 
+            : `https://www.huayaopudong.com${filePath}`;
           
           // 创建临时链接下载文件
           const link = document.createElement('a');
           link.href = downloadUrl;
-          link.download = `payment_info_${startDay}_${endDay}.csv`;
+          // 从文件路径中提取文件名，如果没有则使用默认名称
+          const fileName = filePath.split('/').pop() || `payment_info_${startDay}_${endDay}.csv`;
+          link.download = fileName;
           link.target = '_blank';
           document.body.appendChild(link);
           link.click();

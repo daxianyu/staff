@@ -1094,7 +1094,7 @@ export const defaultMenuConfig: MenuItem[] = [
     key: 'core',
     label: 'Core',
     icon: 'settings',
-    requiredPermissions: [PERMISSIONS.VIEW_CORE_RECORD],
+    // requiredPermissions: [PERMISSIONS.VIEW_CORE_RECORD],
     children: [
       {
         key: 'core-record',

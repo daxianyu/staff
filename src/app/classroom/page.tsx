@@ -514,8 +514,8 @@ export default function ClassroomPage() {
                       onChange={(e) => handleInputChange('flag', Number(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value={1}>参与AI排课</option>
-                      <option value={0}>不参与AI排课</option>
+                      <option value={0}>参与AI排课</option>
+                      <option value={1}>不参与AI排课</option>
                     </select>
                   </div>
                   

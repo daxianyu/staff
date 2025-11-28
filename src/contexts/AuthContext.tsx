@@ -195,6 +195,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return operationRights.includes(OPERATION_RIGHTS.FEE_PROMOTION);
     }
     
+    // 需要 operation_right为10 或 core_user=1 的权限（导师晋升）
+    const mentorPromotionPermissions = [
+      PERMISSIONS.VIEW_PROMOTION,
+      PERMISSIONS.EDIT_PROMOTION,
+    ];
+    if (mentorPromotionPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.MENTOR_PROMOTION);
+    }
+    
     // 需要 sales_core=1 或 core_user=1 的权限
     const salesCorePermissions = [
       PERMISSIONS.MANAGE_INTERVIEW_CONFIG,
@@ -212,6 +221,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ];
     if (toolUserPermissions.includes(permission as any)) {
       return (user as any).tool_user === true || (user as any).tool_user === 1;
+    }
+    
+    // 档案管理权限
+    const archivesViewPermissions = [
+      PERMISSIONS.VIEW_ARCHIVES,
+    ];
+    const archivesEditPermissions = [
+      PERMISSIONS.EDIT_ARCHIVES,
+    ];
+    
+    if (archivesViewPermissions.includes(permission as any)) {
+      // 查看列表：operation_right为6 or operation_right为5 or mentor_leader为真 or core_user为真
+      const mentorLeader = (user as any).mentor_leader === true || (user as any).mentor_leader === 1;
+      return operationRights.includes(OPERATION_RIGHTS.ARCHIVES_MANAGEMENT_EDIT) ||
+             operationRights.includes(OPERATION_RIGHTS.ARCHIVES_MANAGEMENT_VIEW) ||
+             mentorLeader ||
+             isCoreUser;
+    }
+    
+    if (archivesEditPermissions.includes(permission as any)) {
+      // 编辑：operation_right为6 or core_user为真
+      return operationRights.includes(OPERATION_RIGHTS.ARCHIVES_MANAGEMENT_EDIT) || isCoreUser;
     }
     
     // 基础权限 - 所有staff用户都可以访问
