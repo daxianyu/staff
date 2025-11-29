@@ -19,6 +19,7 @@ interface SearchableSelectProps {
   className?: string;
   disabled?: boolean;
   multiple?: boolean;
+  onSearch?: (value: string) => void;
 }
 
 export default function SearchableSelect({
@@ -29,18 +30,19 @@ export default function SearchableSelect({
   searchPlaceholder = "搜索...",
   className = "",
   disabled = false,
-  multiple = false
+  multiple = false,
+  onSearch
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // 统一在运行时把可能的字符串 ID 转为 number
   const toNum = (v: unknown): number => {
-    const n = Number(v as any);
+    const n = Number(v);
     return Number.isNaN(n) ? (v as number) : n;
   };
 
   // 当前选中项
-  const selectedOptions = multiple 
+  const selectedOptions = multiple
     ? options.filter(option => (value as number[]).includes(toNum(option.id)))
     : options.find(option => toNum(option.id) === toNum(value as number));
 
@@ -103,7 +105,7 @@ export default function SearchableSelect({
                   const maxDisplay = 3;
                   const displayOptions = selected.slice(0, maxDisplay);
                   const remainingCount = selected.length - maxDisplay;
-                  
+
                   return (
                     <>
                       {displayOptions.map(option => (
@@ -155,21 +157,22 @@ export default function SearchableSelect({
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <Command className="w-full">
+          <Command className="w-full" shouldFilter={!onSearch}>
             <Command.Input
               placeholder={searchPlaceholder}
               className="w-full px-3 py-2 text-sm border-b border-gray-200 focus:outline-none bg-transparent"
               autoFocus
+              onValueChange={onSearch}
             />
             <Command.List className="max-h-64 overflow-auto p-1">
               <Command.Empty className="px-3 py-2 text-sm text-gray-500 text-center">
                 没有找到匹配项
               </Command.Empty>
               {options.map((option) => {
-                const isSelected = multiple 
+                const isSelected = multiple
                   ? (value as number[]).includes(toNum(option.id))
                   : toNum(option.id) === toNum(value as number);
-                
+
                 return (
                   <Command.Item
                     key={toNum(option.id)}
