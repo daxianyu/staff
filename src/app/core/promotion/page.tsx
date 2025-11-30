@@ -269,13 +269,14 @@ export default function PromotionPage() {
     }
   };
 
-  const handleDownloadMentorRecommendation = async (recordId: number, type: 'mentor' | 'teacher') => {
+  const handleDownloadMentorRecommendation = async (recordId: number, type: '1' | '2') => {
     setDownloadingMentorId(recordId);
     try {
       await downloadMentorRecommendation({ record_id: recordId, type });
+      // 下载成功提示（如果需要）
     } catch (error) {
       console.error('下载失败:', error);
-      alert('下载失败');
+      alert(error instanceof Error ? error.message : '下载失败');
     } finally {
       setDownloadingMentorId(null);
     }
@@ -453,14 +454,14 @@ export default function PromotionPage() {
                                     </button>
                                   )}
                                   <button
-                                    onClick={() => handleDownloadMentorRecommendation(record.record_id, 'mentor')}
+                                    onClick={() => handleDownloadMentorRecommendation(record.record_id, '1')}
                                     disabled={downloadingMentorId === record.record_id}
                                     className="text-blue-600 hover:text-blue-900 disabled:opacity-50 text-xs"
                                   >
                                     导师推荐表
                                   </button>
                                   <button
-                                    onClick={() => handleDownloadMentorRecommendation(record.record_id, 'teacher')}
+                                    onClick={() => handleDownloadMentorRecommendation(record.record_id, '2')}
                                     disabled={downloadingMentorId === record.record_id}
                                     className="text-blue-600 hover:text-blue-900 disabled:opacity-50 text-xs"
                                   >

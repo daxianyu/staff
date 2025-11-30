@@ -7,12 +7,12 @@ import { MenuItem, UserInfo } from '@/types/permission';
 export class MenuFilter {
   private userRights: string[];
   private user: UserInfo | null;
-  
+
   constructor(userRights: string[], user: UserInfo | null) {
     this.userRights = userRights;
     this.user = user;
   }
-  
+
   /**
    * 检查用户是否有权限访问菜单项
    * @param menuItem 菜单项
@@ -20,35 +20,35 @@ export class MenuFilter {
    */
   private hasPermission(menuItem: MenuItem): boolean {
     const { requiredPermissions, requiredAllPermissions } = menuItem;
-    
+
     // 没有权限要求，允许访问
     if (!requiredPermissions && !requiredAllPermissions) {
       return true;
     }
-    
+
     // 检查 requiredPermissions (任意一个满足)
     if (requiredPermissions && requiredPermissions.length > 0) {
-      const hasAnyPermission = requiredPermissions.some(permission => 
+      const hasAnyPermission = requiredPermissions.some(permission =>
         this.checkPermission(permission)
       );
       if (!hasAnyPermission) {
         return false;
       }
     }
-    
+
     // 检查 requiredAllPermissions (全部满足)
     if (requiredAllPermissions && requiredAllPermissions.length > 0) {
-      const hasAllPermissions = requiredAllPermissions.every(permission => 
+      const hasAllPermissions = requiredAllPermissions.every(permission =>
         this.checkPermission(permission)
       );
       if (!hasAllPermissions) {
         return false;
       }
     }
-    
+
     return true;
   }
-  
+
   /**
    * 检查单个权限（使用新的权限逻辑）
    * @param permission 权限字符串
@@ -56,18 +56,18 @@ export class MenuFilter {
    */
   private checkPermission(permission: string): boolean {
     if (!this.user) return false;
-    
+
     // 根据权限文档检查特殊权限
     // 兼容后端返回 core_user 为字符串/数字/布尔
     const isCoreUser = Number((this.user as any).core_user) === 1 || (this.user as any).core_user === true;
     const operationRights = Array.isArray(this.user.operation_right) ? this.user.operation_right : [];
-    
+
     // 核心用户拥有所有权限
     if (isCoreUser) return true;
-    
+
     // 检查基础权限（字符串权限）
     if (this.userRights.includes(permission)) return true;
-    
+
     // 需要 operation_right为11 或 core_user=1 的权限
     const withdrawalPermissions = [
       PERMISSIONS.VIEW_WITHDRAWAL_OVERVIEW,
@@ -80,7 +80,7 @@ export class MenuFilter {
     if (withdrawalPermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.WITHDRAWAL_MANAGEMENT);
     }
-    
+
     // 需要 operation_right为13 或 core_user=1 的权限
     const polishPermissions = [
       PERMISSIONS.VIEW_PS_POLISH,
@@ -89,7 +89,7 @@ export class MenuFilter {
     if (polishPermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.PS_POLISH);
     }
-    
+
     // 需要 operation_right为16 或 core_user=1 的权限
     const cardPermissions = [
       PERMISSIONS.VIEW_CARD_BIND,
@@ -100,7 +100,7 @@ export class MenuFilter {
     if (cardPermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.CARD_MANAGEMENT);
     }
-    
+
     // 需要 operation_right为17 或 core_user=1 的权限
     const weekendPlanPermissions = [
       PERMISSIONS.VIEW_WEEKEND_PLAN,
@@ -109,7 +109,7 @@ export class MenuFilter {
     if (weekendPlanPermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.WEEKEND_PLAN);
     }
-    
+
     // 需要 operation_right为21 或 core_user=1 的权限
     const warningPermissions = [
       PERMISSIONS.VIEW_WARNING_OVERVIEW,
@@ -118,7 +118,7 @@ export class MenuFilter {
     if (warningPermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.WARNING_MANAGEMENT);
     }
-    
+
     // 需要 operation_right为22 或 core_user=1 的权限
     const weekendSpecialDatePermissions = [
       PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE,
@@ -127,7 +127,7 @@ export class MenuFilter {
     if (weekendSpecialDatePermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.WEEKEND_SPECIAL_DATE);
     }
-    
+
     // 需要 operation_right为7 或 core_user=1 的权限
     const feePromotionPermissions = [
       PERMISSIONS.VIEW_FEE_PROMOTION,
@@ -136,7 +136,7 @@ export class MenuFilter {
     if (feePromotionPermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.FEE_PROMOTION);
     }
-    
+
     // 需要 tool_user 权限
     const toolUserPermissions = [
       PERMISSIONS.VIEW_FREE_SEARCH,
@@ -145,7 +145,7 @@ export class MenuFilter {
     if (toolUserPermissions.includes(permission as any)) {
       return (this.user as any).tool_user === true || (this.user as any).tool_user === 1;
     }
-    
+
     // 需要 sales_core=1 或 core_user=1 的权限
     const salesCorePermissions = [
       PERMISSIONS.MANAGE_INTERVIEW_CONFIG,
@@ -155,7 +155,7 @@ export class MenuFilter {
       const isSalesCore = Number((this.user as any).sales_core) === 1 || (this.user as any).sales_core === true;
       return isSalesCore || isCoreUser;
     }
-    
+
     // 需要 core_user=1 的权限
     const corePermissions = [
       PERMISSIONS.VIEW_CORE_RECORD,
@@ -182,7 +182,7 @@ export class MenuFilter {
     if (corePermissions.includes(permission as any)) {
       return isCoreUser;
     }
-    
+
     // 需要 edit_classes 或 sales_admin 权限
     const selfSignupPermissions = [
       PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES,
@@ -191,7 +191,7 @@ export class MenuFilter {
     if (selfSignupPermissions.includes(permission as any)) {
       return this.userRights.includes('edit_classes') || this.userRights.includes('sales_admin');
     }
-    
+
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,
@@ -220,10 +220,10 @@ export class MenuFilter {
     if (basicPermissions.includes(permission as any)) {
       return true; // 所有staff用户都可以访问
     }
-    
+
     return false;
   }
-  
+
   /**
    * 过滤菜单项
    * @param menuItems 菜单项数组
@@ -235,18 +235,18 @@ export class MenuFilter {
       if (!this.hasPermission(item)) {
         return filtered;
       }
-      
+
       // 处理子菜单
       const filteredItem: MenuItem = { ...item };
       if (item.children && item.children.length > 0) {
         filteredItem.children = this.filterMenuItems(item.children);
-        
+
         // 如果子菜单全部被过滤掉，且当前项没有path，则不显示当前项
         if (filteredItem.children.length === 0 && !item.path) {
           return filtered;
         }
       }
-      
+
       filtered.push(filteredItem);
       return filtered;
     }, []);
@@ -366,13 +366,13 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'user-group',
         requiredPermissions: ['view_students'],
       },
-        {
-          key: 'lesson-table',
-          label: 'Lesson Table',
-          path: '/lesson-table',
-          icon: 'table',
-          requiredPermissions: ['view_lesson_table'],
-        },
+      {
+        key: 'lesson-table',
+        label: 'Lesson Table',
+        path: '/lesson-table',
+        icon: 'table',
+        requiredPermissions: ['view_lesson_table'],
+      },
     ],
   },
   {
@@ -1175,6 +1175,21 @@ export const defaultMenuConfig: MenuItem[] = [
       },
     ],
   },
+  {
+    key: 'front-page-admin',
+    label: 'Front Page Admin',
+    icon: 'home',
+    requiredPermissions: [PERMISSIONS.EDIT_FRONT_PAGE],
+    children: [
+      {
+        key: 'front-pages',
+        label: 'Front Pages',
+        path: '/front-page-admin/front-page',
+        icon: 'home',
+        requiredPermissions: [PERMISSIONS.EDIT_FRONT_PAGE],
+      },
+    ],
+  },
 ];
 
 /**
@@ -1217,11 +1232,11 @@ export function getBreadcrumbPath(menuItems: MenuItem[], path: string): MenuItem
   function findPath(items: MenuItem[], targetPath: string, currentPath: MenuItem[] = []): MenuItem[] | null {
     for (const item of items) {
       const newPath = [...currentPath, item];
-      
+
       if (item.path === targetPath) {
         return newPath;
       }
-      
+
       if (item.children) {
         const result = findPath(item.children, targetPath, newPath);
         if (result) {
@@ -1231,6 +1246,6 @@ export function getBreadcrumbPath(menuItems: MenuItem[], path: string): MenuItem
     }
     return null;
   }
-  
+
   return findPath(menuItems, path) || [];
 } 

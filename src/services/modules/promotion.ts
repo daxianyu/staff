@@ -68,7 +68,7 @@ export interface CompletePromotionParams {
 // 下载推荐表参数
 export interface DownloadRecommendationParams {
   record_id: number;
-  type: 'mentor' | 'teacher'; // 导师推荐表或教师推荐表
+  type: '1' | '2'; // 导师推荐表或教师推荐表
 }
 
 // 获取导师晋升的select信息
@@ -154,15 +154,31 @@ export const downloadMentorRecommendation = async (params: DownloadRecommendatio
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const blob = await response.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = `${params.type}_recommendation_${params.record_id}_${Date.now()}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(downloadUrl);
+    // 解析 JSON 响应获取 file_path
+    const result = await response.json();
+    
+    if (result.status !== 0 || !result.data?.file_path) {
+      throw new Error(result.message || '获取文件路径失败');
+    }
+
+    const filePath = result.data.file_path;
+    
+    // 构建完整的文件下载URL
+    // 如果是相对路径，需要添加基础URL
+    const downloadUrl = filePath.startsWith('http') 
+      ? filePath 
+      : `https://www.huayaopudong.com/${filePath}`;
+
+    // 创建下载链接
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    // 从文件路径中提取文件名
+    const fileName = filePath.split('/').pop() || `recommendation_${params.type}_${params.record_id}_${Date.now()}.docx`;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   } catch (error) {
     console.error('下载导师推荐表失败:', error);
     throw error;
