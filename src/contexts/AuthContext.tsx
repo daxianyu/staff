@@ -186,6 +186,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return operationRights.includes(OPERATION_RIGHTS.WEEKEND_PLAN);
     }
     
+    // 需要 operation_right为21 或 core_user=1 的权限（警告管理）
+    const warningPermissions = [
+      PERMISSIONS.VIEW_WARNING_OVERVIEW,
+      PERMISSIONS.EDIT_WARNING_OVERVIEW,
+    ];
+    if (warningPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WARNING_MANAGEMENT);
+    }
+    
+    // 需要 operation_right为23 或 core_user=1 的权限（课程主题管理）
+    const topicsPermissions = [
+      PERMISSIONS.VIEW_TOPICS,
+      PERMISSIONS.EDIT_TOPICS,
+    ];
+    if (topicsPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.TOPICS_MANAGEMENT);
+    }
+    
+    // 需要 operation_right为22 或 core_user=1 的权限（节假日配置）
+    const weekendSpecialDatePermissions = [
+      PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE,
+      PERMISSIONS.EDIT_WEEKEND_SPECIAL_DATE,
+    ];
+    if (weekendSpecialDatePermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WEEKEND_SPECIAL_DATE);
+    }
+    
     // 需要 operation_right为7 或 core_user=1 的权限
     const feePromotionPermissions = [
       PERMISSIONS.VIEW_FEE_PROMOTION,
@@ -218,6 +245,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const toolUserPermissions = [
       PERMISSIONS.VIEW_FREE_SEARCH,
       PERMISSIONS.VIEW_TOOLS_OVERVIEW,
+      PERMISSIONS.VIEW_SET_SIGNUP_TIME,
+      PERMISSIONS.EDIT_SET_SIGNUP_TIME,
     ];
     if (toolUserPermissions.includes(permission as any)) {
       return (user as any).tool_user === true || (user as any).tool_user === 1;

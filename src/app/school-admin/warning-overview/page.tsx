@@ -10,6 +10,7 @@ import {
   TrashIcon,
   XMarkIcon,
   MagnifyingGlassIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import {
   getWarningList,
@@ -17,6 +18,7 @@ import {
   addWarning,
   editWarning,
   deleteWarning,
+  downloadWarningPdf,
   type WarningRecord,
   type StudentOption,
   type AddWarningRequest,
@@ -51,7 +53,7 @@ export default function WarningOverviewPage() {
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
 
   // 权限检查
   const canView = true; // 所有staff都可以查看
@@ -202,6 +204,16 @@ export default function WarningOverviewPage() {
     }
   };
 
+  // 处理打开 PDF（在新标签页）
+  const handleDownloadPdf = async (recordId: number) => {
+    try {
+      await downloadWarningPdf(recordId);
+    } catch (error) {
+      console.error('打开PDF失败:', error);
+      alert('打开PDF失败，请稍后重试');
+    }
+  };
+
   // 处理警告选择变化
   const handleWarnSelectChange = (value: string) => {
     const currentSelections = formData.warn_select ? formData.warn_select.split(',') : [];
@@ -289,11 +301,9 @@ export default function WarningOverviewPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         更新时间
                       </th>
-                      {canEdit && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          操作
-                        </th>
-                      )}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        操作
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -336,28 +346,35 @@ export default function WarningOverviewPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {warning.update_time || '-'}
                         </td>
-                        {canEdit && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex items-center gap-2">
-                              {warning.can_edit === 1 && (
-                                <>
-                                  <button
-                                    onClick={() => handleEdit(warning)}
-                                    className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center transition-colors"
-                                  >
-                                    <PencilIcon className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(warning)}
-                                    className="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center transition-colors"
-                                  >
-                                    <TrashIcon className="h-4 w-4" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        )}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleDownloadPdf(warning.record_id)}
+                              className="w-8 h-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center transition-colors"
+                              title="查看PDF"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                            </button>
+                            {canEdit && warning.can_edit === 1 && (
+                              <>
+                                <button
+                                  onClick={() => handleEdit(warning)}
+                                  className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center transition-colors"
+                                  title="编辑"
+                                >
+                                  <PencilIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(warning)}
+                                  className="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center transition-colors"
+                                  title="删除"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -382,10 +399,9 @@ export default function WarningOverviewPage() {
                           }}
                           className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                          <option value={5}>5</option>
-                          <option value={10}>10</option>
                           <option value={20}>20</option>
                           <option value={50}>50</option>
+                          <option value={100}>100</option>
                         </select>
                       </div>
                       <div className="flex items-center gap-1">

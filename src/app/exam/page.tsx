@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
+import DropdownPortal from './components/DropdownPortal';
 import {
   getExamList,
   addNewExam,
@@ -66,6 +67,7 @@ export default function ExamPage() {
   const [filterType, setFilterType] = useState<number | ''>('');
   const [showDisabled, setShowDisabled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const dropdownButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
   const [confirmAction, setConfirmAction] = useState<{
     show: boolean;
     title: string;
@@ -133,17 +135,6 @@ export default function ExamPage() {
     }
   }, [canEdit]);
 
-  // 关闭下拉菜单
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.exam-action-dropdown')) {
-        setOpenDropdown(null);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
 
   const handleAddExam = async () => {
     setActionLoading(true);
@@ -173,7 +164,7 @@ export default function ExamPage() {
   };
 
   const handleEdit = (id: number) => {
-    router.push(`/exam/edit?id=${id}`);
+    window.open(`/staff/exam/edit?id=${id}`, '_blank');
   };
 
   // 显示确认对话框
@@ -549,7 +540,7 @@ export default function ExamPage() {
               </div>
 
             {/* Active Exams */}
-            <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+            <div className="bg-white rounded-lg shadow mb-6">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="p-1 bg-green-100 rounded">
@@ -571,7 +562,7 @@ export default function ExamPage() {
                   </p>
                 </div>
               ) : (
-                <div className="w-full">
+                <div className="w-full rounded-lg overflow-hidden">
                   <table className="w-full divide-y divide-gray-200 table-fixed">
                     <thead className="bg-gray-50">
                       <tr>
@@ -588,7 +579,12 @@ export default function ExamPage() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredExams.map((exam) => (
-                        <tr key={exam.id} className="hover:bg-gray-50 transition-colors">
+                        <tr 
+                          key={exam.id} 
+                          className={`transition-colors ${
+                            openDropdown === exam.id ? 'bg-gray-50' : 'hover:bg-gray-50'
+                          }`}
+                        >
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{EXAM_TYPES[exam.type as keyof typeof EXAM_TYPES] ?? '-'}</td>
@@ -604,7 +600,7 @@ export default function ExamPage() {
                               <span>{exam.price}</span>
                             </div>
                           </td>
-                          <td className="px-3 py-4 text-right text-sm font-medium">
+                          <td className="px-3 py-4 text-right text-sm font-medium relative">
                             <div className="flex items-center justify-end space-x-2">
                               <button
                                 onClick={() => handleEdit(exam.id)}
@@ -613,40 +609,55 @@ export default function ExamPage() {
                               >
                                 <PencilIcon className="w-4 h-4" />
                               </button>
-                              <div className="relative exam-action-dropdown">
+                              <div className="relative">
                                 <button
-                                  onClick={() => setOpenDropdown(openDropdown === exam.id ? null : exam.id)}
+                                  ref={(el) => {
+                                    if (el) {
+                                      dropdownButtonRefs.current.set(exam.id, el);
+                                    } else {
+                                      dropdownButtonRefs.current.delete(exam.id);
+                                    }
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenDropdown(openDropdown === exam.id ? null : exam.id);
+                                  }}
                                   className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                                   title="More Actions"
                                 >
                                   <EllipsisVerticalIcon className="w-4 h-4" />
                                 </button>
-                                {openDropdown === exam.id && (
-                                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
-                                    <div className="py-1">
-                                      <button
-                                        onClick={() => {
-                                          setOpenDropdown(null);
-                                          handleStatusChangeConfirm(exam, true);
-                                        }}
-                                        className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50"
-                                      >
-                                        <XMarkIcon className="w-4 h-4 mr-2" />
-                                        Disable Exam
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setOpenDropdown(null);
-                                          handleDeleteConfirm(exam);
-                                        }}
-                                        className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-                                      >
-                                        <TrashIcon className="w-4 h-4 mr-2" />
-                                        Delete Exam
-                                      </button>
-                                    </div>
+                                <DropdownPortal
+                                  isOpen={openDropdown === exam.id}
+                                  onClose={() => setOpenDropdown(null)}
+                                  triggerElement={dropdownButtonRefs.current.get(exam.id) || null}
+                                >
+                                  <div className="py-1.5">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenDropdown(null);
+                                        handleStatusChangeConfirm(exam, true);
+                                      }}
+                                      className="flex items-center w-full px-4 py-2.5 text-sm text-yellow-700 hover:bg-yellow-50 transition-colors"
+                                    >
+                                      <XMarkIcon className="w-4 h-4 mr-3 flex-shrink-0" />
+                                      <span>Disable Exam</span>
+                                    </button>
+                                    <div className="my-1 border-t border-gray-200" />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenDropdown(null);
+                                        handleDeleteConfirm(exam);
+                                      }}
+                                      className="flex items-center w-full px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                    >
+                                      <TrashIcon className="w-4 h-4 mr-3 flex-shrink-0" />
+                                      <span>Delete Exam</span>
+                                    </button>
                                   </div>
-                                )}
+                                </DropdownPortal>
                               </div>
                             </div>
                           </td>
@@ -660,7 +671,7 @@ export default function ExamPage() {
 
             {/* Disabled Exams */}
             {showDisabled && (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center gap-3">
                     <div className="p-1 bg-red-100 rounded">
@@ -682,7 +693,7 @@ export default function ExamPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-lg overflow-hidden">
                     <table className="w-full divide-y divide-gray-200 table-fixed">
                       <thead className="bg-gray-50">
                         <tr>
@@ -700,7 +711,12 @@ export default function ExamPage() {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {filteredDisabledExams.map((exam) => (
-                          <tr key={exam.id} className="hover:bg-gray-50 transition-colors opacity-75">
+                          <tr 
+                            key={exam.id} 
+                            className={`transition-colors opacity-75 ${
+                              openDropdown === exam.id ? 'bg-gray-50' : 'hover:bg-gray-50'
+                            }`}
+                          >
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.type ?? '-'}</td>
@@ -717,7 +733,7 @@ export default function ExamPage() {
                               </div>
                             </td>
 
-                            <td className="px-3 py-4 text-right text-sm font-medium">
+                            <td className="px-3 py-4 text-right text-sm font-medium relative">
                               <div className="flex items-center justify-end space-x-2">
                                 <button
                                   onClick={() => handleEdit(exam.id)}
@@ -726,40 +742,55 @@ export default function ExamPage() {
                                 >
                                   <PencilIcon className="w-4 h-4" />
                                 </button>
-                                <div className="relative exam-action-dropdown">
+                                <div className="relative">
                                   <button
-                                    onClick={() => setOpenDropdown(openDropdown === exam.id ? null : exam.id)}
+                                    ref={(el) => {
+                                      if (el) {
+                                        dropdownButtonRefs.current.set(exam.id, el);
+                                      } else {
+                                        dropdownButtonRefs.current.delete(exam.id);
+                                      }
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenDropdown(openDropdown === exam.id ? null : exam.id);
+                                    }}
                                     className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                                     title="More Actions"
                                   >
                                     <EllipsisVerticalIcon className="w-4 h-4" />
                                   </button>
-                                  {openDropdown === exam.id && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
-                                      <div className="py-1">
-                                        <button
-                                          onClick={() => {
-                                            setOpenDropdown(null);
-                                            handleStatusChangeConfirm(exam, false);
-                                          }}
-                                          className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50"
-                                        >
-                                          <CheckIcon className="w-4 h-4 mr-2" />
-                                          Enable Exam
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            setOpenDropdown(null);
-                                            handleDeleteConfirm(exam);
-                                          }}
-                                          className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-                                        >
-                                          <TrashIcon className="w-4 h-4 mr-2" />
-                                          Delete Exam
-                                        </button>
-                                      </div>
+                                  <DropdownPortal
+                                    isOpen={openDropdown === exam.id}
+                                    onClose={() => setOpenDropdown(null)}
+                                    triggerElement={dropdownButtonRefs.current.get(exam.id) || null}
+                                  >
+                                    <div className="py-1.5">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenDropdown(null);
+                                          handleStatusChangeConfirm(exam, false);
+                                        }}
+                                        className="flex items-center w-full px-4 py-2.5 text-sm text-green-700 hover:bg-green-50 transition-colors"
+                                      >
+                                        <CheckIcon className="w-4 h-4 mr-3 flex-shrink-0" />
+                                        <span>Enable Exam</span>
+                                      </button>
+                                      <div className="my-1 border-t border-gray-200" />
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenDropdown(null);
+                                          handleDeleteConfirm(exam);
+                                        }}
+                                        className="flex items-center w-full px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                      >
+                                        <TrashIcon className="w-4 h-4 mr-3 flex-shrink-0" />
+                                        <span>Delete Exam</span>
+                                      </button>
                                     </div>
-                                  )}
+                                  </DropdownPortal>
                                 </div>
                               </div>
                             </td>

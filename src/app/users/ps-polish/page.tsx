@@ -61,7 +61,7 @@ export default function PSPolishPage() {
   });
 
   const canView = true;
-  const canEdit = hasPermission(PERMISSIONS.EDIT_PS_POLISH);
+  const canEdit = 1; // hasPermission(PERMISSIONS.EDIT_PS_POLISH);
 
   useEffect(() => {
     if (canView) {

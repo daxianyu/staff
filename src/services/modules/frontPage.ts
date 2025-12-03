@@ -91,11 +91,17 @@ interface BackendSiteInfoResponse {
   };
   banners: {
     about_us_banner: string;
+    about_us_banner_link?: string;
     teachers_banner: string;
+    teachers_banner_link?: string;
     campus_banner: string;
+    campus_banner_link?: string;
     achievements_banner: string;
+    achievements_banner_link?: string;
     apply_banner: string;
+    apply_banner_link?: string;
     join_us_banner: string;
+    join_us_banner_link?: string;
   };
 }
 
@@ -151,12 +157,15 @@ export interface SiteInfoResponse {
     teacher_responsible?: string;
   }>;
   achievements: {
+    latest_achievement_image?: string;
     graduation_info: string;
+    graduate_year?: string;
     tech_info: string;
+    tech_info_title?: string;
     list: Array<{
       id: number;
       title: string;
-      image_url: string;
+      achievements_type: string;
       link_url: string;
     }>;
   };
@@ -255,7 +264,7 @@ export const getSiteInfo = async (): Promise<ApiResponse<SiteInfoResponse>> => {
         list: (rawData.achievements || []).map(ach => ({
           id: ach.id,
           title: ach.title,
-          image_url: '', // 后端返回的数据中没有image_url字段
+          achievements_type: ach.achievements_type,
           link_url: ach.link_url,
         })),
       },
@@ -474,13 +483,26 @@ export const deleteAchievements = async (params: { id: number }): Promise<ApiRes
   }
 };
 
-export const updateGraduationInfo = async (params: { content: string }): Promise<ApiResponse<unknown>> => {
-  // Backend expects: graduate_year, graduate_url
-  // We only have content. Let's assume content is graduate_url? Or year?
+// 更新最新成果图片
+export const updateLatestAchievement = async (params: { image_url: string }): Promise<ApiResponse<unknown>> => {
+  try {
+    const { data } = await request('/api/web_site/update_latest_achievement', {
+      method: 'POST',
+      body: { image_url: params.image_url },
+    });
+    return normalizeApiResponse<unknown>(data as ApiEnvelope<unknown>);
+  } catch (error) {
+    console.error('更新最新成果失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '更新最新成果失败' };
+  }
+};
+
+// 更新毕业生去向
+export const updateGraduationInfo = async (params: { graduate_year: string; image_url: string }): Promise<ApiResponse<unknown>> => {
   try {
     const { data } = await request('/api/web_site/graduation_info', {
       method: 'POST',
-      body: { graduate_year: '2025', graduate_url: params.content },
+      body: { graduate_year: params.graduate_year, graduate_url: params.image_url },
     });
     return normalizeApiResponse<unknown>(data as ApiEnvelope<unknown>);
   } catch (error) {
@@ -489,12 +511,12 @@ export const updateGraduationInfo = async (params: { content: string }): Promise
   }
 };
 
-export const updateTechInfo = async (params: { content: string }): Promise<ApiResponse<unknown>> => {
-  // Backend expects: teach_result, teach_result_url
+// 更新学术成果
+export const updateTechInfo = async (params: { title: string; link_url: string }): Promise<ApiResponse<unknown>> => {
   try {
     const { data } = await request('/api/web_site/new_tech_info', {
       method: 'POST',
-      body: { teach_result: 'Tech Result', teach_result_url: params.content },
+      body: { teach_result: params.title, teach_result_url: params.link_url },
     });
     return normalizeApiResponse<unknown>(data as ApiEnvelope<unknown>);
   } catch (error) {

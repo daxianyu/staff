@@ -154,8 +154,11 @@ export default function StudentsPage() {
     try {
       setLoading(true);
       
+      // 如果没有 edit_students 权限，只加载在读学生
+      const effectiveFilter = canEditStudents ? studentStatusFilter : 'active';
+      
       // 使用正确的API接口
-      const response = await getStudentList({ disabled: studentStatusFilter === 'all' ? 1 : 0 });
+      const response = await getStudentList({ disabled: effectiveFilter === 'all' ? 1 : 0 });
       
       if (response.code === 200) {
         // 新的数据结构，学生信息在 response.data.list_info 中
@@ -374,6 +377,13 @@ export default function StudentsPage() {
     }
   };
 
+  // 如果没有 edit_students 权限，强制设置为 active
+  useEffect(() => {
+    if (!canEditStudents && studentStatusFilter === 'all') {
+      setStudentStatusFilter('active');
+    }
+  }, [canEditStudents]);
+
   useEffect(() => {
     loadStudentList(); // 这个函数现在也会加载导师列表
     
@@ -390,13 +400,7 @@ export default function StudentsPage() {
   }, [studentStatusFilter]);
 
   const filteredStudents = studentList.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.student_id.toString().includes(searchTerm) ||
-    (student.class_info && Object.values(student.class_info).some(className => 
-      className.toLowerCase().includes(searchTerm.toLowerCase())
-    )) ||
-    (student.mentor_name && student.mentor_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    student.campus.toLowerCase().includes(searchTerm.toLowerCase())
+    student.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // 分页逻辑
@@ -433,7 +437,7 @@ export default function StudentsPage() {
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by name, student ID, classes, mentor, or campus..."
+                  placeholder="Search by name"
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -459,19 +463,22 @@ export default function StudentsPage() {
                   >
                     在读学生
                   </button>
-                  <button
-                    onClick={() => {
-                      setStudentStatusFilter('all');
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                      studentStatusFilter === 'all'
-                        ? 'bg-white text-gray-800 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    历史学生
-                  </button>
+                  {/* 只有拥有 edit_students 权限的用户才能看到历史学生按钮 */}
+                  {canEditStudents && (
+                    <button
+                      onClick={() => {
+                        setStudentStatusFilter('all');
+                        setCurrentPage(1);
+                      }}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                        studentStatusFilter === 'all'
+                          ? 'bg-white text-gray-800 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      历史学生
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

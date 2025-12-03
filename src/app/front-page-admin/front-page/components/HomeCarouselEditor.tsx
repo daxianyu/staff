@@ -82,12 +82,12 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
             key: 'image_url',
             width: 140,
             render: (url: string) => (
-                <div className="flex items-center justify-center">
-                    <div className="rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50 p-2 shadow-sm hover:shadow-md transition-shadow">
-                        <Image 
-                            src={url} 
-                            height={70} 
-                            width={110} 
+                <div className="flex">
+                    <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                        <Image
+                            src={url}
+                            height={70}
+                            width={110}
                             style={{ objectFit: 'contain' }}
                             className="block rounded"
                             preview={{
@@ -113,19 +113,19 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
             width: 150,
             render: (_: any, record: any) => (
                 <Space size="small">
-                    <Button 
-                        type="text" 
-                        icon={<EditOutlined />} 
-                        onClick={() => handleEdit(record)} 
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
                         className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded"
                     >
                         编辑
                     </Button>
-                    <Button 
-                        type="text" 
-                        icon={<DeleteOutlined />} 
-                        danger 
-                        onClick={() => handleDelete(record.id)} 
+                    <Button
+                        type="text"
+                        icon={<DeleteOutlined />}
+                        danger
+                        onClick={() => handleDelete(record.id)}
                         className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded"
                     >
                         删除
@@ -141,10 +141,10 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
                 title={<span className="text-lg font-semibold text-gray-800">主页轮播图管理</span>}
                 bordered={false}
                 className="rounded-lg shadow-sm border border-gray-200"
-                styles={{ 
-                    header: { 
-                        borderBottom: '1px solid #e5e7eb', 
-                        padding: '16px 20px' 
+                styles={{
+                    header: {
+                        borderBottom: '1px solid #e5e7eb',
+                        padding: '16px 20px'
                     },
                     body: {
                         padding: '20px'
@@ -155,11 +155,11 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
                         <span className="text-gray-500 text-xs font-medium">
                             {data.length}/5
                         </span>
-                        <Button 
-                            type="primary" 
-                            icon={<PlusOutlined />} 
-                            onClick={handleAdd} 
-                            disabled={data.length >= 5} 
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={handleAdd}
+                            disabled={data.length >= 5}
                             className={`${buttonClass} ${data.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             添加轮播图
@@ -170,9 +170,9 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
                 {data.length === 0 ? (
                     <div className="text-center py-12">
                         <div className="text-gray-400 text-sm mb-4">暂无轮播图</div>
-                        <Button 
-                            type="primary" 
-                            icon={<PlusOutlined />} 
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
                             onClick={handleAdd}
                             className={buttonClass}
                         >
@@ -205,7 +205,7 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
                 confirmLoading={loading}
                 width={600}
                 centered
-                okButtonProps={{ 
+                okButtonProps={{
                     className: "bg-blue-600 hover:bg-blue-700 h-10 px-6 font-medium shadow-sm hover:shadow-md transition-shadow"
                 }}
                 cancelButtonProps={{
@@ -226,9 +226,9 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
                 }}
             >
                 <Form form={form} layout="vertical" onFinish={onFinish} className="space-y-4">
-                    <Form.Item 
-                        label={<span className="text-sm font-medium text-gray-700">图片</span>} 
-                        name="image_url" 
+                    <Form.Item
+                        label={<span className="text-sm font-medium text-gray-700">图片</span>}
+                        name="image_url"
                         rules={[{ required: true, message: '请上传图片' }]}
                     >
                         <Space.Compact style={{ width: '100%' }}>
@@ -255,8 +255,8 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
                             return url ? (
                                 <div className="mb-4 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50 p-4 shadow-sm">
                                     <div className="flex items-center justify-center min-h-[200px]">
-                                        <Image 
-                                            src={url} 
+                                        <Image
+                                            src={url}
                                             alt="预览图片"
                                             className="max-w-full max-h-[200px] object-contain"
                                             preview={false}
@@ -275,8 +275,8 @@ const HomeCarouselEditor: React.FC<Props> = ({ data, refresh }) => {
                             );
                         }}
                     </Form.Item>
-                    <Form.Item 
-                        label={<span className="text-sm font-medium text-gray-700">跳转链接</span>} 
+                    <Form.Item
+                        label={<span className="text-sm font-medium text-gray-700">跳转链接</span>}
                         name="link"
                     >
                         <Input placeholder="请输入跳转链接（可选）" className={inputClass} />

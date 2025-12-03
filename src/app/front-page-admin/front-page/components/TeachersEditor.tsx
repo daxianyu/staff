@@ -112,13 +112,13 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
             key: 'image_url',
             width: 100,
             render: (image_url: string) => (
-                <div className="flex items-center justify-center">
+                <div className="flex">
                     {image_url ? (
-                        <div className="rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50 p-1 shadow-sm hover:shadow-md transition-shadow">
-                            <Image 
-                                src={image_url} 
-                                height={60} 
-                                width={60} 
+                        <div className="rounded-lg overflow-hidden border-gray-200 bg-gray-50 shadow-sm hover:shadow-md transition-shadow">
+                            <Image
+                                src={image_url}
+                                height={60}
+                                width={60}
                                 style={{ objectFit: 'cover' }}
                                 className="block rounded"
                                 preview={{
@@ -150,19 +150,19 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
             width: 150,
             render: (_: any, record: any) => (
                 <Space size="small">
-                    <Button 
-                        type="text" 
-                        icon={<EditOutlined />} 
-                        onClick={() => handleEdit(record)} 
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
                         className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded"
                     >
                         编辑
                     </Button>
-                    <Button 
-                        type="text" 
-                        icon={<DeleteOutlined />} 
-                        danger 
-                        onClick={() => handleDelete(record.id)} 
+                    <Button
+                        type="text"
+                        icon={<DeleteOutlined />}
+                        danger
+                        onClick={() => handleDelete(record.id)}
                         className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded"
                     >
                         删除
@@ -223,10 +223,10 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
                 title={<span className="text-lg font-semibold text-gray-800">师资团队管理</span>}
                 bordered={false}
                 className="rounded-lg shadow-sm border border-gray-200"
-                styles={{ 
-                    header: { 
-                        borderBottom: '1px solid #e5e7eb', 
-                        padding: '16px 20px' 
+                styles={{
+                    header: {
+                        borderBottom: '1px solid #e5e7eb',
+                        padding: '16px 20px'
                     },
                     body: {
                         padding: '20px'
@@ -241,9 +241,9 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
                 {totalItems === 0 ? (
                     <div className="text-center py-12">
                         <div className="text-gray-400 text-sm mb-4">暂无教师信息</div>
-                        <Button 
-                            type="primary" 
-                            icon={<PlusOutlined />} 
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
                             onClick={handleAdd}
                             className={buttonClass}
                         >
@@ -335,7 +335,7 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
                 confirmLoading={loading}
                 width={700}
                 centered
-                okButtonProps={{ 
+                okButtonProps={{
                     className: "bg-blue-600 hover:bg-blue-700 h-10 px-6 font-medium shadow-sm hover:shadow-md transition-shadow"
                 }}
                 cancelButtonProps={{
@@ -357,16 +357,16 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
             >
                 <Form form={form} layout="vertical" onFinish={onFinish} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Form.Item 
-                            name="teacher_name" 
-                            label={<span className="text-sm font-medium text-gray-700">姓名</span>} 
+                        <Form.Item
+                            name="teacher_name"
+                            label={<span className="text-sm font-medium text-gray-700">姓名</span>}
                             rules={[{ required: true, message: '请输入姓名' }]}
                         >
                             <Input placeholder="请输入姓名" className={inputClass} />
                         </Form.Item>
-                        <Form.Item 
-                            name="teacher_title" 
-                            label={<span className="text-sm font-medium text-gray-700">头衔/职称</span>} 
+                        <Form.Item
+                            name="teacher_title"
+                            label={<span className="text-sm font-medium text-gray-700">头衔/职称</span>}
                             rules={[{ required: true, message: '请输入头衔' }]}
                         >
                             <Input placeholder="请输入头衔" className={inputClass} />
@@ -374,21 +374,21 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Form.Item 
-                            name="teacher_group" 
-                            label={<span className="text-sm font-medium text-gray-700">分组</span>} 
+                        <Form.Item
+                            name="teacher_group"
+                            label={<span className="text-sm font-medium text-gray-700">分组</span>}
                             rules={[{ required: true, message: '请输入分组' }]}
                         >
-                            <Input 
-                                placeholder="请输入分组，如：数学组" 
+                            <Input
+                                placeholder="请输入分组，如：数学组"
                                 className={inputClass}
                             />
                         </Form.Item>
-                        <Form.Item 
-                            name="group_leader" 
+                        <Form.Item
+                            name="group_leader"
                             label={<span className="text-sm font-medium text-gray-700">是否组长</span>}
                         >
-                            <Select 
+                            <Select
                                 placeholder="请选择是否组长"
                                 className={inputClass}
                                 style={{ width: '100%' }}
@@ -399,31 +399,31 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
                         </Form.Item>
                     </div>
 
-                    <Form.Item 
-                        name="teacher_desc" 
+                    <Form.Item
+                        name="teacher_desc"
                         label={<span className="text-sm font-medium text-gray-700">简介</span>}
                     >
-                        <Input.TextArea 
-                            rows={4} 
-                            placeholder="请输入教师简介" 
+                        <Input.TextArea
+                            rows={4}
+                            placeholder="请输入教师简介"
                             className={`${inputClass} resize-none`}
                             style={{ minHeight: '100px' }}
                         />
                     </Form.Item>
 
-                    <Form.Item 
-                        name="teacher_responsible" 
+                    <Form.Item
+                        name="teacher_responsible"
                         label={<span className="text-sm font-medium text-gray-700">负责内容</span>}
                     >
-                        <Input.TextArea 
-                            rows={2} 
-                            placeholder="请输入负责内容" 
+                        <Input.TextArea
+                            rows={2}
+                            placeholder="请输入负责内容"
                             className={`${inputClass} resize-none`}
                         />
                     </Form.Item>
 
-                    <Form.Item 
-                        name="teacher_photo" 
+                    <Form.Item
+                        name="teacher_photo"
                         label={<span className="text-sm font-medium text-gray-700">照片</span>}
                     >
                         <Space.Compact style={{ width: '100%' }}>
@@ -450,8 +450,8 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
                             return url ? (
                                 <div className="mb-4 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50 p-4 shadow-sm">
                                     <div className="flex items-center justify-center w-32 h-32">
-                                        <Image 
-                                            src={url} 
+                                        <Image
+                                            src={url}
                                             alt="预览照片"
                                             className="max-w-full max-h-full object-contain"
                                             preview={false}

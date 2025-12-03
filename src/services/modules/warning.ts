@@ -1,4 +1,4 @@
-import { request, normalizeApiResponse } from '../apiClient';
+import { request, normalizeApiResponse, getAuthHeader } from '../apiClient';
 import type { ApiResponse, ApiEnvelope } from '../types';
 
 // 警告类型定义
@@ -118,5 +118,41 @@ export const deleteWarning = async (recordId: number): Promise<ApiResponse> => {
   } catch (error) {
     console.error('删除警告失败:', error);
     return { code: 500, message: error instanceof Error ? error.message : '删除警告失败' };
+  }
+};
+
+// 下载警告 PDF（在新标签页打开）
+export const downloadWarningPdf = async (recordId: number): Promise<void> => {
+  try {
+    const url = `/api/warning/download_warning_pdf?record_id=${recordId}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // 检查响应状态
+    if (data.status !== 0) {
+      throw new Error(data.message || '获取文件路径失败');
+    }
+
+    if (!data.data?.file_path) {
+      throw new Error('文件路径不存在');
+    }
+
+    // 直接使用返回的文件路径，在新标签页打开
+    const filePath = data.data.file_path;
+    window.open(filePath, '_blank');
+  } catch (error) {
+    console.error('打开警告PDF失败:', error);
+    throw error;
   }
 };

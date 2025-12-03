@@ -10,8 +10,8 @@ import {
   XMarkIcon,
   CogIcon,
   UserIcon,
-  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
+import SearchableSelect from '@/components/SearchableSelect';
 import {
   getOperationList,
   getStaffOperation,
@@ -40,7 +40,6 @@ export default function OperationConfigPage() {
   const [selectedRecord, setSelectedRecord] = useState<StaffOperationRecord | null>(null);
 
   // 员工搜索和选择
-  const [staffSearchTerm, setStaffSearchTerm] = useState('');
   const [availableStaffList, setAvailableStaffList] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([]);
 
@@ -62,6 +61,13 @@ export default function OperationConfigPage() {
       setStaffList([]);
     }
   }, [selectedOperation]);
+
+  // 当模态框打开时，加载员工列表
+  useEffect(() => {
+    if (showAddModal && availableStaffList.length === 0) {
+      loadAvailableStaff();
+    }
+  }, [showAddModal]);
 
   // 加载操作权限列表
   const loadOperationList = async () => {
@@ -100,14 +106,18 @@ export default function OperationConfigPage() {
 
   // 加载员工列表（用于添加）
   const loadAvailableStaff = async (search?: string) => {
-    const response = await getActiveStaffList({ name: search, limit: 100 });
-    if (response.code === 200 && Array.isArray(response.data)) {
-      setAvailableStaffList(
-        response.data.map((item: any) => ({
-          id: item.staff_id || item.id,
-          name: item.name || item.name_search_cache || '',
-        }))
-      );
+    try {
+      const response = await getActiveStaffList({ name: search || '', limit: 100 });
+      if (response.code === 200 && Array.isArray(response.data)) {
+        setAvailableStaffList(
+          response.data.map((item: any) => ({
+            id: item.staff_id || item.id,
+            name: item.name || item.name_search_cache || '',
+          }))
+        );
+      }
+    } catch (error) {
+      console.error('加载员工列表失败:', error);
     }
   };
 
@@ -124,7 +134,6 @@ export default function OperationConfigPage() {
     if (response.code === 200) {
       setShowAddModal(false);
       setSelectedStaffIds([]);
-      setStaffSearchTerm('');
       await loadStaffList();
       alert('添加成功');
     } else {
@@ -235,10 +244,9 @@ export default function OperationConfigPage() {
                     <p className="text-sm text-gray-500 mt-1">共 {staffList.length} 人</p>
                   </div>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedStaffIds([]);
-                      setStaffSearchTerm('');
-                      loadAvailableStaff();
+                      await loadAvailableStaff();
                       setShowAddModal(true);
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -381,7 +389,6 @@ export default function OperationConfigPage() {
                   onClick={() => {
                     setShowAddModal(false);
                     setSelectedStaffIds([]);
-                    setStaffSearchTerm('');
                   }}
                   className="text-gray-400 hover:text-gray-500"
                 >
@@ -390,52 +397,21 @@ export default function OperationConfigPage() {
               </div>
               <div className="p-6 flex-1 overflow-y-auto">
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">搜索员工</label>
-                  <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="搜索员工..."
-                      value={staffSearchTerm}
-                      onChange={async (e) => {
-                        setStaffSearchTerm(e.target.value);
-                        await loadAvailableStaff(e.target.value);
-                      }}
-                      onFocus={() => {
-                        if (availableStaffList.length === 0) {
-                          loadAvailableStaff(staffSearchTerm);
-                        }
-                      }}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
-                  {availableStaffList.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 text-sm">暂无员工</div>
-                  ) : (
-                    <div className="divide-y divide-gray-200">
-                      {availableStaffList
-                        .filter((staff) => !staffList.some((s) => s.teacher_id === staff.id))
-                        .map((staff) => (
-                          <label
-                            key={staff.id}
-                            className="flex items-center p-4 hover:bg-gray-50 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedStaffIds.includes(staff.id)}
-                              onChange={() => toggleStaffSelection(staff.id)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <div className="ml-3 flex-1">
-                              <div className="text-sm font-medium text-gray-900">{staff.name}</div>
-                              <div className="text-xs text-gray-500">ID: {staff.id}</div>
-                            </div>
-                          </label>
-                        ))}
-                    </div>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">选择员工</label>
+                  <SearchableSelect
+                    options={availableStaffList
+                      .filter((staff) => !staffList.some((s) => s.teacher_id === staff.id))
+                      .map((staff) => ({
+                        id: staff.id,
+                        name: staff.name,
+                      }))}
+                    value={selectedStaffIds}
+                    onValueChange={(value) => setSelectedStaffIds(value as number[])}
+                    placeholder="请选择员工..."
+                    searchPlaceholder="搜索员工..."
+                    multiple={true}
+                    className="w-full"
+                  />
                 </div>
                 {selectedStaffIds.length > 0 && (
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg">
@@ -450,7 +426,6 @@ export default function OperationConfigPage() {
                   onClick={() => {
                     setShowAddModal(false);
                     setSelectedStaffIds([]);
-                    setStaffSearchTerm('');
                   }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
                 >

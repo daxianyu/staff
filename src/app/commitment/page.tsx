@@ -315,7 +315,6 @@ export default function CommitmentPage() {
                         onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
                         className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value={5}>5</option>
                         <option value={10}>10</option>
                         <option value={20}>20</option>
                         <option value={50}>50</option>

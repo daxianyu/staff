@@ -83,7 +83,6 @@ const HomePageEditor: React.FC<Props> = ({ data, refresh }) => {
                 {/* Video & Intro Section - 合并为一个区域 */}
                 <Card
                     title={<span className="text-lg font-semibold text-gray-800">视频与图文介绍</span>}
-                    bordered={false}
                     className="mb-6 rounded-lg shadow-sm border border-gray-200"
                     styles={{ header: { borderBottom: '1px solid #e5e7eb', padding: '16px 20px' }, body: { padding: '20px' } }}
                 >
@@ -113,9 +112,9 @@ const HomePageEditor: React.FC<Props> = ({ data, refresh }) => {
                                         <Input placeholder="请输入文章链接" className={inputClass} />
                                     </Form.Item>
                                     <Form.Item label={<span className="text-sm font-medium text-gray-700">描述</span>} name="intro_description">
-                                        <Input.TextArea 
-                                            rows={4} 
-                                            placeholder="请输入描述内容" 
+                                        <Input.TextArea
+                                            rows={4}
+                                            placeholder="请输入描述内容"
                                             className={`${inputClass} resize-none`}
                                             style={{ minHeight: '100px' }}
                                         />
@@ -164,7 +163,6 @@ const HomePageEditor: React.FC<Props> = ({ data, refresh }) => {
                 {/* Banners Section */}
                 <Card
                     title={<span className="text-lg font-semibold text-gray-800">Banner 设置</span>}
-                    bordered={false}
                     className="mb-6 rounded-lg shadow-sm border border-gray-200"
                     styles={{ header: { borderBottom: '1px solid #e5e7eb', padding: '16px 20px' }, body: { padding: '20px' } }}
                 >
@@ -222,11 +220,11 @@ const HomePageEditor: React.FC<Props> = ({ data, refresh }) => {
                 </Card>
 
                 <Form.Item className="mb-0">
-                    <Button 
-                        type="primary" 
-                        htmlType="submit" 
-                        loading={loading} 
-                        block 
+                    <Button
+                        type="primary"
+                        htmlType="submit"
+                        loading={loading}
+                        block
                         className={`${buttonClass} h-11 text-base font-medium shadow-md hover:shadow-lg transition-shadow`}
                     >
                         {loading ? '保存中...' : '保存所有更改'}

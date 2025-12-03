@@ -81,10 +81,10 @@ export default function StaffPage() {
   const [itemsPerPage] = useState(10); // 每页10条
 
   // const canView = true; // 临时禁用权限检查用于测试
-  const canView = hasPermission(PERMISSIONS.VIEW_STAFF) || hasPermission(PERMISSIONS.FINANCE) || hasPermission(PERMISSIONS.SALES_PERSON);
+  const canView = hasPermission(PERMISSIONS.VIEW_STAFF) || hasPermission(PERMISSIONS.FINANCE) || hasPermission(PERMISSIONS.SALES_PERSON) || hasPermission(PERMISSIONS.DELETE_STAFF);
   // 权限检查 - 按功能分类
-  const canViewStaffDetails = hasPermission(PERMISSIONS.VIEW_STAFF); // 查看类功能：Lesson Overview, Staff Info, Staff Schedule, Default Availability
-  const canEditStaff = hasPermission(PERMISSIONS.EDIT_STAFF);        // 编辑类功能：Add Staff, Staff Edit, Disable Account
+  const canViewStaffDetails = hasPermission(PERMISSIONS.VIEW_STAFF) || hasPermission(PERMISSIONS.DELETE_STAFF); // 查看类功能：Lesson Overview, Staff Info, Staff Schedule, Default Availability
+  const canEditStaff = hasPermission(PERMISSIONS.EDIT_STAFF) || hasPermission(PERMISSIONS.DELETE_STAFF);        // 编辑类功能：Add Staff, Staff Edit, Disable Account
   const canDeleteStaff = hasPermission(PERMISSIONS.DELETE_STAFF);    // 删除功能：Delete Account
   
   // 检查是否有任何操作权限（决定是否显示下拉菜单按钮）
@@ -143,6 +143,13 @@ export default function StaffPage() {
     setValidationErrors(newErrors);
   };
 
+  // 如果没有 delete_staff 权限，强制设置为 active
+  useEffect(() => {
+    if (!canDeleteStaff && (staffStatusFilter === 'disabled' || staffStatusFilter === 'all')) {
+      setStaffStatusFilter('active');
+    }
+  }, [canDeleteStaff]);
+
   useEffect(() => {
     if (canView) {
       loadStaffList();
@@ -156,7 +163,10 @@ export default function StaffPage() {
       setLoading(true);
       let response;
       
-      switch (staffStatusFilter) {
+      // 如果没有 delete_staff 权限，只加载在职员工
+      const effectiveFilter = canDeleteStaff ? staffStatusFilter : 'active';
+      
+      switch (effectiveFilter) {
         case 'active':
           response = await getActiveStaffList();
           break;
@@ -474,32 +484,37 @@ export default function StaffPage() {
                   >
                     在职员工
                   </button>
-                  <button
-                    onClick={() => {
-                      setStaffStatusFilter('disabled');
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                      staffStatusFilter === 'disabled'
-                        ? 'bg-white text-red-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    离职员工
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStaffStatusFilter('all');
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                      staffStatusFilter === 'all'
-                        ? 'bg-white text-gray-800 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    全部员工
-                  </button>
+                  {/* 只有拥有 delete_staff 权限的用户才能看到离职员工和全部员工按钮 */}
+                  {canDeleteStaff && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setStaffStatusFilter('disabled');
+                          setCurrentPage(1);
+                        }}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                          staffStatusFilter === 'disabled'
+                            ? 'bg-white text-red-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        }`}
+                      >
+                        离职员工
+                      </button>
+                      <button
+                        onClick={() => {
+                          setStaffStatusFilter('all');
+                          setCurrentPage(1);
+                        }}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                          staffStatusFilter === 'all'
+                            ? 'bg-white text-gray-800 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        }`}
+                      >
+                        全部员工
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

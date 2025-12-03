@@ -294,9 +294,6 @@ export default function TopicsPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         类型
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID
-                      </th>
                       {canEdit && (
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           操作
@@ -330,9 +327,6 @@ export default function TopicsPage() {
                           }`}>
                             {topic.is_english ? '英语课程' : '中文课程'}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          #{topic.id}
                         </td>
                         {canEdit && (
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

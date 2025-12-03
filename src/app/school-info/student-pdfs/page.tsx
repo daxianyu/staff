@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo, Fragment } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
@@ -42,6 +42,7 @@ export default function StudentPdfsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedStudents, setExpandedStudents] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active'); // 在读/非在读tab
   const [reportConfig, setReportConfig] = useState<{
     studentId: number | null;
     reportType: 'transcript' | 'predict' | 'am' | 'academic' | 'mock' | 'certificate' | null;
@@ -156,12 +157,20 @@ export default function StudentPdfsPage() {
   // 过滤学生
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
-    const fullName = `${student.first_name || ''}${student.last_name || ''}`.toLowerCase();
-    const longId = (student.student_long_id || '').toLowerCase();
-    const search = searchTerm.toLowerCase();
-    return fullName.includes(search) || longId.includes(search);
-  });
-  }, [students, searchTerm]);
+      // 先根据tab过滤（在读/非在读）
+      const matchesTab = activeTab === 'active' 
+        ? student.active === 1 
+        : student.active !== 1;
+      
+      if (!matchesTab) return false;
+      
+      // 再根据搜索关键词过滤
+      const fullName = `${student.first_name || ''}${student.last_name || ''}`.toLowerCase();
+      const longId = (student.student_long_id || '').toLowerCase();
+      const search = searchTerm.toLowerCase();
+      return fullName.includes(search) || longId.includes(search);
+    });
+  }, [students, searchTerm, activeTab]);
 
   // 切换展开/折叠
   const toggleExpand = useCallback((studentId: number) => {
@@ -610,6 +619,36 @@ export default function StudentPdfsPage() {
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              {/* Tab切换 */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => {
+                    setActiveTab('active');
+                    setSearchTerm(''); // 切换tab时清空搜索
+                  }}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    activeTab === 'active'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  在读学生
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('inactive');
+                    setSearchTerm(''); // 切换tab时清空搜索
+                  }}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    activeTab === 'inactive'
+                      ? 'bg-white text-red-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  非在读学生
+                </button>
+              </div>
+              
               {/* 搜索框 */}
               <div className="relative flex-1 max-w-md">
                 <input
@@ -666,9 +705,8 @@ export default function StudentPdfsPage() {
                   {filteredStudents.map((student) => {
                     const isExpanded = expandedStudents.has(student.id);
                     return (
-                      <>
+                      <Fragment key={student.id}>
                         <tr 
-                          key={student.id} 
                           className="hover:bg-gray-50 transition-colors cursor-pointer"
                           onClick={() => toggleExpand(student.id)}
                         >
@@ -699,7 +737,7 @@ export default function StudentPdfsPage() {
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-red-100 text-red-800'
                             }`}>
-                              {student.active === 1 ? '活跃' : '非活跃'}
+                              {student.active === 1 ? '在读' : '非在读'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -860,7 +898,7 @@ export default function StudentPdfsPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                   {filteredStudents.length === 0 && (

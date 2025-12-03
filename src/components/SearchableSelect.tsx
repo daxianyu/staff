@@ -114,16 +114,24 @@ export default function SearchableSelect({
                           className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
                         >
                           {option.name}
-                          <button
-                            type="button"
+                          <span
+                            role="button"
+                            tabIndex={0}
                             onClick={(e) => {
                               e.stopPropagation();
                               removeSelected(toNum(option.id));
                             }}
-                            className="ml-1 hover:text-blue-600"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                removeSelected(toNum(option.id));
+                              }
+                            }}
+                            className="ml-1 hover:text-blue-600 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 rounded"
                           >
                             <CheckIcon className="h-3 w-3" />
-                          </button>
+                          </span>
                         </span>
                       ))}
                       {remainingCount > 0 && (
