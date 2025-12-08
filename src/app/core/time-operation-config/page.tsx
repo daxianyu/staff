@@ -54,7 +54,7 @@ export default function TimeOperationConfigPage() {
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
 
   useEffect(() => {
     if (canView) {
@@ -312,9 +312,8 @@ export default function TimeOperationConfigPage() {
                       }}
                       className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value={10}>10 条/页</option>
-                      <option value={20}>20 条/页</option>
                       <option value={50}>50 条/页</option>
+                      <option value={100}>100 条/页</option>
                     </select>
                     <div className="flex gap-1">
                       <button

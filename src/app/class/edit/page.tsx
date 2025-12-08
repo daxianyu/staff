@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { 
+import {
   getClassEditInfo,
   editClass,
   addToGroup,
@@ -37,7 +37,7 @@ export default function ClassEditPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const classId = searchParams.get('id');
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editData, setEditData] = useState<ClassEditData | null>(null);
@@ -45,7 +45,7 @@ export default function ClassEditPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   // 错误详情状态
   const [errorDetail, setErrorDetail] = useState<{
     class_student_dict?: Record<string, number>;
@@ -100,11 +100,11 @@ export default function ClassEditPage() {
     try {
       setLoading(true);
       const response = await getClassEditInfo(Number(classId));
-      
+
       if (response.code === 200 && response.data) {
         setEditData(response.data);
         setClassInfo(response.data.class_info);
-        
+
         // 初始化学生列表
         const studentsWithNames = response.data.class_student.map(student => {
           const studentInfo = response.data!.student_info.find(s => s.id === student.student_id);
@@ -233,7 +233,7 @@ export default function ClassEditPage() {
         setShowError(true);
         return;
       }
-      
+
       const studentInfo = editData?.student_info.find(s => s.id === value);
       newStudents[index] = {
         ...newStudents[index],
@@ -253,8 +253,6 @@ export default function ClassEditPage() {
         ...newStudents[index],
         [field]: value
       };
-      // 自动更新 isTransfer 状态：只有当 start_time 和 end_time 都不为 -1 时才是插班生
-      updatedStudent.isTransfer = updatedStudent.start_time !== -1 && updatedStudent.end_time !== -1;
       newStudents[index] = updatedStudent;
     } else {
       newStudents[index] = {
@@ -285,7 +283,7 @@ export default function ClassEditPage() {
 
   const updateSubject = (index: number, field: string, value: any) => {
     const newSubjects = [...subjects];
-    
+
     // 更新字段值
     if (field === 'topic_id') {
       const topicInfo = editData?.topics.find(t => t.id === value);
@@ -319,12 +317,12 @@ export default function ClassEditPage() {
     if (field === 'topic_id' || field === 'teacher_id') {
       const currentSubject = newSubjects[index];
       if (currentSubject.topic_id && currentSubject.teacher_id) {
-        const existingSubjectIndex = newSubjects.findIndex((s, i) => 
-          i !== index && 
-          s.topic_id === currentSubject.topic_id && 
+        const existingSubjectIndex = newSubjects.findIndex((s, i) =>
+          i !== index &&
+          s.topic_id === currentSubject.topic_id &&
           s.teacher_id === currentSubject.teacher_id
         );
-        
+
         if (existingSubjectIndex !== -1) {
           setErrorMessage('该Topic和Teacher的组合已经存在');
           setShowError(true);
@@ -387,7 +385,7 @@ export default function ClassEditPage() {
       };
 
       const response = await editClass(params);
-      
+
       if (response.code === 200) {
         setShowSuccess(true);
         // 重新加载页面数据
@@ -411,12 +409,12 @@ export default function ClassEditPage() {
             // 已经是对象
             errorData = response.message;
           }
-          
+
           // 检查是否包含错误详情字段
           if (errorData && (
-            errorData.class_student_dict || 
-            errorData.error_lesson || 
-            errorData.student_flag !== undefined || 
+            errorData.class_student_dict ||
+            errorData.error_lesson ||
+            errorData.student_flag !== undefined ||
             errorData.teacher_flag !== undefined
           )) {
             // 包含错误详情，显示详情弹框
@@ -424,8 +422,8 @@ export default function ClassEditPage() {
             setErrorMessage('保存失败，存在冲突课程');
           } else {
             // 普通错误信息
-            const message = typeof response.message === 'string' 
-              ? response.message 
+            const message = typeof response.message === 'string'
+              ? response.message
               : JSON.stringify(response.message);
             setErrorMessage(message || '保存失败');
             setErrorDetail(null);
@@ -433,8 +431,8 @@ export default function ClassEditPage() {
         } catch (err) {
           // 解析失败，使用普通错误提示
           console.error('解析错误信息失败:', err);
-          setErrorMessage(typeof response.message === 'string' 
-            ? response.message 
+          setErrorMessage(typeof response.message === 'string'
+            ? response.message
             : '保存失败');
           setErrorDetail(null);
         }
@@ -465,7 +463,7 @@ export default function ClassEditPage() {
       };
 
       const response = await addToGroup(params);
-      
+
       if (response.code === 200) {
         setShowSuccess(true);
         setShowAddToGroup(false);
@@ -558,7 +556,6 @@ export default function ClassEditPage() {
           </div>
           <div className="mt-4">
             <h1 className="text-3xl font-bold text-gray-900">Edit Class</h1>
-            <p className="text-gray-600 mt-2">Class ID: {classId}</p>
           </div>
         </div>
 
@@ -606,17 +603,17 @@ export default function ClassEditPage() {
                 <input
                   type="text"
                   value={classInfo.name}
-                  onChange={(e) => setClassInfo({...classInfo, name: e.target.value})}
+                  onChange={(e) => setClassInfo({ ...classInfo, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                   placeholder="请输入班级名称"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">校区</label>
                 <select
                   value={classInfo.campus_id}
-                  onChange={(e) => setClassInfo({...classInfo, campus_id: Number(e.target.value)})}
+                  onChange={(e) => setClassInfo({ ...classInfo, campus_id: Number(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 >
                   {editData.campus_info.map((campus) => (
@@ -632,7 +629,7 @@ export default function ClassEditPage() {
                   <input
                     type="checkbox"
                     checked={Boolean(classInfo.double_time)}
-                    onChange={(e) => setClassInfo({...classInfo, double_time: e.target.checked ? 1 : 0})}
+                    onChange={(e) => setClassInfo({ ...classInfo, double_time: e.target.checked ? 1 : 0 })}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <span className="text-sm font-medium text-gray-700">双倍课时</span>
@@ -835,14 +832,14 @@ export default function ClassEditPage() {
 
                     <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4">
                       <label className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={subject.student_signup === 1}
-                            onChange={(e) => updateSubject(index, 'student_signup', e.target.checked ? 1 : 0)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <span className="text-sm font-medium text-gray-700">学生可报名</span>
-                        </label>
+                        <input
+                          type="checkbox"
+                          checked={subject.student_signup === 1}
+                          onChange={(e) => updateSubject(index, 'student_signup', e.target.checked ? 1 : 0)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-700">学生可报名</span>
+                      </label>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
@@ -868,7 +865,7 @@ export default function ClassEditPage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Add to Group</h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -878,12 +875,12 @@ export default function ClassEditPage() {
                     type="number"
                     min="1"
                     value={addToGroupData.week_lessons}
-                    onChange={(e) => setAddToGroupData({...addToGroupData, week_lessons: Number(e.target.value)})}
+                    onChange={(e) => setAddToGroupData({ ...addToGroupData, week_lessons: Number(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="一周多少节课"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Assign Name <span className="text-red-500">*</span>
@@ -891,7 +888,7 @@ export default function ClassEditPage() {
                   <input
                     type="text"
                     value={addToGroupData.assign_name}
-                    onChange={(e) => setAddToGroupData({...addToGroupData, assign_name: e.target.value})}
+                    onChange={(e) => setAddToGroupData({ ...addToGroupData, assign_name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="别名或者后缀名字"
                   />
@@ -940,14 +937,14 @@ export default function ClassEditPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     选择学生 <span className="text-red-500">*</span>
                   </label>
                   <SearchableSelect
-                    options={editData.student_info.filter(student => 
+                    options={editData.student_info.filter(student =>
                       !students.some(s => s.student_id === student.id)
                     )}
                     value={selectedStudentIds}

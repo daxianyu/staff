@@ -146,6 +146,25 @@ export class MenuFilter {
       return operationRights.includes(OPERATION_RIGHTS.FEE_PROMOTION);
     }
 
+    // 需要 operation_right为14 或 core_user=1 的权限 (证书管理)
+    if (permission === PERMISSIONS.VIEW_CERTIFICATE_OVERVIEW) {
+      return operationRights.includes(OPERATION_RIGHTS.CERTIFICATE_MANAGEMENT);
+    }
+
+    // 需要 operation_right为5/6 或 core_user=1 的权限 (档案管理)
+    const archivesPermissions = [
+      PERMISSIONS.VIEW_ARCHIVES,
+      PERMISSIONS.EDIT_ARCHIVES,
+    ];
+    if (archivesPermissions.includes(permission as any)) {
+      if (permission === PERMISSIONS.VIEW_ARCHIVES) {
+        return operationRights.includes(OPERATION_RIGHTS.ARCHIVES_MANAGEMENT_VIEW) || operationRights.includes(OPERATION_RIGHTS.ARCHIVES_MANAGEMENT_EDIT);
+      }
+      if (permission === PERMISSIONS.EDIT_ARCHIVES) {
+        return operationRights.includes(OPERATION_RIGHTS.ARCHIVES_MANAGEMENT_EDIT);
+      }
+    }
+
     // 需要 tool_user 权限
     const toolUserPermissions = [
       PERMISSIONS.VIEW_FREE_SEARCH,
@@ -177,8 +196,6 @@ export class MenuFilter {
       PERMISSIONS.EDIT_OPERATION_CONFIG,
       PERMISSIONS.VIEW_TIME_OPERATION_CONFIG,
       PERMISSIONS.EDIT_TIME_OPERATION_CONFIG,
-      PERMISSIONS.VIEW_ARCHIVES,
-      PERMISSIONS.EDIT_ARCHIVES,
       PERMISSIONS.VIEW_TOOLS,
       PERMISSIONS.EDIT_TOOLS,
       PERMISSIONS.VIEW_PROMOTION,
@@ -370,6 +387,13 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'document',
         requiredPermissions: [PERMISSIONS.STUDENT_PDFS],
       },
+      {
+        key: 'certificate-overview',
+        label: 'Certificate Overview',
+        path: '/students/certificate-overview',
+        icon: 'academic-cap',
+        requiredPermissions: [PERMISSIONS.VIEW_CERTIFICATE_OVERVIEW],
+      },
     ],
   },
   {
@@ -440,7 +464,7 @@ export const defaultMenuConfig: MenuItem[] = [
     key: 'classes',
     label: 'Class Management',
     icon: 'book',
-    requiredPermissions: ['view_classes', PERMISSIONS.VIEW_TOPICS, PERMISSIONS.VIEW_SET_SIGNUP_TIME, PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES, 'view_classrooms'],
+    requiredPermissions: ['view_classes', PERMISSIONS.VIEW_TOPICS, PERMISSIONS.VIEW_SET_SIGNUP_TIME, PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES],
     children: [
       {
         key: 'topics',
@@ -484,20 +508,7 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'user-group',
         requiredPermissions: [PERMISSIONS.EDIT_CLASSES, PERMISSIONS.SALES_ADMIN],
       },
-      {
-        key: 'classrooms-list',
-        label: 'Classroom List',
-        path: '/classroom',
-        icon: 'building-office',
-        requiredPermissions: ['view_classrooms'],
-      },
-      {
-        key: 'classroom-view',
-        label: 'Classroom View',
-        path: '/mentor/classroom-view',
-        icon: 'building',
-        requiredPermissions: [],
-      },
+
     ],
   },
   {
@@ -547,7 +558,7 @@ export const defaultMenuConfig: MenuItem[] = [
     key: 'services',
     label: 'Service Management',
     icon: 'home',
-    requiredPermissions: ['edit_books', 'view_locker', 'view_dormitory', PERMISSIONS.VIEW_RETURN_LOCKER, PERMISSIONS.VIEW_COMMITMENT, PERMISSIONS.VIEW_WEEKEND_PLAN, PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE, PERMISSIONS.VIEW_CARD_BIND, PERMISSIONS.VIEW_CARD_CONSUME],
+    requiredPermissions: ['edit_books', 'view_locker', 'view_dormitory', PERMISSIONS.VIEW_RETURN_LOCKER, PERMISSIONS.VIEW_COMMITMENT, PERMISSIONS.VIEW_WEEKEND_PLAN, PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE, PERMISSIONS.VIEW_CARD_BIND, PERMISSIONS.VIEW_CARD_CONSUME, 'view_classrooms'],
     children: [
       {
         key: 'textbook-management',
@@ -611,6 +622,20 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/card/check-consume',
         icon: 'calculator',
         requiredPermissions: [PERMISSIONS.VIEW_CARD_CONSUME],
+      },
+      {
+        key: 'classrooms-list',
+        label: 'Classroom List',
+        path: '/classroom',
+        icon: 'building-office',
+        requiredPermissions: ['view_classrooms'],
+      },
+      {
+        key: 'classroom-view',
+        label: 'Classroom View',
+        path: '/mentor/classroom-view',
+        icon: 'building',
+        requiredPermissions: [],
       },
     ],
   },
@@ -690,25 +715,6 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/admission-admin/sales-pay-overview',
         icon: 'dollar-sign',
         requiredPermissions: [PERMISSIONS.VIEW_PAYMENT_INFO],
-      },
-    ],
-  },
-  {
-    key: 'knowledge',
-    label: 'Knowledge',
-    icon: 'book',
-    children: [
-      {
-        key: 'pastpaper',
-        label: 'Pastpaper',
-        path: '/knowledge/pastpaper',
-        icon: 'clipboard-document-list',
-      },
-      {
-        key: 'knowledge-base',
-        label: 'Knowledge Base',
-        path: '/knowledge/base',
-        icon: 'book',
       },
     ],
   },
@@ -913,6 +919,24 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/core/exit-permit',
         icon: 'map-pin',
         requiredPermissions: [PERMISSIONS.VIEW_CORE_EXIT_PERMIT],
+      },
+    ],
+  }, {
+    key: 'knowledge',
+    label: 'Knowledge',
+    icon: 'book',
+    children: [
+      {
+        key: 'pastpaper',
+        label: 'Pastpaper',
+        path: '/knowledge/pastpaper',
+        icon: 'clipboard-document-list',
+      },
+      {
+        key: 'knowledge-base',
+        label: 'Knowledge Base',
+        path: '/knowledge/base',
+        icon: 'book',
       },
     ],
   },

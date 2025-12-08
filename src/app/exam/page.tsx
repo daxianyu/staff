@@ -90,7 +90,7 @@ export default function ExamPage() {
 
   // 分页相关状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10); // 每页显示10条记录
+  const [pageSize] = useState(50); // 每页显示10条记录
   const [totalRecords, setTotalRecords] = useState(0);
 
   // 搜索相关状态

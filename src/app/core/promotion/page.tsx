@@ -64,7 +64,7 @@ export default function PromotionPage() {
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
 
   // 加载数据
   useEffect(() => {
@@ -500,10 +500,8 @@ export default function PromotionPage() {
                         onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                         className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
                         <option value={50}>50</option>
+                        <option value={100}>100</option>
                       </select>
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}

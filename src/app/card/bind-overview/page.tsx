@@ -36,7 +36,7 @@ export default function BindOverviewPage() {
   
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   
   // 选项数据
   const [selectOptions, setSelectOptions] = useState<CardSelectOptions>({
@@ -396,8 +396,6 @@ export default function BindOverviewPage() {
                     onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                     className="border border-gray-300 rounded px-2 py-1 text-sm"
                   >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
                   </select>

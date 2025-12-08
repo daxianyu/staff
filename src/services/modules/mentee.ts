@@ -28,6 +28,7 @@ export interface MenteeStudentInfo {
   unauthorized_week_details: string[];
   unauthorized_month_details: string[];
   english_name: string;
+  student_name: string;
   nationality: string;
   exam_0_number: string;
   exam_1_number: string;

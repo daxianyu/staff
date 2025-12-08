@@ -78,7 +78,7 @@ export default function StaffPage() {
 
   // 分页相关 state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // 每页10条
+  const [itemsPerPage] = useState(50); // 每页10条
 
   // const canView = true; // 临时禁用权限检查用于测试
   const canView = hasPermission(PERMISSIONS.VIEW_STAFF) || hasPermission(PERMISSIONS.FINANCE) || hasPermission(PERMISSIONS.SALES_PERSON) || hasPermission(PERMISSIONS.DELETE_STAFF);

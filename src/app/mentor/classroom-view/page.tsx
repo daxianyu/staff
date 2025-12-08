@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getClassroomOverview, type ClassroomOverviewData, type ClassroomLesson } from '@/services/modules/classroom';
+import { getClassroomOverview, getClassroomList, type ClassroomOverviewData, type ClassroomLesson, type Classroom } from '@/services/modules/classroom';
 import { authService } from '@/services/authService';
 import type { UserInfo } from '@/types/permission';
 import {
@@ -32,6 +32,7 @@ export default function ClassroomViewPage() {
   const [topics, setTopics] = useState<Record<string, string>>({});
   const [selectedLesson, setSelectedLesson] = useState<ClassroomLesson | null>(null);
   const [showLessonModal, setShowLessonModal] = useState(false);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
 
   // 生成时间槽位 (9:00-22:00, 每半小时一格)
   const generateTimeSlots = () => {
@@ -136,6 +137,14 @@ export default function ClassroomViewPage() {
   useEffect(() => {
     loadUserTopics(); // 先加载 topics 数据
     loadClassroomOverview(currentDay);
+
+    // 加载教室列表以获取容量信息
+    getClassroomList().then(res => {
+      if (res.status === 200) {
+        setClassrooms(res.data.room_list);
+      }
+    });
+
     const today = new Date();
     setSelectedDate(today.toISOString().split('T')[0]);
   }, []);
@@ -145,7 +154,7 @@ export default function ClassroomViewPage() {
     const newDay = currentDay - 1;
     setCurrentDay(newDay);
     loadClassroomOverview(newDay);
-    
+
     const date = new Date(newDay * 86400000);
     setSelectedDate(date.toISOString().split('T')[0]);
   };
@@ -154,7 +163,7 @@ export default function ClassroomViewPage() {
     const newDay = currentDay + 1;
     setCurrentDay(newDay);
     loadClassroomOverview(newDay);
-    
+
     const date = new Date(newDay * 86400000);
     setSelectedDate(date.toISOString().split('T')[0]);
   };
@@ -190,8 +199,8 @@ export default function ClassroomViewPage() {
     // 比较日期（只比较年月日，忽略时间）
     const isSameDay = (date1: Date, date2: Date) => {
       return date1.getFullYear() === date2.getFullYear() &&
-             date1.getMonth() === date2.getMonth() &&
-             date1.getDate() === date2.getDate();
+        date1.getMonth() === date2.getMonth() &&
+        date1.getDate() === date2.getDate();
     };
 
     if (isSameDay(date, today)) {
@@ -224,7 +233,7 @@ export default function ClassroomViewPage() {
   const getLessonCellInfo = (lesson: ClassroomLesson) => {
     const startTime = new Date(lesson.start_time * 1000);
     const endTime = new Date(lesson.end_time * 1000);
-    
+
     const startHour = startTime.getHours();
     const startMinute = startTime.getMinutes();
     const endHour = endTime.getHours();
@@ -234,9 +243,9 @@ export default function ClassroomViewPage() {
     const startSlot = Math.floor(((startHour - 9) * 60 + startMinute) / 30);
     const endSlot = Math.ceil(((endHour - 9) * 60 + endMinute) / 30);
 
-    return { 
-      startSlot: Math.max(0, startSlot), 
-      rowSpan: Math.max(1, endSlot - startSlot) 
+    return {
+      startSlot: Math.max(0, startSlot),
+      rowSpan: Math.max(1, endSlot - startSlot)
     };
   };
 
@@ -259,10 +268,20 @@ export default function ClassroomViewPage() {
     return topicName || `Topic ${topicId}`;
   };
 
-  // 根据课程主题ID获取颜色
+  // 根据课程人数和教室容量获取颜色
   const getLessonColor = (lesson: ClassroomLesson) => {
-    const topicId = lesson.topic_id || 0;
-    return LESSON_COLOR_CLASSES[Math.abs(topicId) % LESSON_COLOR_CLASSES.length];
+    const students = getLessonStudents(lesson.class_id);
+    const studentCount = students.length;
+    const room = classrooms.find(r => r.id === lesson.room_id);
+    const roomSize = room?.size || 0;
+
+    if (roomSize >= studentCount) {
+      return 'bg-[rgba(59,130,246,0.8)] border-blue-400 text-white'; // 满足人数
+    } else if (studentCount - roomSize <= 2) {
+      return 'bg-yellow-100 border-yellow-200 text-yellow-800'; // 超过2个以内
+    } else {
+      return 'bg-red-100 border-red-200 text-red-800'; // 超过2个以上
+    }
   };
 
   // 创建教室课程映射表 - 课程可以跨越多个格子
@@ -302,10 +321,10 @@ export default function ClassroomViewPage() {
   // 格式化时间戳为时间字符串
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp * 1000);
-    return date.toLocaleTimeString('zh-CN', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false 
+      hour12: false
     });
   };
 
@@ -419,6 +438,23 @@ export default function ClassroomViewPage() {
           </div>
         </div>
 
+        {/* 图例 */}
+        <div className="flex items-center gap-6 text-sm bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+          <span className="font-medium text-gray-700">图例说明：</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-[rgba(59,130,246,0.8)] border border-blue-400"></div>
+            <span className="text-gray-600">教室容量充足</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-yellow-100 border border-yellow-200"></div>
+            <span className="text-gray-600">超员 (≤2人)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-100 border border-red-200"></div>
+            <span className="text-gray-600">严重超员 (&gt;2人)</span>
+          </div>
+        </div>
+
         {loading ? (
           <div className="flex items-center gap-3 rounded-lg border border-dashed border-gray-300 bg-white px-4 py-16 text-sm text-gray-500">
             <ClockIcon className="h-5 w-5 animate-pulse" /> 正在加载教室数据...
@@ -475,7 +511,7 @@ export default function ClassroomViewPage() {
                           {campus.rooms.map(room => {
                             const lessonsForRoom = cellMap[room.roomId] ?? [];
                             const currentCell = lessonsForRoom[slotIndex];
-                            
+
                             if (currentCell === null) {
                               // 被跨越的格子，不渲染
                               return null;
@@ -484,9 +520,14 @@ export default function ClassroomViewPage() {
                             if (currentCell) {
                               const span = cellSpan[room.roomId]?.[slotIndex] ?? 1;
                               const colorClass = getLessonColor(currentCell);
-                              const needsDarkText = colorClass.includes('yellow') || colorClass.includes('orange');
-                              const containerTextClass = needsDarkText ? 'text-gray-900' : 'text-white';
-                              const subtleTextClass = needsDarkText ? 'text-gray-700' : 'text-blue-100';
+                              // const needsDarkText = colorClass.includes('yellow') || colorClass.includes('orange');
+                              // const containerTextClass = needsDarkText ? 'text-gray-900' : 'text-white';
+                              // const subtleTextClass = needsDarkText ? 'text-gray-700' : 'text-blue-100';
+
+                              // 使用新的颜色类，文本颜色已经包含在 colorClass 中
+                              const containerTextClass = 'text-inherit';
+                              const subtleTextClass = 'opacity-75';
+
                               const students = getLessonStudents(currentCell.class_id);
                               const studentsDisplay = students.length > 0 ? students.join('、') : '暂无学生信息';
                               const topicName = getLessonTopicName(currentCell);
@@ -549,7 +590,7 @@ export default function ClassroomViewPage() {
                   <XMarkIcon className="h-5 w-5" />
                 </button>
               </div>
-              
+
               <div className="px-6 py-4 space-y-4">
                 {/* 基本信息 */}
                 <div className="space-y-3">
@@ -596,7 +637,7 @@ export default function ClassroomViewPage() {
                     <UserIcon className="h-5 w-5 text-orange-500" />
                     <span className="font-medium text-gray-900">学生列表</span>
                   </div>
-                  
+
                   {(() => {
                     const students = getLessonStudents(selectedLesson.class_id);
                     if (students.length === 0) {
@@ -606,7 +647,7 @@ export default function ClassroomViewPage() {
                         </div>
                       );
                     }
-                    
+
                     return (
                       <div className="space-y-1">
                         <div className="text-sm text-gray-600 mb-2">共 {students.length} 人</div>

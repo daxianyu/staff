@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, memo, Fragment } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { 
+import {
   ExclamationTriangleIcon,
   ArrowPathIcon,
   ArrowDownTrayIcon,
@@ -114,7 +114,7 @@ export default function StudentPdfsPage() {
         getStudentPdf(),
         getEvaluateSelect(),
       ]);
-      
+
       if (pdfResult.code === 200 && pdfResult.data) {
         setStudents(pdfResult.data.student_list || []);
         // 保存所有数据字段
@@ -131,7 +131,7 @@ export default function StudentPdfsPage() {
         console.error('获取Student PDF列表失败:', pdfResult.message);
         setStudents([]);
       }
-      
+
       if (evaluateResult.code === 200 && evaluateResult.data) {
         const options = {
           student_evaluate: evaluateResult.data.student_evaluate || {},
@@ -158,12 +158,12 @@ export default function StudentPdfsPage() {
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
       // 先根据tab过滤（在读/非在读）
-      const matchesTab = activeTab === 'active' 
-        ? student.active === 1 
+      const matchesTab = activeTab === 'active'
+        ? student.active === 1
         : student.active !== 1;
-      
+
       if (!matchesTab) return false;
-      
+
       // 再根据搜索关键词过滤
       const fullName = `${student.first_name || ''}${student.last_name || ''}`.toLowerCase();
       const longId = (student.student_long_id || '').toLowerCase();
@@ -176,11 +176,11 @@ export default function StudentPdfsPage() {
   const toggleExpand = useCallback((studentId: number) => {
     setExpandedStudents(prev => {
       const newExpanded = new Set(prev);
-    if (newExpanded.has(studentId)) {
-      newExpanded.delete(studentId);
-    } else {
-      newExpanded.add(studentId);
-    }
+      if (newExpanded.has(studentId)) {
+        newExpanded.delete(studentId);
+      } else {
+        newExpanded.add(studentId);
+      }
       return newExpanded;
     });
   }, []);
@@ -262,11 +262,11 @@ export default function StudentPdfsPage() {
     } else if (reportType === 'predict') {
       handleOpenPredictModal(student);
       return;
-      } else if (reportType === 'am') {
-        // 美本成绩单需要输入参数
+    } else if (reportType === 'am') {
+      // 美本成绩单需要输入参数
       setSelectedStudentForAm(student);
-        setShowAmReportModal(true);
-        return;
+      setShowAmReportModal(true);
+      return;
     } else if (reportType === 'academic' || reportType === 'mock') {
       // 学术报告或模考报告需要选择学期
       console.log('打开模态框:', { studentId: student.id, reportType });
@@ -283,11 +283,10 @@ export default function StudentPdfsPage() {
   // 处理 Predict 报告生成
   const handlePredictConfirm = useCallback(async (params: {
     graduation_date: string;
-    class_size: string;
     data: Array<{ alevel: string; date: string; course: string; score: string }>;
   }) => {
     if (!selectedStudentForPredict) return;
-    
+
     try {
       const student = selectedStudentForPredict;
       const enName = `${student.pinyin_first_name || ''} ${student.pinyin_last_name || ''}`.trim();
@@ -310,7 +309,7 @@ export default function StudentPdfsPage() {
         item.course,
         item.score,
       ]);
-      
+
       const result = await genPredictReport({
         student_id: student.id,
         name: enName || chineseName,
@@ -347,13 +346,13 @@ export default function StudentPdfsPage() {
     graduation_date: string;
   }) => {
     if (!selectedStudentForCertificate) return;
-    
+
     try {
       const student = selectedStudentForCertificate;
       const birthdayTimestamp = params.birthday ? Math.floor(new Date(params.birthday).getTime() / 1000) : 0;
       const studiedFromTimestamp = params.studied_from ? Math.floor(new Date(params.studied_from).getTime() / 1000) : 0;
       const graduationTimestamp = params.graduation_date ? Math.floor(new Date(params.graduation_date).getTime() / 1000) : 0;
-      
+
       const result = await genCertificateReport({
         student_id: student.id,
         name: params.name,
@@ -401,7 +400,7 @@ export default function StudentPdfsPage() {
     }>;
   }) => {
     if (!selectedStudentForTranscript) return;
-    
+
     try {
       const student = selectedStudentForTranscript;
       const isMale = params.gender === 'Male' ? 1 : 0;
@@ -417,7 +416,7 @@ export default function StudentPdfsPage() {
       const graduationTime = formatGraduationTime(params.graduation_date);
       const birthdayTimestamp = params.birthday ? Math.floor(new Date(params.birthday).getTime() / 1000) : 0;
       const durationFromTimestamp = params.duration_from ? Math.floor(new Date(params.duration_from).getTime() / 1000) : 0;
-      
+
       const result = await genTranscriptReport({
         student_id: student.id,
         name: params.name_pinyin,
@@ -469,7 +468,7 @@ export default function StudentPdfsPage() {
     }>;
   }) => {
     if (!selectedStudentForAm) return;
-    
+
     try {
       const student = selectedStudentForAm;
       // 转换数据格式为后端需要的格式
@@ -485,7 +484,7 @@ export default function StudentPdfsPage() {
         al_term2: item.grade12_s2 || ' ',
         al_final: item.grade12_final || ' ',
       }));
-      
+
       const result = await genAmReport({
         student_id: student.id,
         name: params.name,
@@ -527,7 +526,7 @@ export default function StudentPdfsPage() {
         alert('请选择学期');
         return;
       }
-      
+
       const result = await genViewReport({
         student_id: student.id,
         title: title,
@@ -551,15 +550,15 @@ export default function StudentPdfsPage() {
   // 确认生成报告（学术报告和模考报告）
   const handleConfirmGenerate = useCallback(() => {
     if (!reportConfig.studentId || !reportConfig.reportType) return;
-    
+
     const student = students.find(s => s.id === reportConfig.studentId);
     if (!student) return;
-    
+
     if (!selectedTitle) {
       alert('请选择学期');
       return;
     }
-    
+
     if (reportConfig.reportType === 'academic' || reportConfig.reportType === 'mock') {
       handleGenerateReport(
         student,
@@ -576,10 +575,10 @@ export default function StudentPdfsPage() {
       console.log('选项计算: 缺少 studentId 或 reportType', reportConfig);
       return [];
     }
-    
+
     const studentId = reportConfig.studentId;
     const reportType = reportConfig.reportType;
-    
+
     // 调试信息
     console.log('计算学期选项:', {
       studentId,
@@ -589,7 +588,7 @@ export default function StudentPdfsPage() {
       student_evaluate_value: evaluateOptions.student_evaluate[studentId],
       mock_evaluate_value: evaluateOptions.mock_evaluate[studentId],
     });
-    
+
     if (reportType === 'academic') {
       // 学术报告使用 student_evaluate
       const options = evaluateOptions.student_evaluate[studentId] || [];
@@ -601,7 +600,7 @@ export default function StudentPdfsPage() {
       console.log('模考报告选项 (mock_evaluate):', options);
       return options;
     }
-    
+
     console.log('选项计算: 未知的 reportType', reportType);
     return [];
   }, [reportConfig.studentId, reportConfig.reportType, evaluateOptions]);
@@ -626,11 +625,10 @@ export default function StudentPdfsPage() {
                     setActiveTab('active');
                     setSearchTerm(''); // 切换tab时清空搜索
                   }}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                    activeTab === 'active'
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeTab === 'active'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   在读学生
                 </button>
@@ -639,16 +637,15 @@ export default function StudentPdfsPage() {
                     setActiveTab('inactive');
                     setSearchTerm(''); // 切换tab时清空搜索
                   }}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                    activeTab === 'inactive'
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeTab === 'inactive'
                       ? 'bg-white text-red-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   非在读学生
                 </button>
               </div>
-              
+
               {/* 搜索框 */}
               <div className="relative flex-1 max-w-md">
                 <input
@@ -660,7 +657,7 @@ export default function StudentPdfsPage() {
                 />
               </div>
             </div>
-            
+
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={handleDownloadAllWishes}
@@ -706,7 +703,7 @@ export default function StudentPdfsPage() {
                     const isExpanded = expandedStudents.has(student.id);
                     return (
                       <Fragment key={student.id}>
-                        <tr 
+                        <tr
                           className="hover:bg-gray-50 transition-colors cursor-pointer"
                           onClick={() => toggleExpand(student.id)}
                         >
@@ -732,11 +729,10 @@ export default function StudentPdfsPage() {
                             {`${student.last_name || ''}${student.first_name || ''}`}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              student.active === 1 
-                                ? 'bg-green-100 text-green-800' 
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${student.active === 1
+                                ? 'bg-green-100 text-green-800'
                                 : 'bg-red-100 text-red-800'
-                            }`}>
+                              }`}>
                               {student.active === 1 ? '在读' : '非在读'}
                             </span>
                           </td>
@@ -749,7 +745,7 @@ export default function StudentPdfsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {student.wish_report === 1 ? '有' : '无'}
                           </td>
-                          <td 
+                          <td
                             className="px-6 py-4 whitespace-nowrap text-sm font-medium"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -828,7 +824,7 @@ export default function StudentPdfsPage() {
                                       <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
                                       Expected grades
                                     </button>
-                                    
+
                                     {/* Certificate - 总是显示 */}
                                     <button
                                       onClick={(e) => {
@@ -840,7 +836,7 @@ export default function StudentPdfsPage() {
                                       <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
                                       Certificate
                                     </button>
-                                    
+
                                     {/* Transcript 成绩单 - 总是显示 */}
                                     <button
                                       onClick={(e) => {
@@ -852,7 +848,7 @@ export default function StudentPdfsPage() {
                                       <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
                                       Transcript
                                     </button>
-                                    
+
                                     {/* 美本成绩单 (AM) - 总是显示 */}
                                     <button
                                       onClick={(e) => {
@@ -864,7 +860,7 @@ export default function StudentPdfsPage() {
                                       <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
                                       美本成绩单
                                     </button>
-                                    
+
                                     {/* 成绩单 - 只在 report === 1 时显示 */}
                                     {student.report === 1 && (
                                       <button
@@ -878,7 +874,7 @@ export default function StudentPdfsPage() {
                                         成绩单
                                       </button>
                                     )}
-                                    
+
                                     {/* 模考成绩报告 - 只在 mock_report === 1 时显示 */}
                                     {student.mock_report === 1 && (
                                       <button
@@ -930,7 +926,7 @@ export default function StudentPdfsPage() {
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -954,7 +950,7 @@ export default function StudentPdfsPage() {
                   </p>
                 )}
               </div>
-              
+
               {reportConfig.reportType === 'academic' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -970,7 +966,7 @@ export default function StudentPdfsPage() {
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
               <button
                 onClick={() => setShowReportModal(false)}

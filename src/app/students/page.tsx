@@ -95,7 +95,7 @@ export default function StudentsPage() {
 
   // 分页相关 state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(50);
 
   const canView =
     hasPermission(PERMISSIONS.VIEW_STUDENTS) ||

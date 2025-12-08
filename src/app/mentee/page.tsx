@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { 
+import {
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   UserGroupIcon,
@@ -103,8 +103,8 @@ const StudentStatusModal: React.FC<StudentStatusModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">
             {operationType === 'suspend' ? 'Suspend Student' :
-             operationType === 'dropout' ? 'Drop Out Student' :
-             operationType === 'graduate' ? 'Graduate Student' : 'Update Student Status'} - {student.student_name}
+              operationType === 'dropout' ? 'Drop Out Student' :
+                operationType === 'graduate' ? 'Graduate Student' : 'Update Student Status'} - {student.student_name}
           </h3>
           <button
             onClick={onClose}
@@ -418,12 +418,12 @@ const OperationsMenu: React.FC<OperationsMenuProps> = ({
   const hasMockReport = (evaluateOptions?.mock_evaluate && evaluateOptions.mock_evaluate[student.student_id] && evaluateOptions.mock_evaluate[student.student_id].length > 0) || false;
 
   const operations = [
-    { id: 'suspend', label: 'Suspend', icon: StopIcon, permission: canManageStatus, className: 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' },
-    { id: 'dropout', label: 'Drop out', icon: XCircleIcon, permission: canManageStatus, className: 'bg-red-100 text-red-600 hover:bg-red-200' },
-    { id: 'graduate', label: 'Graduate', icon: GraduateIcon, permission: canManageStatus, className: 'bg-green-100 text-green-600 hover:bg-green-200' },
+    { id: 'suspend', label: 'Suspend', icon: StopIcon, permission: canManageStatus, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
+    { id: 'dropout', label: 'Drop out', icon: XCircleIcon, permission: canManageStatus, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
+    { id: 'graduate', label: 'Graduate', icon: GraduateIcon, permission: canManageStatus, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
     { id: 'academic-report', label: 'Academic Report', icon: DocumentTextIcon, permission: hasAcademicReport, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
-    { id: 'mock-report', label: 'Mock Exam Report', icon: ClipboardDocumentListIcon, permission: hasMockReport, className: 'bg-purple-100 text-purple-600 hover:bg-purple-200' },
-    { id: 'graduation-wishes', label: 'Graduation Wishes', icon: HeartIcon, permission: canAddComplaint, className: 'bg-pink-100 text-pink-600 hover:bg-pink-200' },
+    { id: 'mock-report', label: 'Mock Exam Report', icon: ClipboardDocumentListIcon, permission: hasMockReport, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
+    { id: 'graduation-wishes', label: 'Graduation Wishes', icon: HeartIcon, permission: canAddComplaint, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
   ];
 
   const availableOperations = operations.filter(op => op.permission);
@@ -462,11 +462,11 @@ const OperationsMenu: React.FC<OperationsMenuProps> = ({
         {isOpen && (
           <>
             {/* Backdrop */}
-            <div 
-              className="fixed inset-0 z-10" 
+            <div
+              className="fixed inset-0 z-10"
               onClick={() => setIsOpen(false)}
             />
-            
+
             {/* Menu */}
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-20">
               <div className="py-1">
@@ -565,7 +565,7 @@ export default function MenteePage() {
   } | null>(null);
   const [evaluateOptions, setEvaluateOptions] = useState<EvaluateSelect | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [currentOperation, setCurrentOperation] = useState<string>('');
   const [showReportSelectionModal, setShowReportSelectionModal] = useState(false);
   const [reportSelectionData, setReportSelectionData] = useState<{
@@ -630,19 +630,19 @@ export default function MenteePage() {
     // Set confirmation data and show confirmation modal
     const postType = statusData.post_type;
     const confirmationTitle = postType === 1 ? 'Suspend Student' :
-                             postType === 2 ? 'Drop Out Student' : 'Graduate Student';
+      postType === 2 ? 'Drop Out Student' : 'Graduate Student';
     const confirmationMessage = postType === 1 ?
       `Are you sure you want to suspend ${selectedStudent?.student_name}?` :
       postType === 2 ?
-      `Are you sure you want to mark ${selectedStudent?.student_name} as dropped out? This action cannot be easily undone.` :
-      `Are you sure you want to mark ${selectedStudent?.student_name} as graduated? This will change their status to graduated.`;
+        `Are you sure you want to mark ${selectedStudent?.student_name} as dropped out? This action cannot be easily undone.` :
+        `Are you sure you want to mark ${selectedStudent?.student_name} as graduated? This will change their status to graduated.`;
 
     setConfirmationData({
       title: confirmationTitle,
       message: confirmationMessage,
       confirmText: postType === 1 ? 'Suspend' : postType === 2 ? 'Drop Out' : 'Graduate',
       confirmButtonClass: postType === 1 ? 'bg-yellow-600 hover:bg-yellow-700' :
-                         postType === 2 ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700',
+        postType === 2 ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700',
       action: () => performStatusUpdate(statusData),
     });
     setShowConfirmationModal(true);
@@ -837,7 +837,7 @@ export default function MenteePage() {
       // This would typically call a specific API for graduation wishes
       // For now, we'll use the complaint API as a placeholder
       const wishMessage = `Congratulations on your graduation, ${student.student_name}! Wishing you all the best in your future endeavors.`;
-      
+
       const response = await updateComplaint({
         student_id: student.student_id,
         complaint: wishMessage,
@@ -902,12 +902,12 @@ export default function MenteePage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Student Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Operations
-                        </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Student Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Operations
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -921,7 +921,7 @@ export default function MenteePage() {
                               </div>
                             </div>
                             <div className="ml-4">
-                              <Link 
+                              <Link
                                 href={`/mentee/student-detail?id=${student.student_id}`}
                                 className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
                               >
@@ -952,7 +952,7 @@ export default function MenteePage() {
                     <div className="text-sm text-gray-700">
                       显示第 {startIndex + 1} - {Math.min(endIndex, totalItems)} 条，共 {totalItems} 条记录
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                       {/* 每页显示数量选择器 */}
                       <div className="flex items-center gap-2">
@@ -962,10 +962,8 @@ export default function MenteePage() {
                           onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                           className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
-                          <option value={5}>5</option>
-                          <option value={10}>10</option>
-                          <option value={20}>20</option>
                           <option value={50}>50</option>
+                          <option value={100}>100</option>
                         </select>
                       </div>
 
@@ -978,7 +976,7 @@ export default function MenteePage() {
                         >
                           上一页
                         </button>
-                        
+
                         {/* 页码按钮 */}
                         {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
                           let page;
@@ -993,7 +991,7 @@ export default function MenteePage() {
                               page = currentPage - 3 + i;
                             }
                           }
-                          
+
                           if (page === currentPage) {
                             return (
                               <button
@@ -1015,7 +1013,7 @@ export default function MenteePage() {
                             );
                           }
                         })}
-                        
+
                         <button
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages}

@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import type { StudentPdfItem } from '@/services/auth';
+import SearchableSelect from '@/components/SearchableSelect';
 
 interface PredictModalProps {
   isOpen: boolean;
@@ -11,14 +12,12 @@ interface PredictModalProps {
   allCourse: string[];
   onConfirm: (params: {
     graduation_date: string;
-    class_size: string;
     data: Array<{ alevel: string; date: string; course: string; score: string }>;
   }) => Promise<void>;
 }
 
 export default function PredictModal({ isOpen, onClose, student, allCourse, onConfirm }: PredictModalProps) {
   const [graduationDate, setGraduationDate] = useState('');
-  const [classSize, setClassSize] = useState('');
   const [data, setData] = useState<Array<{ alevel: string; date: string; course: string; score: string }>>([]);
 
   // 格式化日期为 YYYY-MM-DD
@@ -36,11 +35,9 @@ export default function PredictModal({ isOpen, onClose, student, allCourse, onCo
     if (isOpen && student) {
       const date = formatDateForInput(student.graduation_date);
       setGraduationDate(date);
-      setClassSize('');
       setData([]);
     } else if (!isOpen) {
       setGraduationDate('');
-      setClassSize('');
       setData([]);
     }
   }, [isOpen, student, formatDateForInput]);
@@ -58,7 +55,7 @@ export default function PredictModal({ isOpen, onClose, student, allCourse, onCo
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    if (!graduationDate || !classSize) {
+    if (!graduationDate) {
       alert('请填写必填项');
       return;
     }
@@ -70,13 +67,12 @@ export default function PredictModal({ isOpen, onClose, student, allCourse, onCo
       alert('请填写完整的成绩数据');
       return;
     }
-    
+
     await onConfirm({
       graduation_date: graduationDate,
-      class_size: classSize,
       data: data,
     });
-  }, [graduationDate, classSize, data, onConfirm]);
+  }, [graduationDate, data, onConfirm]);
 
   if (!isOpen) return null;
 
@@ -92,7 +88,7 @@ export default function PredictModal({ isOpen, onClose, student, allCourse, onCo
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-        
+
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -107,21 +103,8 @@ export default function PredictModal({ isOpen, onClose, student, allCourse, onCo
                 required
               />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Graduating Class Size *
-              </label>
-              <input
-                type="number"
-                value={classSize}
-                onChange={(e) => setClassSize(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
           </div>
-          
+
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -161,7 +144,7 @@ export default function PredictModal({ isOpen, onClose, student, allCourse, onCo
                       </td>
                       <td className="px-3 py-2">
                         <input
-                          type="date"
+                          type="month"
                           value={item.date}
                           onChange={(e) => handleUpdateRow(index, 'date', e.target.value)}
                           className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -169,19 +152,19 @@ export default function PredictModal({ isOpen, onClose, student, allCourse, onCo
                         />
                       </td>
                       <td className="px-3 py-2">
-                        <input
-                          type="text"
-                          list={`course-list-${index}`}
+                        <SearchableSelect
+                          options={allCourse
+                            .filter(course => {
+                              // 过滤掉其他行已经选择的课程
+                              const isSelectedInOtherRow = data.some((d, i) => i !== index && d.course === course);
+                              return !isSelectedInOtherRow;
+                            })
+                            .map(course => ({ id: course, name: course }))}
                           value={item.course}
-                          onChange={(e) => handleUpdateRow(index, 'course', e.target.value)}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                          required
+                          onValueChange={(value) => handleUpdateRow(index, 'course', value as string)}
+                          placeholder="选择课程"
+                          searchPlaceholder="搜索课程..."
                         />
-                        <datalist id={`course-list-${index}`}>
-                          {allCourse.map(course => (
-                            <option key={course} value={course} />
-                          ))}
-                        </datalist>
                       </td>
                       <td className="px-3 py-2">
                         <input
@@ -208,7 +191,7 @@ export default function PredictModal({ isOpen, onClose, student, allCourse, onCo
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 sticky bottom-0 bg-white">
           <button
             onClick={onClose}

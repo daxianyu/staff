@@ -4,6 +4,8 @@ import Link from 'next/link';
 import TimePicker from '../../../components/TimePicker';
 import Button from '../../../components/Button';
 import NumberInput from '../../../components/NumberInput';
+import { useAuth } from '@/contexts/AuthContext';
+import { PERMISSIONS } from '@/types/auth';
 
 // 时间限制配置（从组件内移到外部）
 const DAY_START_TIME = '09:00'; // 早上9点
@@ -14,10 +16,10 @@ function useDebouncedConflict(
   enabled: boolean,
   start: Date | null,
   end: Date | null,
-  onConflictCheck?: (s: Date, e: Date) => Array<{start: Date; end: Date}>,
+  onConflictCheck?: (s: Date, e: Date) => Array<{ start: Date; end: Date }>,
   delay = 250
 ) {
-  const [conflicts, setConflicts] = useState<Array<{start: Date; end: Date}>>([]);
+  const [conflicts, setConflicts] = useState<Array<{ start: Date; end: Date }>>([]);
 
   useEffect(() => {
     if (!enabled || !start || !end || !onConflictCheck) {
@@ -49,7 +51,7 @@ interface AddEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTimeChange: (startTime: string, endTime: string) => void;
-  onSave: (event: Partial<ScheduleEvent> & { 
+  onSave: (event: Partial<ScheduleEvent> & {
     repeat?: 'none' | 'weekly';
     subject?: string;
     campus?: string;
@@ -76,9 +78,9 @@ interface AddEventModalProps {
   onEditFromReadOnly?: () => void; // 从只读模式进入编辑的回调
 }
 
-export default function AddEventModal({ 
-  isOpen, 
-  onClose, 
+export default function AddEventModal({
+  isOpen,
+  onClose,
   onSave,
   onTimeChange,
   selectedDate,
@@ -102,6 +104,8 @@ export default function AddEventModal({
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
   const [repeat, setRepeat] = useState<'none' | 'weekly'>('none');
+  const { hasPermission } = useAuth();
+  const canEditClass = hasPermission(PERMISSIONS.EDIT_CLASSES);
 
   // 课程相关表单字段
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -215,11 +219,11 @@ export default function AddEventModal({
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const isCloseButton = target.closest('button');
-    
+
     // 检查是否点击在标题区域（排除关闭按钮）
     if (!isCloseButton) {
       e.preventDefault();
-      
+
       const newDragState = {
         isDragging: true,
         startX: e.clientX,
@@ -227,10 +231,10 @@ export default function AddEventModal({
         startOffsetX: dragOffset.x,
         startOffsetY: dragOffset.y
       };
-      
+
       dragRef.current = newDragState;
       setIsDragging(true);
-      
+
       // 直接添加事件监听器
       const handleMove = (e: MouseEvent) => {
         if (dragRef.current.isDragging) {
@@ -238,7 +242,7 @@ export default function AddEventModal({
             x: dragRef.current.startOffsetX + (e.clientX - dragRef.current.startX),
             y: dragRef.current.startOffsetY + (e.clientY - dragRef.current.startY)
           };
-          
+
           setDragOffset(newOffset);
         }
       };
@@ -296,12 +300,12 @@ export default function AddEventModal({
     }
   }, [selectedTimeRange, position, isOpen]);
 
-    // 自动填充选中的时间范围
+  // 自动填充选中的时间范围
   useEffect(() => {
     if (selectedTimeRange && isOpen) {
       const startTimeStr = moment(selectedTimeRange.start).format('HH:mm');
       const endTimeStr = moment(selectedTimeRange.end).format('HH:mm');
-      
+
       setStartTime(startTimeStr);
       setEndTime(endTimeStr);
     }
@@ -312,7 +316,7 @@ export default function AddEventModal({
     hour: parseInt(startTime.split(':')[0]),
     minute: parseInt(startTime.split(':')[1])
   }).toDate() : null;
-  
+
   const end = selectedDate ? moment(selectedDate).set({
     hour: parseInt(endTime.split(':')[0]),
     minute: parseInt(endTime.split(':')[1])
@@ -377,21 +381,21 @@ export default function AddEventModal({
   const calculateModalProps = () => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    
+
     const modalWidth = 384; // w-96 = 384px
     const margin = 16; // 安全边距
     const estimatedContentHeight = 480; // 预估内容高度（紧凑版）
     const headerHeight = 50; // 标题区域高度（紧凑版）
     const footerHeight = 70; // 按钮区域高度（紧凑版）
-    
+
     let modalStyle: React.CSSProperties = {};
     let modalClassName = "bg-white rounded-lg shadow-2xl border border-gray-200";
     let needsScroll = false;
     let contentMaxHeight: number | undefined;
-    
+
     // 计算最大可用高度
     const maxAvailableHeight = screenHeight - 2 * margin;
-    
+
     // 确定最终的模态框高度
     let modalHeight: number;
     if (estimatedContentHeight > maxAvailableHeight) {
@@ -402,26 +406,26 @@ export default function AddEventModal({
       modalHeight = estimatedContentHeight;
       needsScroll = false;
     }
-    
+
     // ===== 基于DOM元素实际位置的智能定位 =====
     let adjustedX: number;
     let adjustedY: number;
     let finalSlideDirection: 'left' | 'right' | 'center' = 'right';
-    
+
     // 1. 尝试找到虚拟选中事件的DOM元素
     const selectedEventElement = document.querySelector('[class*="rbc-event"][style*="rgb(216, 27, 96)"]') as HTMLElement;
-    
+
     if (selectedEventElement) {
       // 找到了选中事件的DOM元素，获取其在视口中的实际位置
       const rect = selectedEventElement.getBoundingClientRect();
-      
 
-      
+
+
       // === 水平位置计算 ===
       const leftSpace = rect.left;
       const rightSpace = screenWidth - rect.right;
       const modalNeedsSpace = modalWidth + margin;
-      
+
       if (rightSpace >= modalNeedsSpace) {
         // 右侧空间充足，从选中区域右边缘开始，向右偏移20px
         adjustedX = rect.right + 20;
@@ -435,27 +439,27 @@ export default function AddEventModal({
         adjustedX = Math.max(margin, (screenWidth - modalWidth) / 2);
         finalSlideDirection = 'center';
       }
-      
+
       // 确保水平位置在安全范围内
       adjustedX = Math.max(margin, Math.min(adjustedX, screenWidth - modalWidth - margin));
-      
+
       // === 垂直位置计算 ===
       const selectionCenterY = rect.top + rect.height / 2;
       const modalCenterY = modalHeight / 2;
-      
+
       // 尝试让模态框中心与选中区域中心对齐
       const idealY = selectionCenterY - modalCenterY;
-      
+
       // 检查垂直空间
       const spaceAbove = rect.top;
       const spaceBelow = screenHeight - rect.bottom;
-      
+
       if (idealY >= margin && idealY + modalHeight <= screenHeight - margin) {
         // 理想位置可行，居中对齐
         adjustedY = idealY;
       } else {
         // 理想位置不可行，根据溢出方向决定对齐策略
-        
+
         if (idealY < margin) {
           // 理想位置会让弹出框顶部超出屏幕，说明上方区域不够
           adjustedY = Math.max(margin, rect.top);
@@ -467,42 +471,42 @@ export default function AddEventModal({
           adjustedY = idealY;
         }
       }
-      
 
-      
+
+
     } else if (position) {
       // 没找到DOM元素，回退到传入的位置参数
-      
+
       const { x, y, slideDirection = 'right' } = position;
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-      
+
       const viewportX = x - scrollLeft;
       const viewportY = y - scrollTop;
-      
+
       // 水平位置调整
       adjustedX = Math.min(
-        Math.max(margin, viewportX), 
+        Math.max(margin, viewportX),
         screenWidth - modalWidth - margin
       );
-      
+
       // ===== 重新设计的垂直位置逻辑 =====
       finalSlideDirection = slideDirection;
-      
+
       // 检查选中区域是否在当前视口范围内
       const isSelectionVisible = viewportY >= -50 && viewportY <= screenHeight + 50;
-      
 
-      
+
+
       if (isSelectionVisible) {
         // 选中区域在视口内，尝试贴近选中区域
         const idealBelowY = Math.max(margin, viewportY + 10);
         const idealAboveY = Math.max(margin, viewportY - modalHeight - 10);
-        
+
         // 检查空间
         const spaceBelow = screenHeight - idealBelowY - modalHeight;
         const spaceAbove = idealAboveY - margin;
-        
+
         if (spaceBelow >= 0) {
           // 下方有空间
           adjustedY = idealBelowY;
@@ -526,7 +530,7 @@ export default function AddEventModal({
               Math.min(viewportY - modalHeight - 20, screenHeight - modalHeight - margin)
             );
           }
-                      finalSlideDirection = slideDirection;
+          finalSlideDirection = slideDirection;
         }
       } else {
         // 选中区域不在当前视口内，智能选择位置
@@ -544,22 +548,22 @@ export default function AddEventModal({
           adjustedY = Math.min(
             screenHeight - modalHeight - margin,
             screenHeight * 0.4 - modalHeight / 2
-                      );
-            finalSlideDirection = 'center';
+          );
+          finalSlideDirection = 'center';
         }
       }
-      
+
     } else {
       // 默认居中显示
       adjustedX = (screenWidth - modalWidth) / 2;
       adjustedY = Math.max(margin, (screenHeight - modalHeight) / 2);
       finalSlideDirection = 'center';
     }
-    
+
     // 最终边界检查
     adjustedX = Math.max(margin, Math.min(adjustedX, screenWidth - modalWidth - margin));
     adjustedY = Math.max(margin, Math.min(adjustedY, screenHeight - modalHeight - margin));
-    
+
     // 动画变换
     let transform: string;
     if (isAnimating) {
@@ -578,7 +582,7 @@ export default function AddEventModal({
           break;
       }
     }
-    
+
     modalStyle = {
       position: 'fixed',
       left: `${adjustedX}px`,
@@ -591,19 +595,19 @@ export default function AddEventModal({
       opacity: isAnimating ? 1 : 0,
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     };
-    
 
-    
+
+
     return { modalStyle, modalClassName, needsScroll, contentMaxHeight };
   };
-  
+
   const { modalStyle, modalClassName, needsScroll, contentMaxHeight } = calculateModalProps();
 
   // 合并拖拽偏移到模态框样式
   const baseTransform = modalStyle.transform?.replace(/translate[XY]?\([^)]*\)/g, '') || '';
   const dragTransform = `translate(${dragOffset.x}px, ${dragOffset.y}px)`;
   const finalTransform = `${dragTransform} ${baseTransform}`.trim();
-  
+
   const finalModalStyle = {
     ...modalStyle,
     transform: finalTransform,
@@ -614,17 +618,17 @@ export default function AddEventModal({
   return (
     <>
       {/* 背景遮罩 - 纯视觉效果，不拦截事件 */}
-      <div 
+      <div
         className="fixed inset-0 z-50 pointer-events-none"
-        style={{ 
+        style={{
           background: 'rgba(0, 0, 0, 0.1)',
           opacity: isAnimating ? 0.5 : 0,
           transition: 'opacity 0.3s ease-in-out'
         }}
       />
-      
+
       {/* 模态框 - 直接定位，不阻止底层滚动 */}
-      <div 
+      <div
         style={finalModalStyle}
         className={modalClassName}
         data-modal="add-event"
@@ -632,17 +636,17 @@ export default function AddEventModal({
         {/* 统一的3段式布局：固定头部 + 可滚动内容 + 固定底部 */}
         <div className="flex flex-col h-full overflow-hidden">
           {/* 固定标题区域 - 可拖拽 */}
-          <div 
+          <div
             className="flex-shrink-0 px-4 py-3 border-b border-gray-100 bg-white rounded-t-lg cursor-move"
             onMouseDown={handleMouseDown}
             style={{ userSelect: 'none' }}
           >
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-gray-900">
-                {conflictOnlyDelete ? '删除不可用时间段' : 
-                 showDeleteMode ? '删除确认' :
-                 readOnly ? '课程详情' :
-                 mode === 'edit' ? '编辑安排' : '添加安排'}
+                {conflictOnlyDelete ? '删除不可用时间段' :
+                  showDeleteMode ? '删除确认' :
+                    readOnly ? '课程详情' :
+                      mode === 'edit' ? '编辑安排' : '添加安排'}
               </h3>
               <button
                 onClick={onClose}
@@ -663,7 +667,7 @@ export default function AddEventModal({
               </div>
             )}
           </div>
-          
+
           {/* 可滚动内容区域 */}
           <div className="flex-1 overflow-y-auto min-h-0 bg-white">
             {conflictOnlyDelete ? (
@@ -683,7 +687,7 @@ export default function AddEventModal({
                     {initialEvent?.title || '未知安排'} - {moment(initialEvent?.start).format('MM月DD日 HH:mm')} 至 {moment(initialEvent?.end).format('HH:mm')}
                   </p>
                 </div>
-                
+
                 {/* 删除周数设置 - 仅对课程显示 */}
                 {initialEvent?.type === 'lesson' && (
                   <>
@@ -699,7 +703,7 @@ export default function AddEventModal({
                         helpText="设置要删除的周数"
                       />
                     </div>
-                    
+
                     <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-md p-3">
                       <p className="text-yellow-700 text-xs">
                         删除后将同时删除后续 {deleteRepeatNum} 周的相同安排
@@ -707,7 +711,7 @@ export default function AddEventModal({
                     </div>
                   </>
                 )}
-                
+
                 {/* 监考删除提示 */}
                 {initialEvent?.type === 'invigilate' && (
                   <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -727,14 +731,16 @@ export default function AddEventModal({
                         {initialEvent?.title || initialEvent?.subject_name || '未命名课程'}
                       </p>
                       <div className="mt-2 flex space-x-2">
-                        <Link
-                          href={`/class/edit?id=${initialEvent.class_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
-                        >
-                          编辑课程
-                        </Link>
+                        {canEditClass && (
+                          <Link
+                            href={`/class/edit?id=${initialEvent.class_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
+                          >
+                            编辑课程
+                          </Link>
+                        )}
                         <Link
                           href={`/class/view?id=${initialEvent.class_id}`}
                           target="_blank"
@@ -788,9 +794,30 @@ export default function AddEventModal({
                           {initialEvent?.students && (
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">学生</label>
-                              <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
-                                {initialEvent.students}
-                              </p>
+                              <div className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200 flex flex-wrap gap-2">
+                                {(() => {
+                                  const studentNames = initialEvent.students.split(',');
+                                  const studentIds = initialEvent.student_ids || [];
+
+                                  // 只有有编辑权限时才显示链接
+                                  if (canEditClass && studentIds.length === studentNames.length) {
+                                    const basePath = process.env.NODE_ENV === 'production' ? '/staff' : '';
+                                    return studentNames.map((name: string, index: number) => (
+                                      <Link
+                                        key={index}
+                                        href={`${basePath}/students/schedule?studentId=${studentIds[index]}`}
+                                        target="_blank"
+                                        className="text-blue-600 hover:underline hover:text-blue-800"
+                                      >
+                                        {name}
+                                        {index < studentNames.length - 1 ? ',' : ''}
+                                      </Link>
+                                    ));
+                                  }
+
+                                  return initialEvent.students;
+                                })()}
+                              </div>
                             </div>
                           )}
                           {initialEvent?.student_name && (
@@ -803,14 +830,14 @@ export default function AddEventModal({
                           )}
                         </>
                       )}
-                      
+
                       {/* 编辑模式下显示可编辑字段 */}
                       {!readOnly && (
                         <>
                           {scheduleData?.staff_class && mode !== 'edit' && (
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Class Subject</label>
-                              <select 
+                              <select
                                 value={selectedSubject}
                                 onChange={(e) => setSelectedSubject(e.target.value)}
                                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
@@ -824,7 +851,7 @@ export default function AddEventModal({
                           {scheduleData?.campus_info && mode !== 'edit' && (
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Campus rooms</label>
-                              <select 
+                              <select
                                 value={selectedCampus}
                                 onChange={(e) => setSelectedCampus(e.target.value)}
                                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
@@ -838,7 +865,7 @@ export default function AddEventModal({
                           {scheduleData?.room_info && (
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Pick room</label>
-                              <select 
+                              <select
                                 value={selectedRoom}
                                 onChange={(e) => setSelectedRoom(e.target.value)}
                                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
@@ -853,7 +880,7 @@ export default function AddEventModal({
                           {mode !== 'edit' && (
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Replace room when booked</label>
-                              <select 
+                              <select
                                 value={replaceRoomWhenBooked ? 'yes' : 'no'}
                                 onChange={(e) => setReplaceRoomWhenBooked(e.target.value === 'yes')}
                                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
@@ -879,7 +906,7 @@ export default function AddEventModal({
                               {scheduleData.class_topics[selectedTopic] || selectedTopic}
                             </p>
                           ) : (
-                            <select 
+                            <select
                               value={selectedTopic}
                               onChange={(e) => setSelectedTopic(e.target.value)}
                               className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
@@ -928,7 +955,7 @@ export default function AddEventModal({
                           <option value="none">不重复</option>
                           <option value="weekly">每周</option>
                         </select>
-                        
+
                         {/* 重复次数输入框 - 仅对课程，且选择重复时显示 */}
                         {eventType === 'lesson' && repeat === 'weekly' && (
                           <NumberInput
@@ -986,9 +1013,9 @@ export default function AddEventModal({
                               const nextMinutes = minutes + 15;
                               const nextHours = nextMinutes >= 60 ? hours + 1 : hours;
                               const adjustedMinutes = nextMinutes >= 60 ? nextMinutes - 60 : nextMinutes;
-                              
+
                               const newEndTime = `${nextHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
-                              
+
                               // 确保新的结束时间不超过当天的最晚时间
                               const finalEndTime = newEndTime <= DAY_END_TIME ? newEndTime : DAY_END_TIME;
                               setEndTime(finalEndTime);
@@ -1010,9 +1037,9 @@ export default function AddEventModal({
                               const prevMinutes = minutes - 15;
                               const prevHours = prevMinutes < 0 ? hours - 1 : hours;
                               const adjustedMinutes = prevMinutes < 0 ? prevMinutes + 60 : prevMinutes;
-                              
+
                               const newStartTime = `${prevHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
-                              
+
                               // 确保新的开始时间不早于当天的最早时间
                               const finalStartTime = newStartTime >= DAY_START_TIME ? newStartTime : DAY_START_TIME;
                               setStartTime(finalStartTime);
@@ -1028,7 +1055,7 @@ export default function AddEventModal({
               </div>
             )}
           </div>
-          
+
           {/* 固定底部按钮区域 */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-white rounded-b-lg">
             <div className="flex justify-end space-x-2">

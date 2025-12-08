@@ -5,15 +5,15 @@ import * as Popover from '@radix-ui/react-popover';
 import { Command } from 'cmdk';
 import { ChevronDownIcon, CheckIcon } from '@radix-ui/react-icons';
 
-interface Option {
-  id: number; // 外部类型保持 number（运行时允许传入可转为数字的字符串）
+interface Option<T extends string | number> {
+  id: T;
   name: string;
 }
 
-interface SearchableSelectProps {
-  options: Option[];
-  value: number | number[];
-  onValueChange: (value: number | number[]) => void;
+interface SearchableSelectProps<T extends string | number> {
+  options: Option<T>[];
+  value: T | T[];
+  onValueChange: (value: T | T[]) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
@@ -22,7 +22,7 @@ interface SearchableSelectProps {
   onSearch?: (value: string) => void;
 }
 
-export default function SearchableSelect({
+export default function SearchableSelect<T extends string | number>({
   options,
   value,
   onValueChange,
@@ -32,28 +32,24 @@ export default function SearchableSelect({
   disabled = false,
   multiple = false,
   onSearch
-}: SearchableSelectProps) {
+}: SearchableSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // 统一在运行时把可能的字符串 ID 转为 number
-  const toNum = (v: unknown): number => {
-    const n = Number(v);
-    return Number.isNaN(n) ? (v as number) : n;
-  };
+  // Helper to compare values
+  const isEqual = (a: T, b: T) => a === b;
 
   // 当前选中项
   const selectedOptions = multiple
-    ? options.filter(option => (value as number[]).includes(toNum(option.id)))
-    : options.find(option => toNum(option.id) === toNum(value as number));
+    ? options.filter(option => (value as T[]).includes(option.id))
+    : options.find(option => isEqual(option.id, value as T));
 
   // 处理选择
-  const handleSelect = (selectedValue: string) => {
-    const selectedId = toNum(selectedValue);
+  const handleSelect = (selectedId: T) => {
     if (multiple) {
-      const currentValues = (value as number[]) || [];
+      const currentValues = (value as T[]) || [];
       const exists = currentValues.includes(selectedId);
       const newValues = exists
-        ? currentValues.filter(id => id !== selectedId)
+        ? currentValues.filter(id => !isEqual(id, selectedId))
         : [...currentValues, selectedId];
       onValueChange(newValues);
     } else {
@@ -63,10 +59,10 @@ export default function SearchableSelect({
   };
 
   // 移除多选中的项目
-  const removeSelected = (idToRemove: number) => {
+  const removeSelected = (idToRemove: T) => {
     if (multiple) {
-      const currentValues = value as number[];
-      const newValues = currentValues.filter(id => id !== idToRemove);
+      const currentValues = value as T[];
+      const newValues = currentValues.filter(id => !isEqual(id, idToRemove));
       onValueChange(newValues);
     }
   };
@@ -74,12 +70,12 @@ export default function SearchableSelect({
   // 显示文本
   const getDisplayText = () => {
     if (multiple) {
-      const selected = selectedOptions as Option[];
+      const selected = selectedOptions as Option<T>[];
       if (selected.length === 0) return placeholder;
       if (selected.length === 1) return selected[0].name;
       return `${selected.length} 项已选择`;
     } else {
-      return (selectedOptions as Option)?.name || placeholder;
+      return (selectedOptions as Option<T>)?.name || placeholder;
     }
   };
 
@@ -98,10 +94,10 @@ export default function SearchableSelect({
           aria-label={placeholder}
         >
           <div className="flex-1 text-left">
-            {multiple && (selectedOptions as Option[]).length > 0 ? (
+            {multiple && (selectedOptions as Option<T>[]).length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {(() => {
-                  const selected = selectedOptions as Option[];
+                  const selected = selectedOptions as Option<T>[];
                   const maxDisplay = 3;
                   const displayOptions = selected.slice(0, maxDisplay);
                   const remainingCount = selected.length - maxDisplay;
@@ -110,7 +106,7 @@ export default function SearchableSelect({
                     <>
                       {displayOptions.map(option => (
                         <span
-                          key={toNum(option.id)}
+                          key={String(option.id)}
                           className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
                         >
                           {option.name}
@@ -119,13 +115,13 @@ export default function SearchableSelect({
                             tabIndex={0}
                             onClick={(e) => {
                               e.stopPropagation();
-                              removeSelected(toNum(option.id));
+                              removeSelected(option.id);
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                removeSelected(toNum(option.id));
+                                removeSelected(option.id);
                               }
                             }}
                             className="ml-1 hover:text-blue-600 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 rounded"
@@ -178,14 +174,14 @@ export default function SearchableSelect({
               </Command.Empty>
               {options.map((option) => {
                 const isSelected = multiple
-                  ? (value as number[]).includes(toNum(option.id))
-                  : toNum(option.id) === toNum(value as number);
+                  ? (value as T[]).includes(option.id)
+                  : isEqual(option.id, value as T);
 
                 return (
                   <Command.Item
-                    key={toNum(option.id)}
+                    key={String(option.id)}
                     value={`${option.id} ${option.name}`}
-                    onSelect={() => handleSelect(String(option.id))}
+                    onSelect={() => handleSelect(option.id)}
                     className="
                       relative flex items-center px-3 py-2 text-sm select-none cursor-pointer rounded
                       data-[selected]:bg-blue-50 data-[selected]:text-blue-900

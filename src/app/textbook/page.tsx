@@ -37,7 +37,7 @@ export default function TextbookPage() {
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -402,9 +402,8 @@ export default function TextbookPage() {
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value={10}>10 条/页</option>
-                  <option value={20}>20 条/页</option>
                   <option value={50}>50 条/页</option>
+                  <option value={100}>100 条/页</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">

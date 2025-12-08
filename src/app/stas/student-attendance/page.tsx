@@ -55,7 +55,7 @@ export default function StudentAttendancePage() {
   const [selectedStudent, setSelectedStudent] = useState<StudentAttendanceData | null>(null);
   const [attendanceDetails, setAttendanceDetails] = useState<{ rows: AttendanceDetail[]; total: number } | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  
+
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(1000);
@@ -101,7 +101,7 @@ export default function StudentAttendancePage() {
       const year = now.getFullYear();
       const month = now.getMonth() + 1;
       const queryData = `${year}_${month}`;
-      
+
       const response = await getStudentAttendanceDetail(student.student_id, queryData) as ApiResponse<{ rows: AttendanceDetail[]; total: number }>;
       if (response.code === 200) {
         setAttendanceDetails(response.data);
@@ -124,13 +124,13 @@ export default function StudentAttendancePage() {
   const generateMonthOptions = () => {
     const options = [];
     const now = new Date();
-    
+
     for (let i = -6; i <= 0; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       const monthValue = Math.floor((date.getTime() - new Date(1970, 0, 1).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
-      
+
       options.push({
         value: monthValue,
         label: `${year}年${month}月`
@@ -239,7 +239,7 @@ export default function StudentAttendancePage() {
                   className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
+
               {/* 导出按钮 */}
               <ExcelExporter
                 config={{
@@ -267,7 +267,7 @@ export default function StudentAttendancePage() {
               学生考勤统计
             </h3>
           </div>
-          
+
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -314,29 +314,28 @@ export default function StudentAttendancePage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {item.student_name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {item.student_campus}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {item.mentor_name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {item.unattendance}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {item.attendance}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {item.lesson_count}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.percent && item.percent < 0.8 
-                              ? 'bg-red-100 text-red-800' 
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.percent && item.percent < 0.8
+                              ? 'bg-red-100 text-red-800'
                               : item.percent && item.percent < 0.9
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}>
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
                             {item.percent ? `${Math.round(item.percent * 100)}%` : '暂无'}
                           </span>
                         </td>
@@ -394,16 +393,15 @@ export default function StudentAttendancePage() {
                     } else {
                       pageNum = currentPage - 3 + i;
                     }
-                    
+
                     return (
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${
-                          currentPage === pageNum
+                        className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${currentPage === pageNum
                             ? 'bg-blue-600 border-blue-600 text-white'
                             : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -454,7 +452,7 @@ export default function StudentAttendancePage() {
                   </svg>
                 </button>
               </div>
-              
+
               <div className="p-6 overflow-y-auto max-h-[60vh]">
                 {detailsLoading ? (
                   <div className="flex justify-center items-center py-12">
@@ -472,11 +470,10 @@ export default function StudentAttendancePage() {
                           <span className="text-sm font-medium text-gray-900">
                             {detail.topic_name || detail.class_name}
                           </span>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            detail.authorized === 1 
-                              ? 'bg-yellow-100 text-yellow-800' 
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${detail.authorized === 1
+                              ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-red-100 text-red-800'
-                          }`}>
+                            }`}>
                             {detail.authorized_text}
                           </span>
                         </div>
@@ -508,7 +505,7 @@ export default function StudentAttendancePage() {
               <div className="bg-green-50 rounded-lg p-4">
                 <div className="text-sm font-medium text-green-600">平均出勤率</div>
                 <div className="text-2xl font-bold text-green-900">
-                  {data.rows.length > 0 
+                  {data.rows.length > 0
                     ? Math.round(data.rows.reduce((sum, item) => sum + (item.percent || 0), 0) / data.rows.length * 100)
                     : 0}%
                 </div>

@@ -44,7 +44,7 @@ export default function ExitPermitPage() {
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -494,8 +494,6 @@ export default function ExitPermitPage() {
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px]"
                 >
-                  <option value={10}>10条/页</option>
-                  <option value={20}>20条/页</option>
                   <option value={50}>50条/页</option>
                   <option value={100}>100条/页</option>
                 </select>

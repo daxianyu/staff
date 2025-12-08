@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { 
+import {
   getClassChangeRecordList,
   updateClassChangeStatus,
   addClassChangeRecord,
@@ -12,8 +12,8 @@ import {
   type UpdateClassChangeStatusParams,
   type AddClassChangeRecordParams
 } from '@/services/auth';
-import { 
-  CalendarIcon, 
+import {
+  CalendarIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   PlusIcon,
@@ -62,13 +62,13 @@ export default function ClassChangeOverviewPage() {
   // 加载调课记录
   const loadRecords = async () => {
     if (!canView) return;
-    
+
     setLoading(true);
     try {
       const params: ClassChangeRecordListParams = {};
       if (startDate) params.start_day = startDate;
       if (endDate) params.end_day = endDate;
-      
+
       const response = await getClassChangeRecordList(params);
       if (response.code === 200 && response.data) {
         setRecords(response.data.rows);
@@ -193,7 +193,7 @@ export default function ClassChangeOverviewPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              
+
               {/* 日期范围选择 */}
               <div className="flex items-center space-x-2">
                 <CalendarIcon className="h-5 w-5 text-gray-400" />
@@ -212,7 +212,7 @@ export default function ClassChangeOverviewPage() {
                 />
               </div>
             </div>
-            
+
             {/* 添加按钮 */}
             <button
               onClick={() => setShowAddModal(true)}
@@ -264,7 +264,6 @@ export default function ClassChangeOverviewPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{record.apply_name}</div>
-                          <div className="text-sm text-gray-500">ID: {record.apply_id}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -273,17 +272,14 @@ export default function ClassChangeOverviewPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm text-gray-900">{record.operator_name || '-'}</div>
-                          {record.operator_id && (
-                            <div className="text-sm text-gray-500">ID: {record.operator_id}</div>
-                          )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-normal break-words" style={{ width: '300px', minWidth: '300px', maxWidth: '300px' }}>
+                        <div className="text-sm text-gray-900">
                           {record.desc}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-normal break-words" style={{ width: '100px', minWidth: '100px', maxWidth: '100px' }}>
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(record.status)}`}>
                           {record.status}
                         </span>
@@ -306,10 +302,10 @@ export default function ClassChangeOverviewPage() {
                                 setStatusAction('approve');
                                 setShowStatusModal(true);
                               }}
-                              className="text-green-600 hover:text-green-900"
+                              className="text-green-600 hover:text-green-900 text-sm border border-gray-300 rounded-md px-2 py-1"
                               title="通过"
                             >
-                              <CheckIcon className="h-4 w-4" />
+                              通过
                             </button>
                             <button
                               onClick={() => {
@@ -317,10 +313,10 @@ export default function ClassChangeOverviewPage() {
                                 setStatusAction('reject');
                                 setShowStatusModal(true);
                               }}
-                              className="text-red-600 hover:text-red-900"
+                              className="text-red-600 hover:text-red-900 text-sm border border-gray-300 rounded-md px-2 py-1"
                               title="拒绝"
                             >
-                              <XMarkIcon className="h-4 w-4" />
+                              拒绝
                             </button>
                           </div>
                         )}
@@ -370,139 +366,142 @@ export default function ClassChangeOverviewPage() {
       </div>
 
       {/* 添加记录模态框 */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">添加调课记录</h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">学生ID</label>
-                <input
-                  type="number"
-                  value={formData.student_id}
-                  onChange={(e) => setFormData({...formData, student_id: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+      {
+        showAddModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">添加调课记录</h3>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">学生姓名</label>
-                <input
-                  type="text"
-                  value={formData.student_name}
-                  onChange={(e) => setFormData({...formData, student_name: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">学生ID</label>
+                  <input
+                    type="number"
+                    value={formData.student_id}
+                    onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">学生姓名</label>
+                  <input
+                    type="text"
+                    value={formData.student_name}
+                    onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">老师ID</label>
+                  <input
+                    type="number"
+                    value={formData.teacher_id}
+                    onChange={(e) => setFormData({ ...formData, teacher_id: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">老师姓名</label>
+                  <input
+                    type="text"
+                    value={formData.teacher_name}
+                    onChange={(e) => setFormData({ ...formData, teacher_name: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">调课描述</label>
+                  <textarea
+                    value={formData.change_desc}
+                    onChange={(e) => setFormData({ ...formData, change_desc: e.target.value })}
+                    rows={3}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">老师ID</label>
-                <input
-                  type="number"
-                  value={formData.teacher_id}
-                  onChange={(e) => setFormData({...formData, teacher_id: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleAddRecord}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  添加
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">老师姓名</label>
-                <input
-                  type="text"
-                  value={formData.teacher_name}
-                  onChange={(e) => setFormData({...formData, teacher_name: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">调课描述</label>
-                <textarea
-                  value={formData.change_desc}
-                  onChange={(e) => setFormData({...formData, change_desc: e.target.value})}
-                  rows={3}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleAddRecord}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                添加
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* 状态更新模态框 */}
-      {showStatusModal && selectedRecord && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                {statusAction === 'approve' ? '通过申请' : '拒绝申请'}
-              </h3>
-              <button
-                onClick={() => setShowStatusModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="mb-4">
-              <p className="text-sm text-gray-500">
-                申请人: {selectedRecord.apply_name} | 学生: {selectedRecord.student_name}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                描述: {selectedRecord.desc}
-              </p>
-            </div>
-            {statusAction !== 'approve' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">拒绝原因</label>
-                <textarea
-                  value={statusFormData.reject_reason}
-                  onChange={(e) => setStatusFormData({reject_reason: e.target.value})}
-                  rows={3}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="请输入拒绝原因..."
-                />
+      {
+        showStatusModal && selectedRecord && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {statusAction === 'approve' ? '通过申请' : '拒绝申请'}
+                </h3>
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
               </div>
-            )}
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowStatusModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleUpdateStatus}
-                className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                  statusAction === 'approve' 
-                    ? 'bg-green-600 hover:bg-green-700' 
+              <div className="mb-4">
+                <p className="text-sm text-gray-500">
+                  申请人: {selectedRecord.apply_name} | 学生: {selectedRecord.student_name}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  描述: {selectedRecord.desc}
+                </p>
+              </div>
+              {statusAction !== 'approve' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">拒绝原因</label>
+                  <textarea
+                    value={statusFormData.reject_reason}
+                    onChange={(e) => setStatusFormData({ reject_reason: e.target.value })}
+                    rows={3}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="请输入拒绝原因..."
+                  />
+                </div>
+              )}
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleUpdateStatus}
+                  className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${statusAction === 'approve'
+                    ? 'bg-green-600 hover:bg-green-700'
                     : 'bg-red-600 hover:bg-red-700'
-                }`}
-              >
-                确认{statusAction === 'approve' ? '通过' : '拒绝'}
-              </button>
+                    }`}
+                >
+                  确认{statusAction === 'approve' ? '通过' : '拒绝'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

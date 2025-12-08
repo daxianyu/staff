@@ -27,7 +27,7 @@ export default function WeekendPlanOverviewPage() {
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_WEEKEND_PLAN);
@@ -317,10 +317,8 @@ export default function WeekendPlanOverviewPage() {
                           }}
                           className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                          <option value={5}>5</option>
-                          <option value={10}>10</option>
-                          <option value={20}>20</option>
                           <option value={50}>50</option>
+                          <option value={100}>100</option>
                         </select>
                       </div>
                       <div className="flex items-center gap-1">

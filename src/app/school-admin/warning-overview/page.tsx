@@ -24,24 +24,25 @@ import {
   type AddWarningRequest,
   type EditWarningRequest,
 } from '@/services/auth';
+import SearchableSelect from '@/components/SearchableSelect';
 
 export default function WarningOverviewPage() {
   const { hasPermission } = useAuth();
   const [warnings, setWarnings] = useState<WarningRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // 模态框状态
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedWarning, setSelectedWarning] = useState<WarningRecord | null>(null);
-  
+
   // 选项数据
   const [studentOptions, setStudentOptions] = useState<StudentOption[]>([]);
   const [oralWarnOptions, setOralWarnOptions] = useState<Record<string, string>>({});
   const [writeWarnOptions, setWriteWarnOptions] = useState<Record<string, string>>({});
-  
+
   // 表单数据
   const [formData, setFormData] = useState({
     student_id: 0,
@@ -142,13 +143,19 @@ export default function WarningOverviewPage() {
 
   // 提交新增
   const handleSubmitAdd = async () => {
-    if (!formData.student_id || !formData.warn_select || !formData.warn_reason) {
+    const isOtherSelected = formData.warn_select.split(',').includes('111');
+    if (!formData.student_id || !formData.warn_select || (isOtherSelected && !formData.warn_reason)) {
       alert('请填写完整信息');
       return;
     }
 
+    const submitData = {
+      ...formData,
+      warn_reason: isOtherSelected ? formData.warn_reason : ''
+    };
+
     try {
-      const response = await addWarning(formData as AddWarningRequest);
+      const response = await addWarning(submitData as AddWarningRequest);
       if (response.code === 200) {
         setShowAddModal(false);
         loadData();
@@ -163,17 +170,23 @@ export default function WarningOverviewPage() {
 
   // 提交编辑
   const handleSubmitEdit = async () => {
-    if (!selectedWarning || !formData.warn_select || !formData.warn_reason) {
+    const isOtherSelected = formData.warn_select.split(',').includes('111');
+    if (!selectedWarning || !formData.warn_select || (isOtherSelected && !formData.warn_reason)) {
       alert('请填写完整信息');
       return;
     }
 
+    const submitData = {
+      ...formData,
+      warn_reason: isOtherSelected ? formData.warn_reason : ''
+    };
+
     try {
       const response = await editWarning({
         record_id: selectedWarning.record_id,
-        ...formData,
+        ...submitData,
       } as EditWarningRequest);
-      
+
       if (response.code === 200) {
         setShowEditModal(false);
         loadData();
@@ -220,7 +233,7 @@ export default function WarningOverviewPage() {
     const newSelections = currentSelections.includes(value)
       ? currentSelections.filter(item => item !== value)
       : [...currentSelections, value];
-    
+
     setFormData(prev => ({
       ...prev,
       warn_select: newSelections.join(',')
@@ -316,21 +329,20 @@ export default function WarningOverviewPage() {
                           <div className="text-sm text-gray-900">{warning.campus_name}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            warning.warn_type === 1 
-                              ? 'bg-yellow-100 text-yellow-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${warning.warn_type === 1
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                            }`}>
                             {warning.warn_type_str}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                          <div className="text-sm text-gray-900 w-[200px] whitespace-pre-wrap break-words">
                             {warning.warn_select_str}
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                          <div className="text-sm text-gray-900 w-[200px] whitespace-pre-wrap break-words">
                             {warning.warn_reason}
                           </div>
                         </td>
@@ -423,16 +435,15 @@ export default function WarningOverviewPage() {
                           } else {
                             pageNum = currentPage - 3 + i;
                           }
-                          
+
                           return (
                             <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
-                              className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${
-                                currentPage === pageNum
-                                  ? 'bg-blue-600 border-blue-600 text-white'
-                                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                              }`}
+                              className={`w-8 h-8 flex items-center justify-center text-sm font-medium border rounded ${currentPage === pageNum
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
                             >
                               {pageNum}
                             </button>
@@ -470,16 +481,14 @@ export default function WarningOverviewPage() {
               <div className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">学生</label>
-                  <select
+                  <SearchableSelect
+                    options={studentOptions}
                     value={formData.student_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, student_id: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value={0}>请选择学生</option>
-                    {studentOptions.map(student => (
-                      <option key={student.id} value={student.id}>{student.name}</option>
-                    ))}
-                  </select>
+                    onValueChange={(val) => setFormData(prev => ({ ...prev, student_id: val as number }))}
+                    placeholder="请选择学生"
+                    searchPlaceholder="搜索学生..."
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">警告类型</label>
@@ -508,16 +517,18 @@ export default function WarningOverviewPage() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">警告原因</label>
-                  <textarea
-                    value={formData.warn_reason}
-                    onChange={(e) => setFormData(prev => ({ ...prev, warn_reason: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="请输入警告原因"
-                  />
-                </div>
+                {formData.warn_select.split(',').includes('111') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">警告原因</label>
+                    <textarea
+                      value={formData.warn_reason}
+                      onChange={(e) => setFormData(prev => ({ ...prev, warn_reason: e.target.value }))}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="请输入警告原因"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">警告时间</label>
                   <input
@@ -596,16 +607,18 @@ export default function WarningOverviewPage() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">警告原因</label>
-                  <textarea
-                    value={formData.warn_reason}
-                    onChange={(e) => setFormData(prev => ({ ...prev, warn_reason: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="请输入警告原因"
-                  />
-                </div>
+                {formData.warn_select.split(',').includes('111') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">警告原因</label>
+                    <textarea
+                      value={formData.warn_reason}
+                      onChange={(e) => setFormData(prev => ({ ...prev, warn_reason: e.target.value }))}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="请输入警告原因"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">警告时间</label>
                   <input

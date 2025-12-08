@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --header-bg: #3b7bc0;
+  --header-bg: #1e3965;
   --header-text: #fff;
   --sidebar-bg: linear-gradient(180deg, #4a90e2, #357abd);
   --sidebar-text: #fff;
@@ -12,7 +12,9 @@ html {
   box-sizing: border-box;
 }
 
-*, *:before, *:after {
+*,
+*:before,
+*:after {
   box-sizing: inherit;
 }
 

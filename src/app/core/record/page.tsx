@@ -3,19 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { 
-  getOperationRecordList, 
+import {
+  getOperationRecordList,
   getMentorChangeRecordList,
   type OperationRecord,
   type MentorChangeRecord,
-  type OperationRecordListParams 
+  type OperationRecordListParams
 } from '@/services/auth';
-import { 
-  ClockIcon, 
-  UserIcon, 
+import {
+  ClockIcon,
+  UserIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
-  CalendarIcon 
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 
 export default function CoreRecordPage() {
@@ -43,13 +43,13 @@ export default function CoreRecordPage() {
   // 加载操作记录
   const loadOperationRecords = async () => {
     if (!canView) return;
-    
+
     setLoading(true);
     try {
       const params: OperationRecordListParams = {};
       if (startDate) params.start_date = startDate;
       if (endDate) params.end_date = endDate;
-      
+
       const response = await getOperationRecordList(params);
       if (response.code === 200 && response.data) {
         setOperationRecords(response.data.rows);
@@ -64,7 +64,7 @@ export default function CoreRecordPage() {
   // 加载导师变更记录
   const loadMentorRecords = async () => {
     if (!canView) return;
-    
+
     setLoading(true);
     try {
       const response = await getMentorChangeRecordList();
@@ -127,22 +127,20 @@ export default function CoreRecordPage() {
             <nav className="-mb-px flex space-x-8" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('operation')}
-                className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'operation'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-4 px-6 border-b-2 font-medium text-sm ${activeTab === 'operation'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <ClockIcon className="w-5 h-5 inline-block mr-2" />
                 操作记录
               </button>
               <button
                 onClick={() => setActiveTab('mentor')}
-                className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'mentor'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-4 px-6 border-b-2 font-medium text-sm ${activeTab === 'mentor'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <UserIcon className="w-5 h-5 inline-block mr-2" />
                 导师变更记录
@@ -168,7 +166,7 @@ export default function CoreRecordPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              
+
               {/* 日期范围选择（仅操作记录） */}
               {activeTab === 'operation' && (
                 <>
@@ -208,7 +206,7 @@ export default function CoreRecordPage() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          操作员
+                          操作对象
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           操作类型
@@ -223,6 +221,9 @@ export default function CoreRecordPage() {
                           操作后
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          操作人
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           操作时间
                         </th>
                       </tr>
@@ -230,7 +231,7 @@ export default function CoreRecordPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredOperationRecords.map((record, index) => (
                         <tr key={index} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4">
                             <div className="flex items-center">
                               <div>
                                 <div className="text-sm font-medium text-gray-900">
@@ -240,27 +241,32 @@ export default function CoreRecordPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                              {record.operation_type_desc}
-                            </span>
-                          </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900 max-w-xs truncate">
+                            <div className="text-sm font-medium text-gray-900">
+                              {record.operation_type_desc}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4" style={{ width: '100px' }}>
+                            <div className="text-sm text-gray-900">
                               {record.operation_desc}
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-500 max-w-xs truncate">
+                            <div className="text-sm text-gray-500 max-w-xs">
                               {record.operation_before}
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-500 max-w-xs truncate">
+                            <div className="text-sm text-gray-500 max-w-xs">
                               {record.operation_after}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td>
+                            <div className="text-sm text-gray-500 max-w-xs">
+                              {record.operator}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
                             {record.op_time}
                           </td>
                         </tr>

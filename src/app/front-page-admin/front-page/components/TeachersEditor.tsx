@@ -16,7 +16,7 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(50);
 
     const handleEdit = (record: any) => {
         setEditingItem(record);
@@ -279,10 +279,8 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
                                             }}
                                             className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                                         >
-                                            <option value={5}>5 条/页</option>
-                                            <option value={10}>10 条/页</option>
-                                            <option value={20}>20 条/页</option>
                                             <option value={50}>50 条/页</option>
+                                            <option value={100}>100 条/页</option>
                                         </select>
                                         <button
                                             onClick={() => handlePageChange(currentPage - 1)}

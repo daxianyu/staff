@@ -33,7 +33,7 @@ export default function CommitmentPage() {
   const [students, setStudents] = useState<CommitmentStudent[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<CommitmentStudent[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [totalPages, setTotalPages] = useState(0);
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
   
@@ -315,9 +315,8 @@ export default function CommitmentPage() {
                         onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
                         className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
                         <option value={50}>50</option>
+                        <option value={100}>100</option>
                       </select>
                     </div>
                   </div>

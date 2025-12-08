@@ -60,7 +60,7 @@ export default function ClassroomPage() {
 
   // 分页相关状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(50);
 
   useEffect(() => {
     if (canView) {

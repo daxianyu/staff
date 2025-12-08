@@ -72,7 +72,7 @@ export default function LockerReturnManagementPage() {
 
   // 分页相关状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -399,9 +399,8 @@ export default function LockerReturnManagementPage() {
                     onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                     className="text-sm border border-gray-300 rounded px-2 py-1"
                   >
-                    <option value={10}>每页 10 条</option>
-                    <option value={20}>每页 20 条</option>
                     <option value={50}>每页 50 条</option>
+                    <option value={100}>每页 100 条</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">

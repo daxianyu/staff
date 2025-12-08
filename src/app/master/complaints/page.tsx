@@ -31,7 +31,7 @@ export default function ComplaintsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [canReply, setCanReply] = useState(false);
   
   // 回复模态框状态
@@ -299,10 +299,8 @@ export default function ComplaintsPage() {
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value={5}>5条/页</option>
-                  <option value={10}>10条/页</option>
-                  <option value={20}>20条/页</option>
                   <option value={50}>50条/页</option>
+                  <option value={100}>100条/页</option>
                 </select>
                 
                 <div className="flex items-center gap-1">

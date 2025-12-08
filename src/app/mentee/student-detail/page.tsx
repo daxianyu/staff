@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { 
+import {
   ExclamationTriangleIcon,
   UserIcon,
   AcademicCapIcon,
@@ -135,32 +135,32 @@ const LeaveModal: React.FC<LeaveModalProps> = ({
                 {lessons
                   .sort((a, b) => a.start_time - b.start_time)
                   .map((lesson) => (
-                  <label key={lesson.lesson_id} className={`flex items-center p-3 hover:bg-gray-50 ${!lesson.can_report_leave ? 'opacity-50' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={selectedLessons.includes(lesson.lesson_id)}
-                      disabled={!lesson.can_report_leave}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedLessons([...selectedLessons, lesson.lesson_id]);
-                        } else {
-                          setSelectedLessons(selectedLessons.filter(id => id !== lesson.lesson_id));
-                        }
-                      }}
-                      className="mr-3"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">教师：{lesson.teacher_name}</div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(lesson.start_time * 1000).toLocaleString()} - {new Date(lesson.end_time * 1000).toLocaleString()}
+                    <label key={lesson.lesson_id} className={`flex items-center p-3 hover:bg-gray-50 ${!lesson.can_report_leave ? 'opacity-50' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={selectedLessons.includes(lesson.lesson_id)}
+                        disabled={!lesson.can_report_leave}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedLessons([...selectedLessons, lesson.lesson_id]);
+                          } else {
+                            setSelectedLessons(selectedLessons.filter(id => id !== lesson.lesson_id));
+                          }
+                        }}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium">教师：{lesson.teacher_name}</div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(lesson.start_time * 1000).toLocaleString()} - {new Date(lesson.end_time * 1000).toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-500">{lesson.room_name}</div>
+                        {!lesson.can_report_leave && (
+                          <div className="text-sm text-red-500 mt-1">不可请假</div>
+                        )}
                       </div>
-                      <div className="text-sm text-gray-500">{lesson.room_name}</div>
-                      {!lesson.can_report_leave && (
-                        <div className="text-sm text-red-500 mt-1">不可请假</div>
-                      )}
-                    </div>
-                  </label>
-                ))}
+                    </label>
+                  ))}
               </div>
             ) : (
               <div className="p-4 text-center text-gray-500 border border-gray-300 rounded-md">
@@ -698,7 +698,7 @@ export default function StudentDetailPage() {
   const [languageExams, setLanguageExams] = useState<LanguageExamInfo | null>(null);
   const [normalExams, setNormalExams] = useState<NormalExamInfo | null>(null);
   const [lessons, setLessons] = useState<StudentLesson[]>([]);
-  const [examsInfo, setExamsInfo] = useState<{table_1: any[], table_2: any[]} | null>(null);
+  const [examsInfo, setExamsInfo] = useState<{ table_1: any[], table_2: any[] } | null>(null);
   const [selectOptions, setSelectOptions] = useState<any>(null);
 
   // 模态框状态
@@ -816,9 +816,9 @@ export default function StudentDetailPage() {
     { id: 'basic-info', label: 'Basic Info', icon: UserIcon },
     { id: 'university', label: 'University Choices', icon: AcademicCapIcon },
     { id: 'feedback', label: 'Feedback', icon: ChatBubbleBottomCenterTextIcon },
-    { 
-      id: 'exam-info', 
-      label: 'Exam Info', 
+    {
+      id: 'exam-info',
+      label: 'Exam Info',
       icon: DocumentTextIcon,
       children: [
         { id: 'exam-records', label: 'Exam Records' },
@@ -839,10 +839,10 @@ export default function StudentDetailPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                {studentInfo.english_name || '学生详情'}
+                {studentInfo.student_name || '学生详情'}
               </h1>
               <p className="text-gray-600 mt-1">
-                学生ID: {studentInfo.student_long_id} | 校区: {studentInfo.campus_name}
+                校区: {studentInfo.campus_name}
               </p>
             </div>
             <div className="flex space-x-3">
@@ -858,8 +858,8 @@ export default function StudentDetailPage() {
         </div>
 
         {/* 选项卡导航 */}
-        <div className="bg-white rounded-lg shadow mb-6" style={{overflow: 'visible'}}>
-          <div className="border-b border-gray-200 relative" style={{overflow: 'visible'}}>
+        <div className="bg-white rounded-lg shadow mb-6" style={{ overflow: 'visible' }}>
+          <div className="border-b border-gray-200 relative" style={{ overflow: 'visible' }}>
             <nav className="flex space-x-8 px-6 md:overflow-visible overflow-x-auto scrollbar-hide touch-pan-x" aria-label="Tabs">
               {tabs.map((tab) => (
                 <React.Fragment key={tab.id}>
@@ -872,11 +872,10 @@ export default function StudentDetailPage() {
                             console.log('Exam group clicked, current state:', examGroupExpanded);
                             setExamGroupExpanded(!examGroupExpanded);
                           }}
-                          className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                            activeTab.startsWith('exam-') 
-                              ? 'border-blue-500 text-blue-600' 
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                          }`}
+                          className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab.startsWith('exam-')
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
                         >
                           <tab.icon className="h-5 w-5 mr-2" />
                           {tab.label}
@@ -886,14 +885,14 @@ export default function StudentDetailPage() {
                             <ChevronRightIcon className="h-4 w-4 ml-1" />
                           )}
                         </button>
-                        
+
                         {examGroupExpanded && (
-                          <div 
-                            className="absolute top-full left-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-48 mt-1" 
+                          <div
+                            className="absolute top-full left-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-48 mt-1"
                             style={{
-                              position: 'absolute', 
-                              top: '100%', 
-                              left: '0', 
+                              position: 'absolute',
+                              top: '100%',
+                              left: '0',
                               zIndex: 9999,
                               display: 'block',
                               visibility: 'visible'
@@ -906,9 +905,8 @@ export default function StudentDetailPage() {
                                   setActiveTab(child.id);
                                   setExamGroupExpanded(false);
                                 }}
-                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
-                                  activeTab === child.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                                }`}
+                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${activeTab === child.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                  }`}
                               >
                                 {child.label}
                               </button>
@@ -922,11 +920,10 @@ export default function StudentDetailPage() {
                         <div key={child.id} className="relative md:hidden">
                           <button
                             onClick={() => setActiveTab(child.id)}
-                            className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                              activeTab === child.id 
-                                ? 'border-blue-500 text-blue-600' 
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                            className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === child.id
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                              }`}
                           >
                             <DocumentTextIcon className="h-5 w-5 mr-2" />
                             {child.label}
@@ -938,11 +935,10 @@ export default function StudentDetailPage() {
                     <div key={tab.id} className="relative">
                       <button
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                          activeTab === tab.id 
-                            ? 'border-blue-500 text-blue-600' 
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
+                        className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab.id
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
                       >
                         <tab.icon className="h-5 w-5 mr-2" />
                         {tab.label}
@@ -1068,7 +1064,7 @@ export default function StudentDetailPage() {
                   <div className="space-y-4">
                     <div className="flex">
                       <span className="w-40 text-sm font-medium text-gray-500">姓名:</span>
-                      <span className="text-sm text-gray-900">{studentInfo.english_name}</span>
+                      <span className="text-sm text-gray-900">{studentInfo.student_name}</span>
                     </div>
                     <div className="flex">
                       <span className="w-40 text-sm font-medium text-gray-500">校区:</span>
@@ -1255,7 +1251,7 @@ export default function StudentDetailPage() {
                             const countryKey = `university_country_${num}` as keyof typeof courseInfo.student_info;
                             const nameKey = `university_name_${num}` as keyof typeof courseInfo.student_info;
                             const courseKey = `university_course_${num}` as keyof typeof courseInfo.student_info;
-                            
+
                             return (
                               <tr key={num} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -1729,7 +1725,7 @@ export default function StudentDetailPage() {
           isOpen={showLeaveModal}
           onClose={() => setShowLeaveModal(false)}
           studentId={parseInt(studentId || '0')}
-          studentName={studentInfo.english_name}
+          studentName={studentInfo.student_name}
           lessons={lessons}
           onSuccess={() => {
             // 重新加载课程数据
@@ -1747,7 +1743,7 @@ export default function StudentDetailPage() {
           isOpen={showComplaintModal}
           onClose={() => setShowComplaintModal(false)}
           studentId={parseInt(studentId || '0')}
-          studentName={studentInfo.english_name}
+          studentName={studentInfo.student_name}
           onSuccess={() => {
             // 可以在这里添加成功后的处理逻辑
           }}
@@ -1757,7 +1753,7 @@ export default function StudentDetailPage() {
           isOpen={showAddLanguageModal}
           onClose={() => setShowAddLanguageModal(false)}
           studentId={parseInt(studentId || '0')}
-          studentName={studentInfo.english_name}
+          studentName={studentInfo.student_name}
           onSuccess={() => {
             // 重新加载语言考试成绩数据
             if (studentId) {
@@ -1774,7 +1770,7 @@ export default function StudentDetailPage() {
           isOpen={showAddNormalModal}
           onClose={() => setShowAddNormalModal(false)}
           studentId={parseInt(studentId || '0')}
-          studentName={studentInfo.english_name}
+          studentName={studentInfo.student_name}
           selectOptions={selectOptions}
           onSuccess={() => {
             // 重新加载大考成绩数据
@@ -1805,7 +1801,7 @@ export default function StudentDetailPage() {
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              
+
               <div className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">备注</label>
@@ -1818,7 +1814,7 @@ export default function StudentDetailPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-end gap-3 p-6 border-t">
                 <button
                   onClick={() => {
@@ -1833,20 +1829,20 @@ export default function StudentDetailPage() {
                 <button
                   onClick={async () => {
                     if (!selectedAssignment || !studentId) return;
-                    
+
                     try {
                       const result = await updateSingle({
                         student_id: parseInt(studentId),
                         record_id: selectedAssignment.id,
                         note: noteText,
                       });
-                      
+
                       if (result.code === 200) {
                         alert('更新成功');
                         setShowEditNoteModal(false);
                         setSelectedAssignment(null);
                         setNoteText('');
-                        
+
                         // 重新加载作业数据
                         if (studentId) {
                           const assignmentsResult = await getAssignment(studentId);
