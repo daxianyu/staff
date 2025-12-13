@@ -186,6 +186,8 @@ export default function AddEventModal({
       setSelectedTopic(initialEvent.topic_id || '');
       setNote(initialEvent.note || '');
       setRepeatNum(initialEvent.repeat_num || 1);
+
+      console.log("initialEvent", initialEvent);
     }
   }, [mode, initialEvent, isOpen]);
 
@@ -730,6 +732,14 @@ export default function AddEventModal({
                       <p className="w-full px-3 py-1.5 text-base text-blue-700 bg-blue-50 rounded-md border border-blue-200 font-bold">
                         {initialEvent?.title || initialEvent?.subject_name || '未命名课程'}
                       </p>
+                      {initialEvent?.class_name && (
+                        <div className="mt-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
+                          <p className="w-full px-3 py-1.5 text-base text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                            {initialEvent.class_name}
+                          </p>
+                        </div>
+                      )}
                       <div className="mt-2 flex space-x-2">
                         {canEditClass && (
                           <Link

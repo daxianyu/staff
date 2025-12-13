@@ -97,7 +97,7 @@ export default function ExamPage() {
   const [firstFeeSearchTerm, setFirstFeeSearchTerm] = useState('');
 
   // 下载相关状态
-  const [downloadLoading, setDownloadLoading] = useState<{[key: string]: boolean}>({});
+  const [downloadLoading, setDownloadLoading] = useState<{ [key: string]: boolean }>({});
 
   // 批量上传相关状态
   const [showBatchUploadModal, setShowBatchUploadModal] = useState(false);
@@ -164,7 +164,8 @@ export default function ExamPage() {
   };
 
   const handleEdit = (id: number) => {
-    window.open(`/staff/exam/edit?id=${id}`, '_blank');
+    const baseUrl = process.env.NODE_ENV === 'development' ? '/exam/edit' : '/staff/exam/edit';
+    window.open(`${baseUrl}?id=${id}`, '_blank');
   };
 
   // 显示确认对话框
@@ -338,10 +339,10 @@ export default function ExamPage() {
         const studentId = String(item[0] || '').toLowerCase();
         const studentName = String(item[1] || '').toLowerCase();
         const pinyin = String(item[3] || '').toLowerCase().replace(/\s+/g, '');
-        
-        return studentId.includes(searchTerm) || 
-               studentName.includes(searchTerm) || 
-               pinyin.includes(searchTerm);
+
+        return studentId.includes(searchTerm) ||
+          studentName.includes(searchTerm) ||
+          pinyin.includes(searchTerm);
       });
     }
 
@@ -439,8 +440,8 @@ export default function ExamPage() {
               <button
                 onClick={() => handleTabChange('exams')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'exams'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <div className="flex items-center gap-2">
@@ -451,8 +452,8 @@ export default function ExamPage() {
               <button
                 onClick={() => handleTabChange('firstFee')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'firstFee'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <div className="flex items-center gap-2">
@@ -537,7 +538,7 @@ export default function ExamPage() {
                   </button>
                 </div>
               </div>
-              </div>
+            </div>
 
             {/* Active Exams */}
             <div className="bg-white rounded-lg shadow mb-6">
@@ -579,11 +580,10 @@ export default function ExamPage() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredExams.map((exam) => (
-                        <tr 
-                          key={exam.id} 
-                          className={`transition-colors ${
-                            openDropdown === exam.id ? 'bg-gray-50' : 'hover:bg-gray-50'
-                          }`}
+                        <tr
+                          key={exam.id}
+                          className={`transition-colors ${openDropdown === exam.id ? 'bg-gray-50' : 'hover:bg-gray-50'
+                            }`}
                         >
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
@@ -711,11 +711,10 @@ export default function ExamPage() {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {filteredDisabledExams.map((exam) => (
-                          <tr 
-                            key={exam.id} 
-                            className={`transition-colors opacity-75 ${
-                              openDropdown === exam.id ? 'bg-gray-50' : 'hover:bg-gray-50'
-                            }`}
+                          <tr
+                            key={exam.id}
+                            className={`transition-colors opacity-75 ${openDropdown === exam.id ? 'bg-gray-50' : 'hover:bg-gray-50'
+                              }`}
                           >
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
@@ -802,8 +801,8 @@ export default function ExamPage() {
                 )}
               </div>
             )}
-            </>
-          )}
+          </>
+        )}
 
         {/* 首次费用报名记录Tab内容 */}
         {activeTab === 'firstFee' && (
@@ -913,8 +912,8 @@ export default function ExamPage() {
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="px-3 py-4 text-sm text-gray-900">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${item.type === 'inner'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-blue-100 text-blue-800'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-blue-100 text-blue-800'
                               }`}>
                               {item.type === 'inner' ? '内部' : '外部'}
                             </span>
@@ -971,8 +970,8 @@ export default function ExamPage() {
                               // 只显示当前页附近的页码
                               const delta = 2;
                               return page === 1 ||
-                                     page === paginatedData.totalPages ||
-                                     (page >= currentPage - delta && page <= currentPage + delta);
+                                page === paginatedData.totalPages ||
+                                (page >= currentPage - delta && page <= currentPage + delta);
                             })
                             .map((page, index, array) => {
                               // 添加省略号
@@ -986,11 +985,10 @@ export default function ExamPage() {
                                   )}
                                   <button
                                     onClick={() => handlePageChange(page)}
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                      page === currentPage
+                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${page === currentPage
                                         ? 'bg-blue-600 text-white'
                                         : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                                    }`}
+                                      }`}
                                   >
                                     {page}
                                   </button>

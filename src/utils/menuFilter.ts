@@ -653,6 +653,13 @@ export const defaultMenuConfig: MenuItem[] = [
         requiredPermissions: ['finance', 'sales_person'],
       },
       {
+        key: 'trade-info',
+        label: 'Trade Info',
+        path: '/accounting/trade-info',
+        icon: 'table',
+        requiredPermissions: [PERMISSIONS.FINANCE],
+      },
+      {
         key: 'disabled-students',
         label: 'Disabled Students',
         path: '/accounting/disabled-students',

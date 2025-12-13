@@ -62,7 +62,8 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
     const handleUpload = async (file: File) => {
         const res = await uploadImage(file);
         if (res.code === 200 && res.data) {
-            return res.data.url;
+            // 优先使用 file_path，如果没有则使用 url
+            return res.data.file_path || res.data.url;
         } else {
             throw new Error(res.message || '上传失败');
         }
@@ -421,11 +422,12 @@ const TeachersEditor: React.FC<Props> = ({ data, refresh }) => {
                     </Form.Item>
 
                     <Form.Item
-                        name="teacher_photo"
                         label={<span className="text-sm font-medium text-gray-700">照片</span>}
                     >
                         <Space.Compact style={{ width: '100%' }}>
-                            <Input placeholder="输入图片URL或上传" className={inputClass} />
+                            <Form.Item name="teacher_photo" noStyle>
+                                <Input placeholder="输入图片URL或上传" className={inputClass} />
+                            </Form.Item>
                             <Upload
                                 showUploadList={false}
                                 customRequest={async (options) => {

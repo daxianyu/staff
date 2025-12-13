@@ -217,9 +217,9 @@ export const getClassList = async (params: ClassListParams): Promise<ClassListRe
     };
   } catch (error) {
     console.error('获取班级列表失败:', error);
-    return { 
-      status: 500, 
-      message: '获取班级列表失败', 
+    return {
+      status: 500,
+      message: '获取班级列表失败',
       data: { list: [], total: 0 }
     };
   }
@@ -233,7 +233,7 @@ export const getAddClassSelectData = async (): Promise<{
 }> => {
   try {
     console.log('获取添加班级选择数据');
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -243,13 +243,13 @@ export const getAddClassSelectData = async (): Promise<{
       method: 'GET',
       headers,
     });
-    
+
     const data = await response.json();
     console.log('获取添加班级选择数据原始响应:', data);
-    
+
     // 适配器：将对象格式转换为数组格式
     let adaptedData: AddClassSelectData | undefined;
-    
+
     if (data.data) {
       // 转换学生信息：从对象 {id: name} 转为数组 [{id, name, student_id}]
       // 适配新版 student_info: [[id, name], ...] 的格式
@@ -278,15 +278,15 @@ export const getAddClassSelectData = async (): Promise<{
         });
       }
       console.log(campusInfo, studentInfo)
-      
+
       adaptedData = {
         student_info: studentInfo,
         campus_info: campusInfo,
       };
-      
+
       console.log('转换后的数据:', adaptedData);
     }
-    
+
     return {
       code: data.status === 0 ? 200 : 400,
       message: data.message || '',
@@ -305,7 +305,7 @@ export const getAddClassSelectData = async (): Promise<{
 export const addNewClass = async (params: NewClassParams): Promise<ApiResponse> => {
   try {
     console.log('添加新班级请求参数:', params);
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -316,10 +316,10 @@ export const addNewClass = async (params: NewClassParams): Promise<ApiResponse> 
       headers,
       body: JSON.stringify(params),
     });
-    
+
     const data = await response.json();
     console.log('添加新班级响应:', data);
-    
+
     return {
       code: data.status === 0 ? 200 : 400,
       message: data.message || '',
@@ -401,7 +401,7 @@ export const getClassView = async (classId: number): Promise<{
 }> => {
   try {
     console.log('获取class详情，ID:', classId);
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -411,10 +411,10 @@ export const getClassView = async (classId: number): Promise<{
       method: 'GET',
       headers,
     });
-    
+
     const data = await response.json();
     console.log('获取class详情响应:', data);
-    
+
     return {
       code: data.status === 0 ? 200 : 400,
       message: data.message || '',
@@ -492,7 +492,7 @@ export const getClassEditInfo = async (classId: number): Promise<{
 }> => {
   try {
     console.log('获取class编辑信息，ID:', classId);
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -502,10 +502,10 @@ export const getClassEditInfo = async (classId: number): Promise<{
       method: 'GET',
       headers,
     });
-    
+
     const data = await response.json();
     console.log('获取class编辑信息响应:', data);
-    
+
     return {
       code: data.status === 0 ? 200 : 400,
       message: data.message || '',
@@ -544,7 +544,7 @@ export interface EditClassParams {
 export const editClass = async (params: EditClassParams): Promise<ApiResponse> => {
   try {
     console.log('编辑class请求参数:', params);
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -555,13 +555,13 @@ export const editClass = async (params: EditClassParams): Promise<ApiResponse> =
       headers,
       body: JSON.stringify(params),
     });
-    
+
     const data = await response.json();
     console.log('编辑class响应:', data);
-    
+
     return {
       code: data.status === 0 ? 200 : 400,
-      message: data.message || '',
+      message: typeof data.message === 'object' ? JSON.stringify(data.message) : (data.message || ''),
       data: data.data,
     };
   } catch (error) {
@@ -584,7 +584,7 @@ export interface AddToGroupParams {
 export const addToGroup = async (params: AddToGroupParams): Promise<ApiResponse> => {
   try {
     console.log('Add to group请求参数:', params);
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -595,10 +595,10 @@ export const addToGroup = async (params: AddToGroupParams): Promise<ApiResponse>
       headers,
       body: JSON.stringify(params),
     });
-    
+
     const data = await response.json();
     console.log('Add to group响应:', data);
-    
+
     return {
       code: data.status === 0 ? 200 : 400,
       message: data.message || '',
@@ -622,7 +622,7 @@ export interface UpdateClassStatusParams {
 export const updateClassStatus = async (params: UpdateClassStatusParams): Promise<ApiResponse> => {
   try {
     console.log('更新班级状态请求参数:', params);
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -633,10 +633,10 @@ export const updateClassStatus = async (params: UpdateClassStatusParams): Promis
       headers,
       body: JSON.stringify(params),
     });
-    
+
     const data = await response.json();
     console.log('更新班级状态响应:', data);
-    
+
     return {
       code: data.status === 0 ? 200 : 400,
       message: data.message || '',
@@ -659,7 +659,7 @@ export interface DeleteClassParams {
 export const deleteClass = async (params: DeleteClassParams): Promise<ApiResponse> => {
   try {
     console.log('删除班级请求参数:', params);
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -670,10 +670,10 @@ export const deleteClass = async (params: DeleteClassParams): Promise<ApiRespons
       headers,
       body: JSON.stringify(params),
     });
-    
+
     const data = await response.json();
     console.log('删除班级响应:', data);
-    
+
     return {
       code: data.status === 0 ? 200 : 400,
       message: data.message || '',
@@ -1003,6 +1003,101 @@ export const deleteChangePrice = async (
     return {
       code: 500,
       message: error instanceof Error ? error.message : '删除价格变更失败',
+    };
+  }
+};
+
+export interface RemoveExamStudentParams {
+  exam_id: string | number;
+  student_ids: string;
+}
+
+export const removeExamStudent = async (params: RemoveExamStudentParams): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/remove_exam_student', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...params,
+        exam_id: String(params.exam_id),
+      }),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除考试学生失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除考试学生失败',
+    };
+  }
+};
+
+export interface AddExamStudentParams {
+  exam_id: string | number;
+  student_ids: string;
+}
+
+export const addExamStudent = async (params: AddExamStudentParams): Promise<ApiResponse> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/exam/add_exam_student', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('添加学生失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '添加学生失败',
+    };
+  }
+};
+
+export const addExamStudentBatch = async (examId: number, file: File): Promise<ApiResponse> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers = getAuthHeader();
+    // Delete Content-Type to let browser set it with boundary for FormData
+    // @ts-ignore
+    delete headers['Content-Type'];
+
+    const response = await fetch(`/api/exam/add_exam_student_batch/${examId}`, {
+      method: 'POST',
+      headers: headers as any,
+      body: formData,
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('批量添加学生失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '批量添加学生失败',
     };
   }
 };

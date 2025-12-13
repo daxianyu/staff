@@ -48,13 +48,19 @@ export default function ClassEditPage() {
 
   // 错误详情状态
   const [errorDetail, setErrorDetail] = useState<{
-    class_student_dict?: Record<string, number>;
+    class_student_dict?: Record<string, Record<string, {
+      class_id: number;
+      student_id: number;
+      start_time: number;
+      end_time: number;
+    }>>;
     error_lesson?: Record<string, Array<{
       subject_id: number;
       start_time: number;
       end_time: number;
       class_id: number;
     }>>;
+    all_student_info?: Record<string, string>;
     student_flag?: number;
     teacher_flag?: number;
   } | null>(null);
@@ -111,7 +117,7 @@ export default function ClassEditPage() {
           return {
             ...student,
             name: studentInfo?.name || 'Unknown',
-            isTransfer: student.start_time !== -1 && student.end_time !== -1
+            isTransfer: student.start_time !== -1 || student.end_time !== -1
           };
         });
         setStudents(studentsWithNames);
@@ -395,6 +401,7 @@ export default function ClassEditPage() {
         }, 2000);
       } else {
         // 尝试解析错误详情
+        debugger
         let errorData = null;
         try {
           if (typeof response.message === 'string') {
@@ -1005,27 +1012,6 @@ export default function ClassEditPage() {
                   </div>
                 </div>
 
-                {/* Class列表 */}
-                {errorDetail.class_student_dict && Object.keys(errorDetail.class_student_dict).length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">相关Class列表：</h4>
-                    <div className="bg-gray-50 rounded-md p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {Object.entries(errorDetail.class_student_dict).map(([studentId, classId]) => (
-                          <button
-                            key={`${studentId}-${classId}`}
-                            onClick={() => router.push(`/class/edit?id=${classId}`)}
-                            className="text-left px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                          >
-                            <div className="text-sm font-medium text-gray-900">Class ID: {classId}</div>
-                            <div className="text-xs text-gray-500">Student ID: {studentId}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* 冲突课程详情 */}
                 {errorDetail.error_lesson && Object.keys(errorDetail.error_lesson).length > 0 && (
                   <div>
@@ -1064,24 +1050,60 @@ export default function ClassEditPage() {
                                   </div>
                                 </div>
                                 <div className="flex gap-2 ml-4">
-                                  <button
-                                    onClick={() => router.push(`/class/edit?id=${lesson.class_id}`)}
+                                  <a
+                                    href={`${process.env.NODE_ENV === 'development' ? '' : '/staff'}/class/edit?id=${lesson.class_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
                                   >
                                     查看Class
-                                  </button>
-                                  <button
-                                    onClick={() => router.push(`/class/schedule?class_id=${lesson.class_id}`)}
+                                  </a>
+                                  <a
+                                    href={`${process.env.NODE_ENV === 'development' ? '' : '/staff'}/class/schedule?class_id=${lesson.class_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded hover:bg-indigo-100 transition-colors"
                                   >
                                     查看课表
-                                  </button>
+                                  </a>
                                 </div>
                               </div>
                             ))}
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+                {/* Class列表 */}
+                {errorDetail.class_student_dict && Object.keys(errorDetail.class_student_dict).length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">相关Class列表：</h4>
+                    <div className="bg-gray-50 rounded-md p-4 max-h-60 overflow-y-auto">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {Object.entries(errorDetail.class_student_dict).flatMap(([classId, studentMap]) =>
+                          Object.entries(studentMap).map(([studentId, data]) => (
+                            <button
+                              key={`${classId}-${studentId}`}
+                              onClick={() => {
+                                const path = `/class/edit?id=${classId}`;
+                                const url = process.env.NODE_ENV === 'production' ? `/staff${path}` : path;
+                                window.open(url, '_blank');
+                              }}
+                              className="text-left px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                            >
+                              <div className="text-sm font-medium text-gray-900">
+                                Class ID: {classId}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {errorDetail.all_student_info && errorDetail.all_student_info[studentId]
+                                  ? `Student: ${errorDetail.all_student_info[studentId]} (ID: ${studentId})`
+                                  : `Student ID: ${studentId}`}
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

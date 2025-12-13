@@ -10,8 +10,13 @@ import {
   addChangePrice,
   updateChangePrice,
   deleteChangePrice,
+  getStudentList,
+  addExamStudent,
+  addExamStudentBatch,
+  removeExamStudent,
   type EditExamParams,
   type ChangePriceParams,
+  StudentInfo,
 } from '@/services/auth';
 import {
   PencilIcon,
@@ -25,8 +30,11 @@ import {
   UsersIcon,
   UserGroupIcon,
   MagnifyingGlassIcon,
+
   XMarkIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
+import SearchableSelect from '@/components/SearchableSelect';
 
 export default function EditExamPage() {
   const router = useRouter();
@@ -62,10 +70,12 @@ export default function EditExamPage() {
   const [outsideStudents, setOutsideStudents] = useState<any[]>([]);
 
   // 添加学生报名相关状态
+
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
-  const [newStudentId, setNewStudentId] = useState('');
+  const [newStudentIds, setNewStudentIds] = useState<string[]>([]);
   const [availableStudents, setAvailableStudents] = useState<any[]>([]);
   const [searchStudentTerm, setSearchStudentTerm] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // 科目选择相关状态
   const [showTopicDropdown, setShowTopicDropdown] = useState(false);
@@ -255,36 +265,7 @@ export default function EditExamPage() {
   };
 
   // 学生管理函数
-  const handleAddStudent = async () => {
-    if (form.base_price !== 0) {
-      setError('只有价格为0时才能添加学生报名');
-      return;
-    }
-    if (!newStudentId) {
-      setError('请选择要添加的学生');
-      return;
-    }
 
-    try {
-      // 这里应该调用后端API添加学生报名
-      // const response = await addStudentToExam(examId, newStudentId);
-      // 临时模拟添加
-      const newStudent = availableStudents.find(s => s.id === newStudentId);
-      if (newStudent) {
-        setStudentList([...studentList, {
-          id: newStudent.id,
-          name: newStudent.name,
-          signupTime: Date.now(),
-          status: '已报名'
-        }]);
-        setShowAddStudentModal(false);
-        setNewStudentId('');
-        setSearchStudentTerm('');
-      }
-    } catch (error) {
-      setError('添加学生失败');
-    }
-  };
 
   const handleRemoveStudent = async (studentId: string) => {
     if (form.base_price !== 0) {
@@ -292,11 +273,24 @@ export default function EditExamPage() {
       return;
     }
 
+    const confirmed = window.confirm('确定要删除该学生的报名吗？此操作不可撤销。');
+    if (!confirmed) return;
+
     try {
-      // 这里应该调用后端API删除学生报名
-      // const response = await removeStudentFromExam(examId, studentId);
-      // 临时模拟删除
-      setStudentList(studentList.filter(s => s.id !== studentId));
+      const resp = await removeExamStudent({
+        exam_id: examId,
+        student_ids: studentId
+      });
+
+      if (resp.code === 200) {
+        // Refresh list
+        const refreshResp = await getExamEditInfo(examId);
+        if (refreshResp.code === 200 && refreshResp.data) {
+          setStudentList(refreshResp.data.inner_student_data || []);
+        }
+      } else {
+        setError(resp.message || '删除学生失败');
+      }
     } catch (error) {
       setError('删除学生失败');
     }
@@ -305,11 +299,11 @@ export default function EditExamPage() {
   const handleRemoveOutsideStudent = async (index: number) => {
     const student = outsideStudents[index];
     const confirmed = window.confirm(`确定要删除学生 "${student.name}" 吗？此操作不可撤销。`);
-    
+
     if (!confirmed) {
       return;
     }
-    
+
     try {
       // 这里应该调用后端API删除外部学生
       // const response = await removeOutsideStudent(examId, outsideStudents[index].id);
@@ -322,7 +316,7 @@ export default function EditExamPage() {
 
   const handleDownloadStudentCSV = () => {
     const csvContent = [
-      ['Name', 'Campus', 'Sign up date', 'Price', 'Paid'].join(','), 
+      ['Name', 'Campus', 'Sign up date', 'Price', 'Paid'].join(','),
       ...studentList.map(student => [
         student.student_name || student.name,
         student.campus || '-',
@@ -343,21 +337,97 @@ export default function EditExamPage() {
     // 清理资源
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
+    link.href = url;
+    link.download = `exam_students_${examId}_${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+
+    // 清理资源
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
+
+  // 批量上传学生
+  const handleBatchUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    // Simple validation
+    if (!file.name.endsWith('.csv')) {
+      alert('请上传CSV文件');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const resp = await addExamStudentBatch(examId, file);
+      if (resp.code === 200) {
+        // Refresh data
+        const refreshResp = await getExamEditInfo(examId);
+        if (refreshResp.code === 200 && refreshResp.data) {
+          setStudentList(refreshResp.data.inner_student_data || []);
+          setOutsideStudents(refreshResp.data.outer_student_data || []);
+        }
+        alert('批量添加成功');
+      } else {
+        alert(resp.message || '批量添加失败');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('批量添加出错');
+    } finally {
+      setIsUploading(false);
+      // Reset input value to allow selecting same file again
+      e.target.value = '';
+    }
+  };
+
+  // 添加单个/多个学生
+  const handleAddStudent = async () => {
+    if (newStudentIds.length === 0) return;
+
+    try {
+      const resp = await addExamStudent({
+        exam_id: examId,
+        student_ids: newStudentIds.join(',')
+      });
+
+      if (resp.code === 200) {
+        setShowAddStudentModal(false);
+        setNewStudentIds([]);
+        // Refresh list
+        const refreshResp = await getExamEditInfo(examId);
+        if (refreshResp.code === 200 && refreshResp.data) {
+          setStudentList(refreshResp.data.inner_student_data || []);
+        }
+      } else {
+        setError(resp.message || '添加学生失败');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('添加学生出错');
+    }
+  };
+
 
   // 加载可选学生列表
   const loadAvailableStudents = async () => {
     try {
-      // 这里应该调用后端API获取可选学生列表
-      // const response = await getAvailableStudents();
-      // 临时模拟数据
-      setAvailableStudents([
-        { id: 'S001', name: '张三' },
-        { id: 'S002', name: '李四' },
-        { id: 'S003', name: '王五' },
-        { id: 'S004', name: '赵六' },
-      ]);
+      const response = await getStudentList({ disabled: 0 });
+
+      if (response.code === 200) {
+        const listInfo = (response.data as any)?.list_info || [];
+        const formattedList = listInfo.map((student: StudentInfo) => ({
+          id: student.student_id,
+          name: `${student.student_name} (ID: ${student.student_id})`
+        }));
+        setAvailableStudents(formattedList);
+      } else {
+        setAvailableStudents([]);
+        console.error('获取学生列表失败:', response?.message || '未知错误');
+      }
     } catch (error) {
+      setAvailableStudents([]);
       console.error('加载学生列表失败:', error);
     }
   };
@@ -548,12 +618,12 @@ export default function EditExamPage() {
                         }}
                       />
                       <TagIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      
+
                       {/* 科目下拉列表 */}
                       {showTopicDropdown && user?.topics && Object.keys(user.topics).length > 0 && (
                         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                           {Object.entries(user.topics)
-                            .filter(([id, name]) => 
+                            .filter(([id, name]) =>
                               name.toLowerCase().includes(form.exam_topic.toLowerCase()) ||
                               id.includes(form.exam_topic)
                             )
@@ -563,8 +633,8 @@ export default function EditExamPage() {
                                 className="px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors"
                                 onMouseDown={(e) => {
                                   e.preventDefault();
-                                  setForm({ 
-                                    ...form, 
+                                  setForm({
+                                    ...form,
                                     exam_topic: name,
                                     exam_topic_id: Number(id)
                                   });
@@ -577,14 +647,14 @@ export default function EditExamPage() {
                               </div>
                             ))}
                           {Object.entries(user.topics)
-                            .filter(([id, name]) => 
+                            .filter(([id, name]) =>
                               name.toLowerCase().includes(form.exam_topic.toLowerCase()) ||
                               id.includes(form.exam_topic)
                             ).length === 0 && (
-                            <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                              未找到匹配的科目
-                            </div>
-                          )}
+                              <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                未找到匹配的科目
+                              </div>
+                            )}
                         </div>
                       )}
                     </div>
@@ -855,6 +925,29 @@ export default function EditExamPage() {
                         添加学生
                       </button>
                     )}
+                    {form.base_price === 0 && (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".csv"
+                          onChange={handleBatchUpload}
+                          className="hidden"
+                          id="batch-upload-input"
+                          disabled={isUploading}
+                        />
+                        <label
+                          htmlFor="batch-upload-input"
+                          className={`inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {isUploading ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          ) : (
+                            <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
+                          )}
+                          批量上传学生
+                        </label>
+                      </div>
+                    )}
                     <button
                       onClick={handleDownloadStudentCSV}
                       disabled={studentList.length === 0}
@@ -895,7 +988,7 @@ export default function EditExamPage() {
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 ml-2">
                                   退考
                                 </span>
-                              ): ''}
+                              ) : ''}
                             </td>
                             <td className="px-4 py-4 text-sm text-gray-900">{student.campus || '-'}</td>
                             <td className="px-4 py-4 text-sm text-gray-900">
@@ -905,16 +998,15 @@ export default function EditExamPage() {
                               ¥{student.price || form.base_price || 0}
                             </td>
                             <td className="px-4 py-4 text-sm">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                student.paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                              }`}>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${student.paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
                                 {student.paid ? '已支付' : '未支付'}
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right text-sm font-medium">
                               {form.base_price === 0 && (
                                 <button
-                                  onClick={() => handleRemoveStudent(student.id)}
+                                  onClick={() => handleRemoveStudent(String(student.student_id))}
                                   className="text-red-600 hover:text-red-800"
                                   title="删除"
                                 >
@@ -1034,67 +1126,23 @@ export default function EditExamPage() {
                   </div>
 
                   <div className="space-y-4">
-                    {/* 搜索学生 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        搜索学生
-                      </label>
-                      <div className="relative">
-                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <input
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-9 bg-gray-50 focus:bg-white transition-colors"
-                          placeholder="输入学生ID或姓名"
-                          value={searchStudentTerm}
-                          onChange={(e) => setSearchStudentTerm(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* 学生选择列表 */}
+                    {/* 学生选择 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         选择学生 <span className="text-red-500">*</span>
                       </label>
-                      <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg">
-                        {availableStudents
-                          .filter(student =>
-                            searchStudentTerm === '' ||
-                            student.id.toLowerCase().includes(searchStudentTerm.toLowerCase()) ||
-                            student.name.toLowerCase().includes(searchStudentTerm.toLowerCase())
-                          )
-                          .map((student) => (
-                            <div
-                              key={student.id}
-                              onClick={() => setNewStudentId(student.id)}
-                              className={`p-3 cursor-pointer border-b border-gray-200 hover:bg-gray-50 ${newStudentId === student.id ? 'bg-blue-50 border-blue-200' : ''
-                                }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium text-gray-900">{student.name}</p>
-                                  <p className="text-sm text-gray-500">ID: {student.id}</p>
-                                </div>
-                                {newStudentId === student.id && (
-                                  <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
-                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 8 8">
-                                      <path d="M6.564.75l-3.59 3.612-1.538-1.55L0 4.26l2.974 2.99L8 2.193z" />
-                                    </svg>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        {availableStudents.filter(student =>
-                          searchStudentTerm === '' ||
-                          student.id.toLowerCase().includes(searchStudentTerm.toLowerCase()) ||
-                          student.name.toLowerCase().includes(searchStudentTerm.toLowerCase())
-                        ).length === 0 && (
-                            <div className="p-4 text-center text-gray-500">
-                              未找到匹配的学生
-                            </div>
-                          )}
-                      </div>
+                      <SearchableSelect
+                        options={availableStudents.map(student => ({
+                          id: String(student.id),
+                          name: `${student.name}`
+                        }))}
+                        value={newStudentIds}
+                        onValueChange={(value) => setNewStudentIds(value as string[])}
+                        placeholder="请选择学生"
+                        searchPlaceholder="输入学生ID或姓名搜索"
+                        className="w-full"
+                        multiple={true}
+                      />
                     </div>
 
                     {error && (
@@ -1114,7 +1162,8 @@ export default function EditExamPage() {
                       type="button"
                       onClick={() => {
                         setShowAddStudentModal(false);
-                        setNewStudentId('');
+                        setShowAddStudentModal(false);
+                        setNewStudentIds([]);
                         setSearchStudentTerm('');
                         setError('');
                       }}
@@ -1124,7 +1173,7 @@ export default function EditExamPage() {
                     </button>
                     <button
                       onClick={handleAddStudent}
-                      disabled={!newStudentId}
+                      disabled={newStudentIds.length === 0}
                       className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                     >
                       添加学生
@@ -1171,6 +1220,6 @@ export default function EditExamPage() {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }

@@ -350,7 +350,7 @@ export default function StudentSchedulePage() {
                                   <div className="font-bold text-sm mb-0.5">
                                     {canEditClass && (lesson as any).class_id ? (
                                       <Link
-                                        href={`${process.env.NODE_ENV === 'production' ? '/staff' : ''}/class/edit?id=${(lesson as any).class_id}`}
+                                        href={`/class/edit?id=${(lesson as any).class_id}`}
                                         className="text-blue-700 hover:underline"
                                         target="_blank"
                                       >

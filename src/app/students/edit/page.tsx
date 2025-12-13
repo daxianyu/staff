@@ -22,6 +22,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import SearchableSelect from '@/components/SearchableSelect';
 
 // 将后端返回的多种日期表现统一为 yyyy-MM-dd 供 input[type=date]
 function toDateInput(input: any): string {
@@ -889,29 +890,23 @@ export default function StudentEditPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Mentor</label>
-                  <select
-                    value={formData.mentor_id}
-                    onChange={(e) => handleInputChange('mentor_id', Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value={0}>请选择导师</option>
-                    {staffOptions.map(st => (
-                      <option key={st.id} value={st.id}>{st.name}</option>
-                    ))}
-                  </select>
+                  <SearchableSelect
+                    options={staffOptions}
+                    value={formData.mentor_id ?? 0}
+                    onValueChange={(value) => handleInputChange('mentor_id', value as number)}
+                    placeholder="请选择导师"
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Sales Owner</label>
-                  <select
-                    value={formData.assigned_staff}
-                    onChange={(e) => handleInputChange('assigned_staff', Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value={0}>请选择 Sales Owner</option>
-                    {staffOptions.map(st => (
-                      <option key={st.id} value={st.id}>{st.name}</option>
-                    ))}
-                  </select>
+                  <SearchableSelect
+                    options={staffOptions}
+                    value={formData.assigned_staff ?? 0}
+                    onValueChange={(value) => handleInputChange('assigned_staff', value as number)}
+                    placeholder="请选择 Sales Owner"
+                    className="w-full"
+                  />
                 </div>
               </div>
 

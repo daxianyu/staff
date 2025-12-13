@@ -310,9 +310,17 @@ export const uploadImage = async (file: File): Promise<ApiResponse<UploadImageRe
       method: 'POST',
       body: formData,
     });
-    // Backend returns { file_path: ... }
+    // Backend returns { status: 0, message: "", data: { file_path: ... } }
     const resData = data as any;
-    return normalizeApiResponse<UploadImageResponse>({ url: resData.file_path, ...resData });
+    const filePath = resData?.data?.file_path || resData?.file_path;
+    return normalizeApiResponse<UploadImageResponse>({
+      status: resData?.status ?? 0,
+      message: resData?.message ?? '',
+      data: {
+        url: filePath,
+        file_path: filePath,
+      },
+    });
   } catch (error) {
     console.error('上传图片失败:', error);
     return { code: 500, message: error instanceof Error ? error.message : '上传图片失败' };
