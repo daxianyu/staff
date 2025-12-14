@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   getClassChangeSelect,
   getClassChangeList,
@@ -22,7 +23,9 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function ClassChangePage() {
+  const { user } = useAuth();
   const canView = true;
+  const currentUserId = user?.id ?? null;
 
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<MentorClassChangeRecord[]>([]);
@@ -48,6 +51,62 @@ export default function ClassChangePage() {
     message: '',
     action: () => {},
   });
+  const [rejectModal, setRejectModal] = useState<{
+    show: boolean;
+    recordId: number | null;
+    reason: string;
+  }>({
+    show: false,
+    recordId: null,
+    reason: '',
+  });
+  const [revokeModal, setRevokeModal] = useState<{
+    show: boolean;
+    recordId: number | null;
+    reason: string;
+  }>({
+    show: false,
+    recordId: null,
+    reason: '',
+  });
+
+  // 撤销申请（status=-2，仅申请人本人可见）
+  const handleRevoke = (recordId: number) => {
+    setRevokeModal({
+      show: true,
+      recordId,
+      reason: '',
+    });
+  };
+
+  const submitRevoke = async () => {
+    const recordId = revokeModal.recordId;
+    if (!recordId) return;
+    if (!revokeModal.reason.trim()) {
+      alert('请填写撤销理由');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const response = await updateMentorClassChangeStatus({
+        record_id: recordId,
+        status: -2,
+        reject_reason: revokeModal.reason.trim(),
+      });
+      if (response.code === 200) {
+        alert('撤销成功');
+        setRevokeModal({ show: false, recordId: null, reason: '' });
+        loadData();
+      } else {
+        alert('撤销失败: ' + response.message);
+      }
+    } catch (error) {
+      console.error('撤销失败:', error);
+      alert('撤销失败');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // 加载数据
   const loadData = async () => {
@@ -108,36 +167,73 @@ export default function ClassChangePage() {
     }
   };
 
-  // 撤销申请
-  const handleRevoke = (recordId: number) => {
+  // 完成申请（status=1）
+  const handleComplete = (recordId: number) => {
     setConfirmAction({
       show: true,
-      title: '确认撤销',
-      message: '确定要撤销此调课申请吗？',
+      title: '确认完成',
+      message: '确定要将此调课申请标记为完成吗？',
       action: async () => {
         setActionLoading(true);
         try {
           const response = await updateMentorClassChangeStatus({
             record_id: recordId,
-            status: -2, // 撤销状态
-            reject_reason: '申请人撤销',
+            status: 1,
           });
-          
+
           if (response.code === 200) {
-            alert('撤销成功');
+            alert('已标记为完成');
             loadData();
           } else {
-            alert('撤销失败: ' + response.message);
+            alert('操作失败: ' + response.message);
           }
         } catch (error) {
-          console.error('撤销失败:', error);
-          alert('撤销失败');
+          console.error('完成操作失败:', error);
+          alert('操作失败');
         } finally {
           setActionLoading(false);
           setConfirmAction({ show: false, title: '', message: '', action: () => {} });
         }
       },
     });
+  };
+
+  // 拒绝申请（status=2，需要填写拒绝原因）
+  const handleReject = (recordId: number) => {
+    setRejectModal({
+      show: true,
+      recordId,
+      reason: '',
+    });
+  };
+
+  const submitReject = async () => {
+    const recordId = rejectModal.recordId;
+    if (!recordId) return;
+    if (!rejectModal.reason.trim()) {
+      alert('请填写拒绝原因');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const response = await updateMentorClassChangeStatus({
+        record_id: recordId,
+        status: 2,
+        reject_reason: rejectModal.reason.trim(),
+      });
+      if (response.code === 200) {
+        alert('已拒绝');
+        setRejectModal({ show: false, recordId: null, reason: '' });
+        loadData();
+      } else {
+        alert('拒绝失败: ' + response.message);
+      }
+    } catch (error) {
+      console.error('拒绝失败:', error);
+      alert('拒绝失败');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // 过滤记录
@@ -258,7 +354,7 @@ export default function ClassChangePage() {
                         <div className="text-sm text-gray-900">{record.student_name}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
+                        <div className="text-sm text-gray-900" style={{ maxWidth: '240px', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
                           {record.desc}
                         </div>
                       </td>
@@ -288,12 +384,29 @@ export default function ClassChangePage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {record.status_num === 0 && (
-                          <button
-                            onClick={() => handleRevoke(record.id)}
-                            className="text-red-600 hover:text-red-900 text-sm font-medium"
-                          >
-                            撤销
-                          </button>
+                          record.apply_id === currentUserId ? (
+                            <button
+                              onClick={() => handleRevoke(record.id)}
+                              className="text-red-600 hover:text-red-900 text-sm font-medium"
+                            >
+                              撤销
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => handleComplete(record.id)}
+                                className="text-green-600 hover:text-green-900 text-sm font-medium"
+                              >
+                                完成
+                              </button>
+                              <button
+                                onClick={() => handleReject(record.id)}
+                                className="text-red-600 hover:text-red-900 text-sm font-medium"
+                              >
+                                拒绝
+                              </button>
+                            </div>
+                          )
                         )}
                       </td>
                     </tr>
@@ -433,6 +546,102 @@ export default function ClassChangePage() {
                     {actionLoading ? '处理中...' : '确认'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 拒绝原因模态框 */}
+        {rejectModal.show && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="flex items-center justify-between p-6 border-b">
+                <div className="flex items-center">
+                  <ExclamationCircleIcon className="h-6 w-6 text-red-500 mr-3" />
+                  <h3 className="text-lg font-medium text-gray-900">拒绝申请</h3>
+                </div>
+                <button
+                  onClick={() => !actionLoading && setRejectModal({ show: false, recordId: null, reason: '' })}
+                  className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  disabled={actionLoading}
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-600">请填写拒绝原因（必填）</p>
+                <textarea
+                  value={rejectModal.reason}
+                  onChange={(e) => setRejectModal((prev) => ({ ...prev, reason: e.target.value }))}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="例如：时间冲突 / 信息不完整 / 不符合调课规则..."
+                  disabled={actionLoading}
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3 p-6 border-t">
+                <button
+                  onClick={() => setRejectModal({ show: false, recordId: null, reason: '' })}
+                  disabled={actionLoading}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={submitReject}
+                  disabled={actionLoading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                >
+                  {actionLoading ? '处理中...' : '确认拒绝'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 撤销原因模态框 */}
+        {revokeModal.show && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="flex items-center justify-between p-6 border-b">
+                <div className="flex items-center">
+                  <ExclamationCircleIcon className="h-6 w-6 text-red-500 mr-3" />
+                  <h3 className="text-lg font-medium text-gray-900">撤销申请</h3>
+                </div>
+                <button
+                  onClick={() => !actionLoading && setRevokeModal({ show: false, recordId: null, reason: '' })}
+                  className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  disabled={actionLoading}
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-600">请填写撤销理由（必填）</p>
+                <textarea
+                  value={revokeModal.reason}
+                  onChange={(e) => setRevokeModal((prev) => ({ ...prev, reason: e.target.value }))}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="例如：信息填写错误 / 已不需要调课 / 重新提交..."
+                  disabled={actionLoading}
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3 p-6 border-t">
+                <button
+                  onClick={() => setRevokeModal({ show: false, recordId: null, reason: '' })}
+                  disabled={actionLoading}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={submitRevoke}
+                  disabled={actionLoading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                >
+                  {actionLoading ? '处理中...' : '确认撤销'}
+                </button>
               </div>
             </div>
           </div>

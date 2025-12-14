@@ -16,18 +16,34 @@ import {
   ArrowPathIcon,
   BanknotesIcon,
   CalendarIcon,
+  ArrowDownTrayIcon,
   ExclamationTriangleIcon,
   EyeIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { format, subDays } from 'date-fns';
+import { ExcelExporter } from '@/components/ExcelExporter';
 
 const formatMoney = (value: unknown) => {
   const num = Number(value);
   if (Number.isNaN(num)) return String(value ?? '');
   return `¥${num}`;
 };
+
+const exportHeaders = [
+  'Type',
+  'User Name',
+  'Amount',
+  'Out Trade No',
+  'Subject',
+  'Account',
+  'Refund Status',
+  'Refund Amount',
+  'Refund Reason',
+  'Create Time',
+  'Update Time',
+];
 
 export default function TradeInfoPage() {
   const { hasPermission } = useAuth();
@@ -301,13 +317,45 @@ export default function TradeInfoPage() {
                   <p className="text-sm text-gray-600">按日期/账户筛选支付记录</p>
                 </div>
               </div>
-              <button
-                onClick={loadList}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <ArrowPathIcon className="h-4 w-4" />
-                <span className="font-medium">刷新</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <ExcelExporter
+                  config={{
+                    filename: `Trade_Info_${startDate}_${endDate}`,
+                    sheets: [
+                      {
+                        name: 'Trade Info',
+                        headers: exportHeaders,
+                        data: rows.map((r) => [
+                          r.type_name,
+                          r.user_name || '',
+                          r.price,
+                          r.out_trade_no,
+                          r.subject,
+                          r.account_name,
+                          r.refund_status,
+                          r.refund_price,
+                          r.refund_reason,
+                          r.create_time,
+                          r.update_time,
+                        ]),
+                      },
+                    ],
+                  }}
+                  disabled={loading || rows.length === 0}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-sm hover:shadow-md"
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4" />
+                  <span className="font-medium">导出Excel</span>
+                </ExcelExporter>
+
+                <button
+                  onClick={loadList}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <ArrowPathIcon className="h-4 w-4" />
+                  <span className="font-medium">刷新</span>
+                </button>
+              </div>
             </div>
           </div>
 
