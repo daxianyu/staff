@@ -715,14 +715,8 @@ export default function MenteePage() {
         break;
 
       case 'graduation-wishes':
-        setConfirmationData({
-          title: 'Send Graduation Wishes',
-          message: `Are you sure you want to send graduation wishes to ${student.student_name}?`,
-          confirmText: 'Send Wishes',
-          confirmButtonClass: 'bg-pink-600 hover:bg-pink-700',
-          action: () => handleGraduationWishes(student),
-        });
-        setShowConfirmationModal(true);
+        // 直接跳转，不需要二次确认弹窗
+        handleGraduationWishes(student);
         break;
     }
   };
@@ -834,23 +828,13 @@ export default function MenteePage() {
 
   const handleGraduationWishes = async (student: MenteeStudent) => {
     try {
-      // This would typically call a specific API for graduation wishes
-      // For now, we'll use the complaint API as a placeholder
-      const wishMessage = `Congratulations on your graduation, ${student.student_name}! Wishing you all the best in your future endeavors.`;
-
-      const response = await updateComplaint({
-        student_id: student.student_id,
-        complaint: wishMessage,
-      });
-
-      if (response.code === 200) {
-        alert('Graduation wishes sent successfully');
-      } else {
-        alert('Failed to send graduation wishes: ' + response.message);
-      }
+      // 新 tab 打开；生产环境有 basePath=/staff
+      const basePath = window.location.pathname.startsWith('/staff') ? '/staff' : '';
+      const url = `${basePath}/users/graduation-wishes-send`;
+      window.open(url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('Error sending graduation wishes:', error);
-      alert('Failed to send graduation wishes');
+      alert('跳转失败');
     } finally {
       setShowConfirmationModal(false);
       setConfirmationData(null);

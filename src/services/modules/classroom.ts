@@ -144,6 +144,11 @@ export interface ClassroomOverviewData {
   change_classroom_right: boolean;
   campus_info: Record<string, string>;
   room_campuses: Record<string, Array<[string, number]>>;
+  /**
+   * 教室容量（key 为 room_id；后端 JSON object 的 key 实际是 string）
+   * 例如: { "275": 7, "276": 9 }
+   */
+  room_size?: Record<string, number>;
   user_info?: Record<string, ClassroomUserInfo>;
 }
 
@@ -173,6 +178,7 @@ export const getClassroomOverview = async (dayNum: number): Promise<ClassroomOve
         change_classroom_right: false,
         campus_info: {},
         room_campuses: {},
+        room_size: {},
         user_info: {}
       }
     };
@@ -187,6 +193,7 @@ export const getClassroomOverview = async (dayNum: number): Promise<ClassroomOve
         change_classroom_right: false,
         campus_info: {},
         room_campuses: {},
+        room_size: {},
         user_info: {}
       }
     };

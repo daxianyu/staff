@@ -1112,12 +1112,13 @@ export const sendRejectEmail = async (recordId: number): Promise<ApiResponse<voi
 };
 
 // 下载支付报考信息
-export const downloadPaymentInfo = async (params: {
-  start_day: string;
-  end_day: string;
+export const downloadPaymentInfo = async (params?: {
+  start_day?: string;
+  end_day?: string;
 }): Promise<ApiResponse<string>> => {
   try {
-    const queryString = buildQueryString(params);
+    const safeParams = params && Object.keys(params).length > 0 ? params : undefined;
+    const queryString = safeParams ? buildQueryString(safeParams) : '';
     const url = `/api/sales/download_payment_info${queryString}`;
     const { data } = await request<ApiEnvelope<string>>(url, {
       method: 'GET',

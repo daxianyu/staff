@@ -676,7 +676,8 @@ const AddNormalModal: React.FC<AddNormalModalProps> = ({
 export default function StudentDetailPage() {
   const { hasPermission } = useAuth();
   const searchParams = useSearchParams();
-  const studentId = searchParams.get('id');
+  // 兼容历史/不同入口的参数名：student_id（当前） & id（旧）
+  const studentId = searchParams.get('student_id') ?? searchParams.get('id');
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_MENTEE);
@@ -712,7 +713,11 @@ export default function StudentDetailPage() {
 
   // 加载数据
   useEffect(() => {
-    if (!studentId) return;
+    // 没带 student_id 时，不应该一直 loading
+    if (!studentId) {
+      setLoading(false);
+      return;
+    }
 
     const loadData = async () => {
       setLoading(true);
@@ -796,6 +801,18 @@ export default function StudentDetailPage() {
     );
   }
 
+  if (!studentId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">缺少参数</h2>
+          <p className="text-gray-600">请在地址栏携带 student_id（例如：?student_id=2）</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!studentInfo) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -833,7 +850,7 @@ export default function StudentDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden min-h-[600px]">
         {/* 页面头部 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1007,7 +1024,7 @@ export default function StudentDetailPage() {
 
           {activeTab === 'assignment' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">学生作业</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">学生选课（暂无选课信息）</h3>
               {assignments.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">

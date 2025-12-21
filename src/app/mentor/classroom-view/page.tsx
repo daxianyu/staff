@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getClassroomOverview, getClassroomList, type ClassroomOverviewData, type ClassroomLesson, type Classroom } from '@/services/modules/classroom';
+import { getClassroomOverview, type ClassroomOverviewData, type ClassroomLesson } from '@/services/modules/classroom';
 import { authService } from '@/services/authService';
 import type { UserInfo } from '@/types/permission';
 import {
@@ -32,7 +32,6 @@ export default function ClassroomViewPage() {
   const [topics, setTopics] = useState<Record<string, string>>({});
   const [selectedLesson, setSelectedLesson] = useState<ClassroomLesson | null>(null);
   const [showLessonModal, setShowLessonModal] = useState(false);
-  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
 
   // 生成时间槽位 (9:00-22:00, 每半小时一格)
   const generateTimeSlots = () => {
@@ -137,13 +136,6 @@ export default function ClassroomViewPage() {
   useEffect(() => {
     loadUserTopics(); // 先加载 topics 数据
     loadClassroomOverview(currentDay);
-
-    // 加载教室列表以获取容量信息
-    getClassroomList().then(res => {
-      if (res.status === 200) {
-        setClassrooms(res.data.room_list);
-      }
-    });
 
     const today = new Date();
     setSelectedDate(today.toISOString().split('T')[0]);
@@ -272,8 +264,7 @@ export default function ClassroomViewPage() {
   const getLessonColor = (lesson: ClassroomLesson) => {
     const students = getLessonStudents(lesson.class_id);
     const studentCount = students.length;
-    const room = classrooms.find(r => r.id === lesson.room_id);
-    const roomSize = room?.size || 0;
+    const roomSize = overviewData?.room_size?.[String(lesson.room_id)] ?? 0;
 
     if (roomSize >= studentCount) {
       return 'bg-[rgba(59,130,246,0.8)] border-blue-400 text-white'; // 满足人数

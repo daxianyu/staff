@@ -263,22 +263,24 @@ export default function PaymentInfoPage() {
 
   // 下载支付报考信息
   const handleDownload = async () => {
-    if (!startDay || !endDay) {
-      alert('请选择日期范围');
-      return;
-    }
-    
-    if (new Date(startDay) > new Date(endDay)) {
+    // 如果用户没输入日期 -> 不传参数，让后端走默认时间范围
+    // 如果只输入了一个日期 -> 也不传，避免后端参数不完整
+    const shouldSendDateRange = Boolean(startDay && endDay);
+    if (shouldSendDateRange && new Date(startDay) > new Date(endDay)) {
       alert('开始日期不能大于结束日期');
       return;
     }
 
     setDownloading(true);
     try {
-      const result = await downloadPaymentInfo({
-        start_day: startDay,
-        end_day: endDay,
-      });
+      const result = await downloadPaymentInfo(
+        shouldSendDateRange
+          ? {
+              start_day: startDay,
+              end_day: endDay,
+            }
+          : undefined
+      );
       
       if (result.code === 200 && result.data) {
         // result.data 是字符串路径，例如：/static/gen_path/payment_info_2025-11-19_2025-11-20_1763638375.csv
@@ -294,7 +296,9 @@ export default function PaymentInfoPage() {
           const link = document.createElement('a');
           link.href = downloadUrl;
           // 从文件路径中提取文件名，如果没有则使用默认名称
-          const fileName = filePath.split('/').pop() || `payment_info_${startDay}_${endDay}.csv`;
+          const fileName =
+            filePath.split('/').pop() ||
+            (shouldSendDateRange ? `payment_info_${startDay}_${endDay}.csv` : `payment_info.csv`);
           link.download = fileName;
           link.target = '_blank';
           document.body.appendChild(link);
@@ -369,7 +373,7 @@ export default function PaymentInfoPage() {
               </div>
               <button
                 onClick={handleDownload}
-                disabled={downloading || !startDay || !endDay}
+                disabled={downloading}
                 className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {downloading ? (

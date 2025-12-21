@@ -835,6 +835,166 @@ export const getOtherGraduationWishes = async (): Promise<ApiResponse<Graduation
   }
 };
 
+// =========================
+// Graduation Wishes Sender（分配/发送毕业祝福邀请）相关接口
+// 后端实现：phy/handler/office/user.py
+// - /api/user/get_graduation_select
+// - /api/user/get_graduation_table
+// - /api/user/add_graduation_wishes_record
+// - /api/user/delete_graduation_wishes_record
+// =========================
+
+export interface GraduationSelectResponse {
+  students: Array<{ id: number; name: string }>;
+  staff: Array<{ id: number; name: string }>;
+}
+
+export interface GraduationWishesRecordItem {
+  record_id: number;
+  student_id: number;
+  student_name: string;
+  teacher_id: number;
+  teacher_name: string;
+  wishes: string;
+  is_mentor: string;
+  create_time: string;
+  update_time: string;
+  operator: number;
+  delete_flag: number;
+}
+
+export interface GraduationWishesRecordTableResponse {
+  rows: GraduationWishesRecordItem[];
+  total: number;
+}
+
+export const getGraduationSelect = async (): Promise<ApiResponse<GraduationSelectResponse>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/user/get_graduation_select', {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取毕业祝福下拉选项失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取毕业祝福下拉选项失败',
+    };
+  }
+};
+
+export const getGraduationTable = async (): Promise<ApiResponse<GraduationWishesRecordTableResponse>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/user/get_graduation_table', {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取毕业祝福表格失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取毕业祝福表格失败',
+    };
+  }
+};
+
+export interface AddGraduationWishesRecordParams {
+  student_id: number;
+  teacher_ids: number[];
+}
+
+export const addGraduationWishesRecord = async (
+  params: AddGraduationWishesRecordParams
+): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/user/add_graduation_wishes_record', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('添加毕业祝福记录失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '添加毕业祝福记录失败',
+    };
+  }
+};
+
+export interface DeleteGraduationWishesRecordParams {
+  record_id: number;
+}
+
+export const deleteGraduationWishesRecord = async (
+  params: DeleteGraduationWishesRecordParams
+): Promise<ApiResponse<string>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/user/delete_graduation_wishes_record', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('删除毕业祝福记录失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '删除毕业祝福记录失败',
+    };
+  }
+};
+
 // Transcript Apply 相关接口
 export interface TranscriptApplyItem {
   record_id: number;

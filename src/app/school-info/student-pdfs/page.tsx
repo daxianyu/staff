@@ -165,10 +165,17 @@ export default function StudentPdfsPage() {
       if (!matchesTab) return false;
 
       // 再根据搜索关键词过滤
-      const fullName = `${student.first_name || ''}${student.last_name || ''}`.toLowerCase();
-      const longId = (student.student_long_id || '').toLowerCase();
-      const search = searchTerm.toLowerCase();
-      return fullName.includes(search) || longId.includes(search);
+      // 移除所有空格以支持模糊匹配（如搜 "Tang Gouzi" 能匹配 "TangGouzi"）
+      const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, '');
+
+      const fullNameOriginal = normalize(`${student.first_name || ''}${student.last_name || ''}`);
+      const fullNameReverse = normalize(`${student.last_name || ''}${student.first_name || ''}`);
+      const longId = normalize(student.student_long_id || '');
+      const search = normalize(searchTerm);
+
+      return fullNameOriginal.includes(search) ||
+        fullNameReverse.includes(search) ||
+        longId.includes(search);
     });
   }, [students, searchTerm, activeTab]);
 
@@ -626,8 +633,8 @@ export default function StudentPdfsPage() {
                     setSearchTerm(''); // 切换tab时清空搜索
                   }}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeTab === 'active'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                 >
                   在读学生
@@ -638,8 +645,8 @@ export default function StudentPdfsPage() {
                     setSearchTerm(''); // 切换tab时清空搜索
                   }}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeTab === 'inactive'
-                      ? 'bg-white text-red-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-white text-red-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                 >
                   非在读学生
@@ -730,8 +737,8 @@ export default function StudentPdfsPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${student.active === 1
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
                               }`}>
                               {student.active === 1 ? '在读' : '非在读'}
                             </span>

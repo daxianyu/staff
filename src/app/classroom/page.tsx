@@ -24,6 +24,7 @@ import {
   ExclamationTriangleIcon,
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
+import SearchableSelect from '@/components/SearchableSelect';
 
 
 export default function ClassroomPage() {
@@ -55,8 +56,6 @@ export default function ClassroomPage() {
     flag: 1,
     owner: -1
   });
-  
-
 
   // 分页相关状态
   const [currentPage, setCurrentPage] = useState(1);
@@ -491,18 +490,20 @@ export default function ClassroomPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       负责人
                     </label>
-                    <select
+                    <SearchableSelect
+                      options={[
+                        { id: -1, name: '不选择' },
+                        ...Object.entries(staffInfo).map(([id, name]) => ({
+                          id: Number(id),
+                          name,
+                        })),
+                      ]}
                       value={formData.owner}
-                      onChange={(e) => handleInputChange('owner', Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value={-1}>不选择</option>
-                      {Object.entries(staffInfo).map(([id, name]) => (
-                        <option key={id} value={Number(id)}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
+                      onValueChange={(value) => handleInputChange('owner', value as number)}
+                      placeholder="不选择"
+                      searchPlaceholder="搜索负责人..."
+                      className="w-full"
+                    />
                   </div>
                   
                   <div>

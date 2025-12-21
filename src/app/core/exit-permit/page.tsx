@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
+import SearchableSelect from '@/components/SearchableSelect';
 import { 
   getExitPermitList,
   type ExitPermitRecord
@@ -21,6 +22,7 @@ export default function CoreExitPermitPage() {
   const [records, setRecords] = useState<ExitPermitRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_CORE_EXIT_PERMIT);
@@ -47,13 +49,35 @@ export default function CoreExitPermitPage() {
     loadRecords();
   }, [canView]);
 
+  const studentOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const r of records) {
+      const id = String(r.student_id ?? '');
+      const name = String(r.student_name ?? '').trim();
+      if (!id || !name) continue;
+      if (!seen.has(id)) seen.set(id, name);
+    }
+    const options = Array.from(seen.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'));
+
+    return [{ id: '', name: '全部学生' }, ...options];
+  }, [records]);
+
   // 搜索过滤
-  const filteredRecords = records.filter(record =>
-    record.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.staff_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.note.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.status_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRecords = records.filter(record => {
+    if (selectedStudentId && String(record.student_id) !== selectedStudentId) return false;
+
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return true;
+
+    return (
+      String(record.student_name ?? '').toLowerCase().includes(keyword) ||
+      String(record.staff_name ?? '').toLowerCase().includes(keyword) ||
+      String(record.note ?? '').toLowerCase().includes(keyword) ||
+      String(record.status_name ?? '').toLowerCase().includes(keyword)
+    );
+  });
 
   // 获取状态颜色
   const getStatusColor = (status: number) => {
@@ -108,6 +132,19 @@ export default function CoreExitPermitPage() {
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              {/* 学生姓名搜索 */}
+              <div className="w-full sm:w-[260px]">
+                <SearchableSelect<string>
+                  options={studentOptions}
+                  value={selectedStudentId}
+                  onValueChange={(v) => setSelectedStudentId(String(v))}
+                  placeholder="选择学生"
+                  searchPlaceholder="搜索学生姓名..."
+                  className="w-full"
+                  disabled={loading}
+                />
+              </div>
+
               {/* 搜索框 */}
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -149,7 +186,7 @@ export default function CoreExitPermitPage() {
                       学生信息
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      负责员工
+                      导师
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       外出时间

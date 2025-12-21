@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
@@ -19,13 +18,15 @@ import {
 } from '@/services/auth';
 
 export default function MyMentorsPage() {
-  const router = useRouter();
   const { hasPermission } = useAuth();
   const [mentorStudents, setMentorStudents] = useState<MyMentorStudents[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+
+  // 生产静态导出时 Next 会加 basePath=/staff；开发环境不需要
+  const basePath = process.env.NODE_ENV === 'development' ? '' : '/staff';
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_MY_MENTORS);
@@ -196,9 +197,6 @@ export default function MyMentorsPage() {
                             Year Fee
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Exams
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
@@ -250,26 +248,11 @@ export default function MyMentorsPage() {
                                 {student.year_fee || 'N/A'}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              {student.exams.length > 0 ? (
-                                <div className="flex flex-wrap gap-1 max-w-xs">
-                                  {student.exams.map((exam, index) => (
-                                    <span
-                                      key={index}
-                                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                                    >
-                                      {exam}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-500 text-sm">No exams</span>
-                              )}
-                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <button
                                 onClick={() => {
-                                  router.push(`/mentee/student-detail?student_id=${student.student_id}`);
+                                  const url = `${basePath}/mentee/student-detail?id=${student.student_id}`;
+                                  window.open(url, '_blank', 'noopener,noreferrer');
                                 }}
                                 className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors flex items-center justify-center"
                                 title="View Student Details"

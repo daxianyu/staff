@@ -61,6 +61,12 @@ export class MenuFilter {
     // 兼容后端返回 core_user 为字符串/数字/布尔
     const isCoreUser = Number((this.user as any).core_user) === 1 || (this.user as any).core_user === true;
     const operationRights = Array.isArray(this.user.operation_right) ? this.user.operation_right : [];
+    // 兼容字段：subject_leader / mentor_leader（学科组长）
+    const isSubjectLeader =
+      (this.user as any).subject_leader === true ||
+      (this.user as any).subject_leader === 1 ||
+      (this.user as any).mentor_leader === true ||
+      (this.user as any).mentor_leader === 1;
 
     // 核心用户拥有所有权限
     if (isCoreUser) return true;
@@ -176,6 +182,24 @@ export class MenuFilter {
       return (this.user as any).tool_user === true || (this.user as any).tool_user === 1;
     }
 
+    // Knowledge - Pastpaper Edit：subject_leader=真 或 core_user=真
+    const pastpaperEditPermissions = [
+      PERMISSIONS.VIEW_PASTPAPER_EDIT,
+      PERMISSIONS.EDIT_PASTPAPER_EDIT,
+    ];
+    if (pastpaperEditPermissions.includes(permission as any)) {
+      return isSubjectLeader || isCoreUser;
+    }
+
+    // Knowledge - Workspace：operation_right=25 或 core_user=真
+    const workspacePermissions = [
+      PERMISSIONS.VIEW_WORKSPACE,
+      PERMISSIONS.EDIT_WORKSPACE,
+    ];
+    if (workspacePermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WORKSPACE_MANAGEMENT) || isCoreUser;
+    }
+
     // 需要 sales_core=1 或 core_user=1 的权限
     const salesCorePermissions = [
       PERMISSIONS.MANAGE_INTERVIEW_CONFIG,
@@ -259,20 +283,33 @@ export class MenuFilter {
    */
   public filterMenuItems(menuItems: MenuItem[]): MenuItem[] {
     return menuItems.reduce((filtered: MenuItem[], item) => {
-      // 检查当前项是否有权限
-      if (!this.hasPermission(item)) {
-        return filtered;
-      }
+      const canSeeSelf = this.hasPermission(item);
 
-      // 处理子菜单
+      // 先过滤子菜单：允许“父级无权限但子级可见”的场景（例如：父级是业务分组，子级里包含所有老师可见页面）
       const filteredItem: MenuItem = { ...item };
       if (item.children && item.children.length > 0) {
-        filteredItem.children = this.filterMenuItems(item.children);
+        const filteredChildren = this.filterMenuItems(item.children);
+        filteredItem.children = filteredChildren;
 
-        // 如果子菜单全部被过滤掉，且当前项没有path，则不显示当前项
-        if (filteredItem.children.length === 0 && !item.path) {
+        // 父级自身没权限且子菜单也为空 -> 不显示
+        if (!canSeeSelf && filteredChildren.length === 0) {
           return filtered;
         }
+
+        // 父级自身没权限但子菜单可见：避免父级带 path 时出现“可点击但无权限”的入口
+        if (!canSeeSelf && filteredChildren.length > 0 && filteredItem.path) {
+          delete (filteredItem as any).path;
+        }
+      } else {
+        // 没有子菜单时按自身权限决定是否显示
+        if (!canSeeSelf) {
+          return filtered;
+        }
+      }
+
+      // 如果子菜单全部被过滤掉，且当前项没有path，则不显示当前项
+      if (filteredItem.children && filteredItem.children.length === 0 && !filteredItem.path) {
+        return filtered;
       }
 
       filtered.push(filteredItem);
@@ -435,13 +472,6 @@ export const defaultMenuConfig: MenuItem[] = [
         label: 'Class Change',
         path: '/mentor/class-change',
         icon: 'calendar',
-        requiredPermissions: [],
-      },
-      {
-        key: 'textbook',
-        label: 'Textbook',
-        path: '/mentor/textbook',
-        icon: 'book',
         requiredPermissions: [],
       },
       {
@@ -637,6 +667,13 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'building',
         requiredPermissions: [],
       },
+      {
+        key: 'textbook',
+        label: 'Textbook',
+        path: '/mentor/textbook',
+        icon: 'book',
+        requiredPermissions: [],
+      }
     ],
   },
   {
@@ -940,6 +977,20 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'clipboard-document-list',
       },
       {
+        key: 'pastpaper-edit',
+        label: 'Pastpaper Edit',
+        path: '/knowledge/pastpaper-edit',
+        icon: 'table',
+        requiredPermissions: [PERMISSIONS.VIEW_PASTPAPER_EDIT],
+      },
+      {
+        key: 'workspace',
+        label: 'Workspace',
+        path: '/knowledge/workspace',
+        icon: 'building-office',
+        requiredPermissions: [PERMISSIONS.VIEW_WORKSPACE],
+      },
+      {
         key: 'knowledge-base',
         label: 'Knowledge Base',
         path: '/knowledge/base',
@@ -970,6 +1021,13 @@ export const defaultMenuConfig: MenuItem[] = [
         key: 'graduation-wishes',
         label: 'My Graduation Wishes',
         path: '/users/graduation-wishes',
+        icon: 'graduation-cap',
+        requiredPermissions: [PERMISSIONS.VIEW_GRADUATION_WISHES],
+      },
+      {
+        key: 'graduation-wishes-send',
+        label: 'Graduation Wishes Details',
+        path: '/users/graduation-wishes-send',
         icon: 'graduation-cap',
         requiredPermissions: [PERMISSIONS.VIEW_GRADUATION_WISHES],
       },

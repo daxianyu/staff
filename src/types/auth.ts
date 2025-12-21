@@ -140,6 +140,14 @@ export const PERMISSIONS = {
   VIEW_PROMOTE_COMMENT: 'view_promote_comment',
   EDIT_PROMOTE_COMMENT: 'edit_promote_comment',
 
+  // Knowledge - Pastpaper Edit（subject_leader 或 core_user）
+  VIEW_PASTPAPER_EDIT: 'view_pastpaper_edit',
+  EDIT_PASTPAPER_EDIT: 'edit_pastpaper_edit',
+
+  // Knowledge - Workspace（operation_right=25 或 core_user）
+  VIEW_WORKSPACE: 'view_workspace',
+  EDIT_WORKSPACE: 'edit_workspace',
+
   // 卡片管理权限
   VIEW_CARD_BIND: 'view_card_bind',
   EDIT_CARD_BIND: 'edit_card_bind',
@@ -275,6 +283,9 @@ export const OPERATION_RIGHTS = {
 
   // 证书管理权限
   CERTIFICATE_MANAGEMENT: 14,
+
+  // Knowledge - Workspace 管理权限
+  WORKSPACE_MANAGEMENT: 25,
 } as const;
 
 // 预定义角色常量（向后兼容）

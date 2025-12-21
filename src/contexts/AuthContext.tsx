@@ -137,6 +137,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 兼容后端返回 core_user 为字符串/数字/布尔
     const isCoreUser = Number((user as any).core_user) === 1 || (user as any).core_user === true;
     const operationRights = Array.isArray(user.operation_right) ? user.operation_right : [];
+    // 兼容字段：subject_leader / mentor_leader（学科组长）
+    const isSubjectLeader =
+      (user as any).subject_leader === true ||
+      (user as any).subject_leader === 1 ||
+      (user as any).mentor_leader === true ||
+      (user as any).mentor_leader === 1;
     
     // 核心用户拥有所有权限
     if (isCoreUser) return true;
@@ -250,6 +256,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ];
     if (toolUserPermissions.includes(permission as any)) {
       return (user as any).tool_user === true || (user as any).tool_user === 1;
+    }
+
+    // Knowledge - Pastpaper Edit：subject_leader=真 或 core_user=真
+    const pastpaperEditPermissions = [
+      PERMISSIONS.VIEW_PASTPAPER_EDIT,
+      PERMISSIONS.EDIT_PASTPAPER_EDIT,
+    ];
+    if (pastpaperEditPermissions.includes(permission as any)) {
+      return isSubjectLeader || isCoreUser;
+    }
+
+    // Knowledge - Workspace：operation_right=25 或 core_user=真
+    const workspacePermissions = [
+      PERMISSIONS.VIEW_WORKSPACE,
+      PERMISSIONS.EDIT_WORKSPACE,
+    ];
+    if (workspacePermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.WORKSPACE_MANAGEMENT) || isCoreUser;
     }
     
     // 档案管理权限

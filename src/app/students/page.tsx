@@ -102,6 +102,11 @@ export default function StudentsPage() {
     hasPermission(PERMISSIONS.FINANCE) ||
     hasPermission(PERMISSIONS.SALES_PERSON) ||
     hasPermission(PERMISSIONS.EDIT_STUDENTS);
+  const canViewStudentDetail0 = 
+    hasPermission(PERMISSIONS.FINANCE) ||
+    hasPermission(PERMISSIONS.SALES_PERSON) ||
+    hasPermission(PERMISSIONS.EDIT_STUDENTS);
+
   const canViewStudentDetails = canView;
   const canEditStudents = hasPermission(PERMISSIONS.EDIT_STUDENTS);
   const canDeleteStudents = hasPermission(PERMISSIONS.DELETE_STUDENTS);
@@ -565,7 +570,7 @@ export default function StudentsPage() {
                         <div className="flex items-center justify-end space-x-1">
 
                           {/* Student View 快捷入口 */}
-                          {canViewStudentDetails && (
+                          {canViewStudentDetail0 && (
                             <Link href={`/students/student-view?studentId=${student.student_id}`} legacyBehavior>
                               <a
                                 className="flex items-center justify-center w-8 h-8 text-teal-600 hover:text-teal-900 hover:bg-teal-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 touch-manipulation"

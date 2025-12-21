@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import {
@@ -24,11 +24,13 @@ import SearchableSelect from '@/components/SearchableSelect';
 
 export default function ExitPermitPage() {
   const { user, hasPermission } = useAuth();
+  const [allRows, setAllRows] = useState<ExitPermitItem[]>([]);
   const [data, setData] = useState<ExitPermitItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<ExitPermitItem | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [formData, setFormData] = useState({
     start_time: '',
     end_time: '',
@@ -58,6 +60,13 @@ export default function ExitPermitPage() {
     }
   }, [canView]);
 
+  // 学生筛选选项（用于表格筛选）
+  const studentFilterOptions = useMemo(() => {
+    const base = [{ id: '', name: '全部学生' }];
+    const opts = (allStudents || []).map(s => ({ id: String(s.id), name: s.name }));
+    return base.concat(opts);
+  }, [allStudents]);
+
   // 加载学生选择数据
   const loadStudentOptions = async () => {
     try {
@@ -77,24 +86,37 @@ export default function ExitPermitPage() {
     }
   };
 
+  const applyFiltersAndPaginate = (
+    rows: ExitPermitItem[],
+    page: number,
+    size: number
+  ) => {
+    const filtered = selectedStudentId
+      ? rows.filter(r => String(r.student_id) === selectedStudentId)
+      : rows;
+
+    const total = filtered.length;
+    const pages = Math.ceil(total / size);
+    const safeTotalPages = pages > 0 ? pages : 1;
+    const safePage = Math.min(Math.max(1, page), safeTotalPages);
+
+    setTotalItems(total);
+    setTotalPages(pages);
+    setCurrentPage(safePage);
+
+    const startIndex = (safePage - 1) * size;
+    const endIndex = startIndex + size;
+    setData(filtered.slice(startIndex, endIndex));
+  };
+
   const loadData = async (page?: number, newPageSize?: number) => {
     setLoading(true);
     try {
       const result = await getStaffOutTable();
       if (result.code === 200) {
-        const allData = result.data?.rows || [];
-        const total = allData.length;
-        const totalPages = Math.ceil(total / (newPageSize || pageSize));
-
-        setTotalItems(total);
-        setTotalPages(totalPages);
-
-        // 计算当前页的数据
-        const startIndex = ((page || currentPage) - 1) * (newPageSize || pageSize);
-        const endIndex = startIndex + (newPageSize || pageSize);
-        const pageData = allData.slice(startIndex, endIndex);
-
-        setData(pageData);
+        const rows = result.data?.rows || [];
+        setAllRows(rows);
+        applyFiltersAndPaginate(rows, page || currentPage, newPageSize || pageSize);
       }
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -167,15 +189,20 @@ export default function ExitPermitPage() {
 
   // 分页处理函数
   const handlePageChange = async (page: number) => {
-    setCurrentPage(page);
-    await loadData(page, pageSize);
+    applyFiltersAndPaginate(allRows, page, pageSize);
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
-    loadData(1, newPageSize);
+    applyFiltersAndPaginate(allRows, 1, newPageSize);
   };
+
+  // 表格学生筛选：切换后自动回到第一页
+  useEffect(() => {
+    applyFiltersAndPaginate(allRows, 1, pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStudentId]);
 
   // 处理学生列表类型变化
   const handleStudentListTypeChange = (type: 'all' | 'live' | 'out') => {
@@ -285,15 +312,29 @@ export default function ExitPermitPage() {
 
         {/* 操作栏 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          {canEdit && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              <PlusIcon className="h-4 w-4" />
-              批量添加
-            </button>
-          )}
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
+            <div className="w-full sm:w-[260px]">
+              <SearchableSelect<string>
+                options={studentFilterOptions}
+                value={selectedStudentId}
+                onValueChange={(v) => setSelectedStudentId(String(v))}
+                placeholder="筛选学生"
+                searchPlaceholder="搜索学生姓名..."
+                className="w-full"
+                disabled={loading}
+              />
+            </div>
+
+            {canEdit && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 justify-center"
+              >
+                <PlusIcon className="h-4 w-4" />
+                批量添加
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 数据表格 */}
