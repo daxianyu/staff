@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import moment from 'moment';
-import Link from 'next/link';
+import { TableActionLink } from '@/components/TableActionLink';
 import TimePicker from '../../../components/TimePicker';
 import Button from '../../../components/Button';
 import NumberInput from '../../../components/NumberInput';
@@ -742,23 +742,19 @@ export default function AddEventModal({
                       )}
                       <div className="mt-2 flex space-x-2">
                         {canEditClass && (
-                          <Link
+                          <TableActionLink
                             href={`/class/edit?id=${initialEvent.class_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
                           >
                             编辑课程
-                          </Link>
+                          </TableActionLink>
                         )}
-                        <Link
+                        <TableActionLink
                           href={`/class/view?id=${initialEvent.class_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="px-3 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
                         >
                           课程详情
-                        </Link>
+                        </TableActionLink>
                       </div>
                     </div>
                   )}
@@ -811,17 +807,15 @@ export default function AddEventModal({
 
                                   // 只有有编辑权限时才显示链接
                                   if (canEditClass && studentIds.length === studentNames.length) {
-                                    const basePath = process.env.NODE_ENV === 'production' ? '/staff' : '';
                                     return studentNames.map((name: string, index: number) => (
-                                      <Link
+                                      <TableActionLink
                                         key={index}
-                                        href={`${basePath}/students/schedule?studentId=${studentIds[index]}`}
-                                        target="_blank"
                                         className="text-blue-600 hover:underline hover:text-blue-800"
+                                        href={`/students/schedule?studentId=${studentIds[index]}`}
                                       >
                                         {name}
                                         {index < studentNames.length - 1 ? ',' : ''}
-                                      </Link>
+                                      </TableActionLink>
                                     ));
                                   }
 

@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
+import { TableActionLink } from '@/components/TableActionLink';
 import {
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
@@ -418,12 +419,12 @@ const OperationsMenu: React.FC<OperationsMenuProps> = ({
   const hasMockReport = (evaluateOptions?.mock_evaluate && evaluateOptions.mock_evaluate[student.student_id] && evaluateOptions.mock_evaluate[student.student_id].length > 0) || false;
 
   const operations = [
-    { id: 'suspend', label: 'Suspend', icon: StopIcon, permission: canManageStatus, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
-    { id: 'dropout', label: 'Drop out', icon: XCircleIcon, permission: canManageStatus, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
-    { id: 'graduate', label: 'Graduate', icon: GraduateIcon, permission: canManageStatus, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
-    { id: 'academic-report', label: 'Academic Report', icon: DocumentTextIcon, permission: hasAcademicReport, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
-    { id: 'mock-report', label: 'Mock Exam Report', icon: ClipboardDocumentListIcon, permission: hasMockReport, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
-    { id: 'graduation-wishes', label: 'Graduation Wishes', icon: HeartIcon, permission: canAddComplaint, className: 'bg-blue-100 text-blue-600 hover:bg-blue-200' },
+    { id: 'suspend', label: 'Suspend', icon: StopIcon, permission: canManageStatus, className: 'bg-gray-100 text-gray-900 hover:bg-gray-200' },
+    { id: 'dropout', label: 'Drop out', icon: XCircleIcon, permission: canManageStatus, className: 'bg-gray-100 text-gray-900 hover:bg-gray-200' },
+    { id: 'graduate', label: 'Graduate', icon: GraduateIcon, permission: canManageStatus, className: 'bg-gray-100 text-gray-900 hover:bg-gray-200' },
+    { id: 'academic-report', label: 'Academic Report', icon: DocumentTextIcon, permission: hasAcademicReport, className: 'bg-gray-100 text-gray-900 hover:bg-gray-200' },
+    { id: 'mock-report', label: 'Mock Exam Report', icon: ClipboardDocumentListIcon, permission: hasMockReport, className: 'bg-gray-100 text-gray-900 hover:bg-gray-200' },
+    { id: 'graduation-wishes', label: 'Graduation Wishes', icon: HeartIcon, permission: canAddComplaint, className: 'bg-gray-100 text-gray-900 hover:bg-gray-200' },
   ];
 
   const availableOperations = operations.filter(op => op.permission);
@@ -453,7 +454,7 @@ const OperationsMenu: React.FC<OperationsMenuProps> = ({
       <div className="md:hidden relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors flex items-center justify-center"
+          className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors flex items-center justify-center"
           title="Operations"
         >
           <EllipsisVerticalIcon className="h-4 w-4" />
@@ -479,7 +480,7 @@ const OperationsMenu: React.FC<OperationsMenuProps> = ({
                         onOperationSelect(operation.id, student);
                         setIsOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 transition-colors ${operation.className.replace('bg-', 'text-').replace('-100', '').replace('-200', '')} hover:bg-gray-50`}
+                      className="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 transition-colors text-gray-900 hover:bg-gray-50"
                     >
                       <Icon className="h-4 w-4" />
                       <span>{operation.label}</span>
@@ -828,10 +829,7 @@ export default function MenteePage() {
 
   const handleGraduationWishes = async (student: MenteeStudent) => {
     try {
-      // 新 tab 打开；生产环境有 basePath=/staff
-      const basePath = window.location.pathname.startsWith('/staff') ? '/staff' : '';
-      const url = `${basePath}/users/graduation-wishes-send`;
-      window.open(url, '_blank', 'noopener,noreferrer');
+      openUrlWithFallback('/users/graduation-wishes-send');
     } catch (error) {
       console.error('Error sending graduation wishes:', error);
       alert('跳转失败');
@@ -905,16 +903,16 @@ export default function MenteePage() {
                               </div>
                             </div>
                             <div className="ml-4">
-                              <Link
+                              <TableActionLink
                                 href={`/mentee/student-detail?id=${student.student_id}`}
-                                className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                                className="text-sm font-medium text-gray-900 hover:text-gray-900 transition-colors"
                               >
                                 {student.student_name} (毕业：{student.graduation_date})
-                              </Link>
+                              </TableActionLink>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <OperationsMenu
                             student={student}
                             onOperationSelect={handleOperationSelect}

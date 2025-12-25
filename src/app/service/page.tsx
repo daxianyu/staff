@@ -137,7 +137,6 @@ const ServiceTable = memo(function ServiceTable({
                     {names ? (
                       <div>
                         <div className="truncate text-xs">{names.join(', ')}</div>
-                        <div className="text-xs text-gray-500">{names.length} 人</div>
                       </div>
                     ) : (
                       <span className="text-gray-400">无</span>
@@ -272,9 +271,10 @@ export default function ServicePage() {
     return services.filter(service =>
       service.name.toLowerCase().includes(term) ||
       service.campus_name?.toLowerCase().includes(term) ||
-      service.mentor_name?.toLowerCase().includes(term)
+      service.mentor_name?.toLowerCase().includes(term) ||
+      (dormitoryStudents[service.id] || []).some((n) => n.toLowerCase().includes(term))
     );
-  }, [services, searchTerm]);
+  }, [services, searchTerm, dormitoryStudents]);
 
   // 分页计算
   const paginatedServices = useMemo(() => {
@@ -568,7 +568,7 @@ export default function ServicePage() {
               <input
                 type="text"
                 className="block w-full rounded-lg border-gray-300 pl-10 pr-4 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
-                placeholder="搜索宿舍名称、校区或导师..."
+                placeholder="搜索宿舍名称、校区、导师或学生..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

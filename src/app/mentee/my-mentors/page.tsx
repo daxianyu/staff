@@ -16,6 +16,7 @@ import {
   getMyMentorStudents,
   type MyMentorStudents,
 } from '@/services/auth';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
 
 export default function MyMentorsPage() {
   const { hasPermission } = useAuth();
@@ -24,9 +25,6 @@ export default function MyMentorsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-
-  // 生产静态导出时 Next 会加 basePath=/staff；开发环境不需要
-  const basePath = process.env.NODE_ENV === 'development' ? '' : '/staff';
 
   // 权限检查
   const canView = hasPermission(PERMISSIONS.VIEW_MY_MENTORS);
@@ -251,8 +249,7 @@ export default function MyMentorsPage() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <button
                                 onClick={() => {
-                                  const url = `${basePath}/mentee/student-detail?id=${student.student_id}`;
-                                  window.open(url, '_blank', 'noopener,noreferrer');
+                                  openUrlWithFallback(`/mentee/student-detail?id=${student.student_id}`);
                                 }}
                                 className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors flex items-center justify-center"
                                 title="View Student Details"

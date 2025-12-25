@@ -137,6 +137,7 @@ export default function SalesEditPage() {
         year_num: '',
         year_of_study: '',
     });
+    const [admissionCampusId, setAdmissionCampusId] = useState<number>(0);
 
     // 拒信邮件参数
     const [rejectParams, setRejectParams] = useState<Partial<RejectMailParams>>({
@@ -543,28 +544,27 @@ export default function SalesEditPage() {
         // 校验模态框中的必填字段
         if (!admissionParams.school_year || !admissionParams.semester ||
             !admissionParams.english_score || !admissionParams.math_score ||
-            !admissionParams.campuses || !admissionParams.year_num || !admissionParams.year_of_study) {
+            !admissionCampusId || !admissionParams.year_num || !admissionParams.year_of_study) {
             setAdmissionError('请填写所有必填字段');
-            return;
-        }
-
-        // 校验页面中的必填字段（强制校验，忽略状态判断）
-        const validationError = validateRequiredFields(true);
-        if (validationError) {
-            setAdmissionError(validationError);
             return;
         }
 
         setSendingAdmission(true);
         setAdmissionError(null);
         try {
+            const campusName = campusList.find((c) => c.id === admissionCampusId)?.name || '';
+            if (!campusName) {
+                setAdmissionError('请选择校区');
+                setSendingAdmission(false);
+                return;
+            }
             const params: AdmissionMailParams = {
                 contract_id: Number(contractId),
                 school_year: admissionParams.school_year!,
                 semester: admissionParams.semester!,
                 english_score: admissionParams.english_score!,
                 math_score: admissionParams.math_score!,
-                campuses: admissionParams.campuses!,
+                campuses: campusName,
                 year_num: admissionParams.year_num!,
                 year_of_study: admissionParams.year_of_study || '',
             };
@@ -583,6 +583,7 @@ export default function SalesEditPage() {
                     year_num: '',
                     year_of_study: '',
                 });
+                setAdmissionCampusId(0);
                 const refreshResult = await getSalesInfo(Number(contractId));
                 if (refreshResult.code === 200 && refreshResult.data) {
                     setSalesInfo(refreshResult.data);
@@ -866,7 +867,18 @@ export default function SalesEditPage() {
                             </button>
                         )}
                         <button
-                            onClick={() => setShowAdmissionModal(true)}
+                            onClick={() => {
+                                setAdmissionError(null);
+                                // 默认带入页面已选校区，减少重复选择
+                                const currentCampusId = Number(formData.campus_id || info.campus_id || 0);
+                                setAdmissionCampusId(currentCampusId);
+                                const currentCampusName = campusList.find((c) => c.id === currentCampusId)?.name || '';
+                                setAdmissionParams((prev) => ({
+                                    ...prev,
+                                    campuses: currentCampusName,
+                                }));
+                                setShowAdmissionModal(true);
+                            }}
                             disabled={sendingAdmission}
                             className="inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -1726,6 +1738,7 @@ export default function SalesEditPage() {
                                     <button
                                         onClick={() => {
                                             setShowAdmissionModal(false);
+                                            setAdmissionError(null);
                                             setAdmissionParams({
                                                 school_year: '',
                                                 semester: '',
@@ -1733,7 +1746,9 @@ export default function SalesEditPage() {
                                                 math_score: '',
                                                 campuses: '',
                                                 year_num: '',
+                                                year_of_study: '',
                                             });
+                                            setAdmissionCampusId(0);
                                         }}
                                         className="text-gray-400 hover:text-gray-500"
                                     >
@@ -1823,14 +1838,21 @@ export default function SalesEditPage() {
                                             校区 <span className="text-red-500">*</span>
                                         </label>
                                         <select
-                                            value={admissionParams.campuses || ''}
-                                            onChange={(e) => setAdmissionParams({ ...admissionParams, campuses: e.target.value })}
+                                            value={admissionCampusId || 0}
+                                            onChange={(e) => {
+                                                const id = Number(e.target.value) || 0;
+                                                setAdmissionCampusId(id);
+                                                // 同步页面表单的 campus_id，避免后续校验仍提示“未填校区”
+                                                if (id) handleInputChange('campus_id', id);
+                                                const name = campusList.find((c) => c.id === id)?.name || '';
+                                                setAdmissionParams({ ...admissionParams, campuses: name });
+                                            }}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                             disabled={sendingAdmission}
                                         >
-                                            <option value="">请选择校区</option>
+                                            <option value={0}>请选择校区</option>
                                             {campusList.map((campus) => (
-                                                <option key={campus.id} value={campus.name}>
+                                                <option key={campus.id} value={campus.id}>
                                                     {campus.name}
                                                 </option>
                                             ))}
@@ -1882,6 +1904,7 @@ export default function SalesEditPage() {
                                 <button
                                     onClick={() => {
                                         setShowAdmissionModal(false);
+                                        setAdmissionError(null);
                                         setAdmissionParams({
                                             school_year: '',
                                             semester: '',
@@ -1889,7 +1912,9 @@ export default function SalesEditPage() {
                                             math_score: '',
                                             campuses: '',
                                             year_num: '',
+                                            year_of_study: '',
                                         });
+                                        setAdmissionCampusId(0);
                                     }}
                                     disabled={sendingAdmission}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"

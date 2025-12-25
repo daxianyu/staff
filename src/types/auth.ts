@@ -206,6 +206,12 @@ export const PERMISSIONS = {
   // 工具概览权限 (tool_user)
   VIEW_TOOLS_OVERVIEW: 'view_tools_overview',
 
+  // 休复学(suspension)管理权限 (tool_user)
+  VIEW_LEAVE_SCHOOL: 'view_leave_school',
+  ADD_LEAVE_SCHOOL: 'add_leave_school',
+  EDIT_LEAVE_SCHOOL: 'edit_leave_school',
+  DELETE_LEAVE_SCHOOL: 'delete_leave_school',
+
   // 自助报名班级权限 (edit_classes or sales_admin)
   VIEW_SELF_SIGNUP_CLASSES: 'view_self_signup_classes',
   EDIT_SELF_SIGNUP_CLASSES: 'edit_self_signup_classes',

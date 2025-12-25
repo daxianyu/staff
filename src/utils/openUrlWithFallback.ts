@@ -1,13 +1,29 @@
+import { withStaffBasePath } from '@/utils/withStaffBasePath';
+import { isWeChatMiniProgram, toAbsoluteUrl } from '@/utils/miniprogram';
+
 export function openUrlWithFallback(url: string) {
+  const finalUrl = withStaffBasePath(url);
+
+  // 小程序 webview：只有一个窗口，不做 navigateTo，直接当前窗口内跳转
+  if (isWeChatMiniProgram()) {
+    try {
+      window.location.assign(finalUrl);
+    } catch {
+      // 降级为复制绝对链接
+      showCopyDialog(toAbsoluteUrl(finalUrl));
+    }
+    return;
+  }
+
   // 尝试正常打开
-  const win = window.open(url, '_blank');
+  const win = window.open(finalUrl, '_blank', 'noopener,noreferrer');
   if (win) {
     win.focus();
     return;
   }
 
   // 被拦截，弹出自定义提示
-  showCopyDialog(url);
+  showCopyDialog(finalUrl);
 }
 
 function showCopyDialog(url: string) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { TableActionLink } from '@/components/TableActionLink';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
@@ -104,12 +104,12 @@ export default function OverBookRoomPage() {
                   {roomList.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <Link 
+                        <TableActionLink
                           href={`/class/schedule?class_id=${item.class_id}`} 
                           className="text-blue-500 hover:text-blue-700"
                         >
                           {item.room_name}
-                        </Link>
+                        </TableActionLink>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {item.room_size}

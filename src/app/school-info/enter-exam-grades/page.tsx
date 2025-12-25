@@ -15,6 +15,7 @@ import {
   TrashIcon,
   DocumentArrowDownIcon,
   PaperClipIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import {
   getEnterExamGrades,
@@ -42,6 +43,7 @@ export default function EnterExamGradesPage() {
   // 列表状态
   const [examList, setExamList] = useState<ExamGradeItem[]>([]);
   const [listLoading, setListLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // 详情状态
   const [detailLoading, setDetailLoading] = useState(true);
@@ -75,6 +77,12 @@ export default function EnterExamGradesPage() {
 
   // Grade 选项
   const gradeOptions = ['A*', 'A', 'B', 'C', 'D', 'E', 'U', 'X No result', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+  const filteredExamList = examList.filter((exam) => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return true;
+    return (exam.name || '').toLowerCase().includes(keyword);
+  });
 
   // 权限检查页面
   if (!canView) {
@@ -847,8 +855,32 @@ export default function EnterExamGradesPage() {
         {/* 操作栏 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="text-sm text-gray-600">
-              共 {examList.length} 条记录
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full sm:w-auto">
+              <div className="relative w-full sm:w-80">
+                <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="搜索考试名称..."
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {searchTerm.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label="清空搜索"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="text-sm text-gray-600 flex items-center">
+                显示 {filteredExamList.length} 条
+                {searchTerm.trim() ? `（共 ${examList.length} 条）` : ''}
+              </div>
             </div>
             
             <button
@@ -882,7 +914,7 @@ export default function EnterExamGradesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {examList.map((exam) => (
+                  {filteredExamList.map((exam) => (
                     <tr key={exam.exam_id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {exam.name}
@@ -913,10 +945,10 @@ export default function EnterExamGradesPage() {
                       </td>
                     </tr>
                   ))}
-                  {examList.length === 0 && (
+                  {filteredExamList.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
-                        暂无数据
+                        {searchTerm.trim() ? '未找到匹配的考试' : '暂无数据'}
                       </td>
                     </tr>
                   )}

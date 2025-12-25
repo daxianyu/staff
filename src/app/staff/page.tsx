@@ -32,7 +32,7 @@ import {
 import DropdownPortal from '@/components/DropdownPortal';
 import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { TableActionLink } from '@/components/TableActionLink';
 
 
 export default function StaffPage() {
@@ -589,30 +589,28 @@ export default function StaffPage() {
                           
                           {/* Staff Schedule - 最常见的操作 */}
                           {canViewStaffDetails && (
-                            <Link href={`/schedule?staffId=${staff.staff_id}`} legacyBehavior>
-                              <a
-                                className="flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-manipulation"
-                                title="Staff Schedule"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </a>
-                            </Link>
+                            <TableActionLink
+                              href={`/schedule?staffId=${staff.staff_id}`}
+                              className="flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-manipulation"
+                              title="Staff Schedule"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </TableActionLink>
                           )}
 
                           {/* Staff Info - 第二常见的操作 */}
                           {canViewStaffDetails && (
-                            <Link href={`/staff/user?userId=${staff.staff_id}`} legacyBehavior>
-                              <a
-                                className="flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 touch-manipulation"
-                                title="Staff Info"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </a>
-                            </Link>
+                            <TableActionLink
+                              href={`/staff/user?userId=${staff.staff_id}`}
+                              className="flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 touch-manipulation"
+                              title="Staff Info"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </TableActionLink>
                           )}
 
                           {/* 更多操作下拉菜单 - 只有有权限时才显示 */}
@@ -665,7 +663,7 @@ export default function StaffPage() {
                     >
                       {/* Lesson overview - 需要 view_staff 权限 */}
                       {canViewStaffDetails && (
-                        <Link
+                        <TableActionLink
                           href={`/lesson-overview?userId=${staff.staff_id}&monthId=${monthsSince1970}`}
                           className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition-colors touch-manipulation"
                         >
@@ -673,12 +671,12 @@ export default function StaffPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                           </svg>
                           Lesson Overview
-                        </Link>
+                        </TableActionLink>
                       )}
 
                       {/* Staff edit - 需要 edit_staff 权限 */}
                       {canEditStaff && (
-                        <Link
+                        <TableActionLink
                           href={`/staff/edit?id=${staff.staff_id}`}
                           className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 flex items-center gap-3 transition-colors touch-manipulation"
                         >
@@ -686,7 +684,7 @@ export default function StaffPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                           Staff Edit
-                        </Link>
+                        </TableActionLink>
                       )}
 
                       {/* 分隔线 - 只有当有管理权限时才显示 */}

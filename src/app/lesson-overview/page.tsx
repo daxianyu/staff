@@ -6,6 +6,7 @@ import DashboardLayout from '@/app/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { getLessonOverview, LessonOverviewData, SubjectData, LessonData, getStaffInfo, StaffInfo } from '@/services/auth';
+import { TableActionLink } from '@/components/TableActionLink';
 
 // 时间工具函数
 const formatTimestamp = (timestamp: number): { date: string; time: string } => {
@@ -314,9 +315,9 @@ export default function LessonOverviewPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex space-x-2">
-                            <Link href={`/class/edit?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">编辑</Link>
-                            <Link href={`/class/view?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">查看</Link>
-                            <Link href={`/class/schedule?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition">排课</Link>
+                            <TableActionLink href={`/class/edit?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">编辑</TableActionLink>
+                            <TableActionLink href={`/class/view?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">查看</TableActionLink>
+                            <TableActionLink href={`/class/schedule?id=${row.classId || 'unknown'}`} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition">排课</TableActionLink>
                           </div>
                         </td>
                       </tr>

@@ -156,6 +156,35 @@ export interface StartTimeAddParams {
   start_day: string; // YYYY-MM-DD
 }
 
+// 休复学(suspension)相关类型
+export interface LeaveSchoolRecord {
+  record_id?: number;
+  id?: number;
+  student_id?: number;
+  student_name?: string;
+  start_day?: string;
+  end_day?: string;
+  desc?: string;
+  [key: string]: any;
+}
+
+export interface LeaveSchoolListResponse {
+  rows: LeaveSchoolRecord[];
+  total: number;
+}
+
+export interface LeaveSchoolAddParams {
+  student_id: number;
+  start_day?: string; // YYYY-MM-DD
+  end_day?: string; // YYYY-MM-DD
+  desc?: string;
+  [key: string]: any;
+}
+
+export interface LeaveSchoolEditParams extends LeaveSchoolAddParams {
+  record_id: number;
+}
+
 // 删除参数
 export interface DeleteParams {
   record_id: number;
@@ -484,5 +513,62 @@ export const getStartTime = async (): Promise<ApiResponse<StartTimeListResponse>
   } catch (error) {
     console.error('获取开学时间列表失败:', error);
     return { code: 500, message: error instanceof Error ? error.message : '获取开学时间列表失败', data: { rows: [], total: 0 } };
+  }
+};
+
+// 新增休复学记录
+export const addLeaveSchool = async (params: LeaveSchoolAddParams): Promise<ApiResponse<string>> => {
+  try {
+    const { data } = await request('/api/tools/add_leave_school', {
+      method: 'POST',
+      body: params,
+    });
+    return normalizeApiResponse(data as ApiEnvelope<string>);
+  } catch (error) {
+    console.error('新增休复学记录失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '新增休复学记录失败' };
+  }
+};
+
+// 编辑休复学记录
+export const editLeaveSchool = async (params: LeaveSchoolEditParams): Promise<ApiResponse<string>> => {
+  try {
+    const { data } = await request('/api/tools/edit_leave_school', {
+      method: 'POST',
+      body: params,
+    });
+    return normalizeApiResponse(data as ApiEnvelope<string>);
+  } catch (error) {
+    console.error('编辑休复学记录失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '编辑休复学记录失败' };
+  }
+};
+
+// 获取休复学记录列表
+export const getLeaveSchool = async (): Promise<ApiResponse<LeaveSchoolListResponse>> => {
+  try {
+    const { data } = await request('/api/tools/get_leave_school', {
+      method: 'GET',
+    });
+    return normalizeApiResponse(data as ApiEnvelope<LeaveSchoolListResponse>);
+  } catch (error) {
+    console.error('获取休复学记录失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '获取休复学记录失败', data: { rows: [], total: 0 } };
+  }
+};
+
+// 删除休复学记录
+export const deleteLeaveSchool = async (params: DeleteParams): Promise<ApiResponse<string>> => {
+  try {
+    const { data } = await request('/api/tools/delete_leave_school', {
+      method: 'POST',
+      body: {
+        record_id: params.record_id,
+      },
+    });
+    return normalizeApiResponse(data as ApiEnvelope<string>);
+  } catch (error) {
+    console.error('删除休复学记录失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '删除休复学记录失败' };
   }
 };

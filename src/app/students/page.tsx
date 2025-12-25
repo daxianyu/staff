@@ -35,7 +35,7 @@ import {
 import DropdownPortal from '@/components/DropdownPortal';
 import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { TableActionLink } from '@/components/TableActionLink';
 
 export default function StudentsPage() {
   const { hasPermission } = useAuth();
@@ -571,43 +571,40 @@ export default function StudentsPage() {
 
                           {/* Student View 快捷入口 */}
                           {canViewStudentDetail0 && (
-                            <Link href={`/students/student-view?studentId=${student.student_id}`} legacyBehavior>
-                              <a
-                                className="flex items-center justify-center w-8 h-8 text-teal-600 hover:text-teal-900 hover:bg-teal-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 touch-manipulation"
-                                title="Student View"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                              </a>
-                            </Link>
+                            <TableActionLink
+                              href={`/students/student-view?studentId=${student.student_id}`}
+                              className="flex items-center justify-center w-8 h-8 text-teal-600 hover:text-teal-900 hover:bg-teal-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 touch-manipulation"
+                              title="Student View"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </TableActionLink>
                           )}
 
                           {/* Student Schedule 快捷入口（桌面） */}
                           {canViewStudentDetails && (
-                            <Link href={`/students/schedule?studentId=${student.student_id}`} legacyBehavior>
-                              <a
-                                className="flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-manipulation"
-                                title="Student Schedule"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </a>
-                            </Link>
+                            <TableActionLink
+                              href={`/students/schedule?studentId=${student.student_id}`}
+                              className="flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-manipulation"
+                              title="Student Schedule"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </TableActionLink>
                           )}
 
                           {/* Lesson Table 入口 */}
                           {canViewStudentDetails && (
-                            <Link href={`/lesson-table?record_id=${student.student_id}`} legacyBehavior>
-                              <a
-                                className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
-                                title="Lesson Table"
-                              >
-                                <TableCellsIcon className="h-4 w-4" />
-                              </a>
-                            </Link>
+                            <TableActionLink
+                              href={`/lesson-table?record_id=${student.student_id}`}
+                              className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
+                              title="Lesson Table"
+                            >
+                              <TableCellsIcon className="h-4 w-4" />
+                            </TableActionLink>
                           )}
 
                           {/* 更多操作下拉菜单 - 只有有权限时才显示 */}
@@ -662,43 +659,40 @@ export default function StudentsPage() {
 
                         {/* Student Schedule 快捷入口（移动） */}
                         {canViewStudentDetails && (
-                          <Link href={`/students/schedule?studentId=${student.student_id}`} legacyBehavior>
-                            <a
-                              className="flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-manipulation"
-                              title="Student Schedule"
-                            >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </a>
-                          </Link>
+                          <TableActionLink
+                            href={`/students/schedule?studentId=${student.student_id}`}
+                            className="flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-manipulation"
+                            title="Student Schedule"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </TableActionLink>
                         )}
 
                         {/* Student View 快捷入口（移动） */}
                         {canViewStudentDetails && (
-                          <Link href={`/students/student-view?studentId=${student.student_id}`} legacyBehavior>
-                            <a
-                              className="flex items-center justify-center w-8 h-8 text-teal-600 hover:text-teal-900 hover:bg-teal-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 touch-manipulation"
-                              title="Student View"
-                            >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </a>
-                          </Link>
+                          <TableActionLink
+                            href={`/students/student-view?studentId=${student.student_id}`}
+                            className="flex items-center justify-center w-8 h-8 text-teal-600 hover:text-teal-900 hover:bg-teal-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 touch-manipulation"
+                            title="Student View"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </TableActionLink>
                         )}
 
                         {/* Lesson Table 快捷入口（移动） */}
                         {canViewStudentDetails && (
-                          <Link href={`/lesson-table?record_id=${student.student_id}`} legacyBehavior>
-                            <a
-                              className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
-                              title="Lesson Table"
-                            >
-                              <TableCellsIcon className="h-4 w-4" />
-                            </a>
-                          </Link>
+                          <TableActionLink
+                            href={`/lesson-table?record_id=${student.student_id}`}
+                            className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
+                            title="Lesson Table"
+                          >
+                            <TableCellsIcon className="h-4 w-4" />
+                          </TableActionLink>
                         )}
 
                         {/* 更多操作按钮 */}
@@ -818,7 +812,7 @@ export default function StudentsPage() {
                       {/* 移除 View Schedule 下拉项，已移至操作栏外部 */}
                       {/* Student edit - 需要 edit_students 权限 */}
                       {canEditStudents && (
-                        <Link
+                        <TableActionLink
                           href={`/students/edit?id=${student.student_id}`}
                           className="w-full px-4 py-3 sm:py-2 text-left text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 flex items-center gap-3 transition-colors touch-manipulation"
                         >
@@ -826,7 +820,7 @@ export default function StudentsPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                           Student Edit
-                        </Link>
+                        </TableActionLink>
                       )}
 
                       {/* 分隔线 - 只有当有管理权限时才显示 */}

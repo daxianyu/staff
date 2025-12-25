@@ -56,6 +56,7 @@ export default function TradeInfoPage() {
   const [endDate, setEndDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [payAccount, setPayAccount] = useState<number>(-1);
   const [accountOptions, setAccountOptions] = useState<TradeAccountOption[]>([]);
+  const [nameKeyword, setNameKeyword] = useState('');
 
   const [rows, setRows] = useState<TradeInfoRow[]>([]);
 
@@ -135,12 +136,23 @@ export default function TradeInfoPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [pageSize]);
+  }, [pageSize, nameKeyword]);
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const startIndex = (currentPage - 1) * pageSize;
+  const filteredRows = rows.filter((r) => {
+    const keyword = nameKeyword.trim().toLowerCase();
+    if (!keyword) return true;
+    return (r.user_name || '').toLowerCase().includes(keyword);
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedRows = rows.slice(startIndex, endIndex);
+  const paginatedRows = filteredRows.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    if (currentPage !== safeCurrentPage) setCurrentPage(safeCurrentPage);
+  }, [currentPage, safeCurrentPage]);
 
   const openDetail = async (recordId: number) => {
     setDetailOpen(true);
@@ -237,7 +249,8 @@ export default function TradeInfoPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="text-sm text-gray-600">
-            显示第 {rows.length === 0 ? 0 : startIndex + 1} - {Math.min(endIndex, rows.length)} 条，共 {rows.length} 条记录
+            显示第 {filteredRows.length === 0 ? 0 : startIndex + 1} - {Math.min(endIndex, filteredRows.length)} 条，共 {filteredRows.length} 条记录
+            {nameKeyword.trim() ? `（过滤前 ${rows.length} 条）` : ''}
           </div>
 
           <div className="flex items-center gap-2">
@@ -325,7 +338,7 @@ export default function TradeInfoPage() {
                       {
                         name: 'Trade Info',
                         headers: exportHeaders,
-                        data: rows.map((r) => [
+                        data: filteredRows.map((r) => [
                           r.type_name,
                           r.user_name || '',
                           r.price,
@@ -341,7 +354,7 @@ export default function TradeInfoPage() {
                       },
                     ],
                   }}
-                  disabled={loading || rows.length === 0}
+                  disabled={loading || filteredRows.length === 0}
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-sm hover:shadow-md"
                 >
                   <ArrowDownTrayIcon className="h-4 w-4" />
@@ -414,6 +427,33 @@ export default function TradeInfoPage() {
                   </select>
                 </div>
               </div>
+
+              {/* 姓名 */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">姓名</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    value={nameKeyword}
+                    onChange={(e) => setNameKeyword(e.target.value)}
+                    placeholder="按用户姓名搜索"
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  />
+                  {nameKeyword.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setNameKeyword('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      aria-label="清空姓名搜索"
+                    >
+                      <XMarkIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
@@ -422,6 +462,7 @@ export default function TradeInfoPage() {
                   setStartDate(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
                   setEndDate(format(new Date(), 'yyyy-MM-dd'));
                   setPayAccount(-1);
+                  setNameKeyword('');
                   setTimeout(() => loadList(), 50);
                 }}
                 className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
@@ -554,13 +595,18 @@ export default function TradeInfoPage() {
           {!loading && rows.length > 0 && (
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
               <div className="text-sm text-gray-600">
-                共找到 <span className="font-medium text-gray-900">{rows.length}</span> 条记录
+                共找到 <span className="font-medium text-gray-900">{filteredRows.length}</span> 条记录
+                {nameKeyword.trim() ? (
+                  <>
+                    ，过滤前 <span className="font-medium text-gray-900">{rows.length}</span> 条
+                  </>
+                ) : null}
               </div>
             </div>
           )}
         </div>
 
-        {!loading && rows.length > 0 && <Pagination />}
+        {!loading && filteredRows.length > 0 && <Pagination />}
       </div>
 
       {/* 详情弹窗 */}

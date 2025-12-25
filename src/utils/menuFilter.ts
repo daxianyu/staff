@@ -177,6 +177,10 @@ export class MenuFilter {
       PERMISSIONS.VIEW_TOOLS_OVERVIEW,
       PERMISSIONS.VIEW_SET_SIGNUP_TIME,
       PERMISSIONS.EDIT_SET_SIGNUP_TIME,
+      PERMISSIONS.VIEW_LEAVE_SCHOOL,
+      PERMISSIONS.ADD_LEAVE_SCHOOL,
+      PERMISSIONS.EDIT_LEAVE_SCHOOL,
+      PERMISSIONS.DELETE_LEAVE_SCHOOL,
     ];
     if (toolUserPermissions.includes(permission as any)) {
       return (this.user as any).tool_user === true || (this.user as any).tool_user === 1;
@@ -430,6 +434,13 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/students/certificate-overview',
         icon: 'academic-cap',
         requiredPermissions: [PERMISSIONS.VIEW_CERTIFICATE_OVERVIEW],
+      },
+      {
+        key: 'suspension-management',
+        label: 'Suspension Management',
+        path: '/students/suspension',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_LEAVE_SCHOOL],
       },
     ],
   },
