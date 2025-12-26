@@ -28,6 +28,7 @@ import {
     UserPlusIcon,
     XMarkIcon,
     CheckCircleIcon,
+    CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 
 // 将时间戳转换为日期输入格式 (yyyy-MM-dd)
@@ -57,6 +58,35 @@ function toTimestamp(dateInput: string): number {
     }
 }
 
+// 解析用户输入/粘贴的日期文本为时间戳（秒）
+// 支持：yyyy-MM-dd / yyyy/M/d / yyyy.MM.dd / "yyyy-MM-dd HH:mm:ss"（会取日期部分）
+function parseDateTextToTimestamp(raw: string): number {
+    const text = (raw || '').trim();
+    if (!text) return -1;
+
+    // 尝试提取年月日
+    const m = text.match(/(\d{4})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{1,2})/);
+    if (!m) return -1;
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return -1;
+    if (mo < 1 || mo > 12) return -1;
+    if (d < 1 || d > 31) return -1;
+
+    // 用 Date 做合法性校验（避免 2025-02-31 这种溢出）
+    const date = new Date(y, mo - 1, d, 0, 0, 0, 0);
+    if (isNaN(date.getTime())) return -1;
+    if (date.getFullYear() !== y || date.getMonth() !== mo - 1 || date.getDate() !== d) return -1;
+    return Math.floor(date.getTime() / 1000);
+}
+
+function normalizeDateText(raw: string): string {
+    const ts = parseDateTextToTimestamp(raw);
+    if (!ts || ts === -1) return (raw || '').trim();
+    return toDateInput(ts);
+}
+
 // 格式化时间戳为可读的日期时间格式
 function formatTimestamp(timestamp: number): string {
     if (!timestamp || timestamp === -1) return '';
@@ -77,6 +107,88 @@ function formatTimestamp(timestamp: number): string {
 
 // 必填字段标记组件
 const RequiredMark = () => <span className="text-red-500 ml-1">*</span>;
+
+function PasteableDateInput(props: {
+    value: number | undefined;
+    onChangeTimestamp: (ts: number) => void;
+    disabled?: boolean;
+    className?: string;
+    placeholder?: string;
+}) {
+    const { value, onChangeTimestamp, disabled, className, placeholder } = props;
+    const [text, setText] = useState<string>(toDateInput(value));
+
+    useEffect(() => {
+        setText(toDateInput(value));
+    }, [value]);
+
+    const parsedTs = parseDateTextToTimestamp(text);
+    const isInvalid = Boolean(text.trim()) && parsedTs === -1;
+
+    return (
+        <div className="space-y-1">
+            <div className="relative">
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={placeholder || 'YYYY-MM-DD'}
+                    value={text}
+                    onChange={(e) => {
+                        setText(e.target.value);
+                    }}
+                    onBlur={() => {
+                        const v = text.trim();
+                        if (!v) {
+                            onChangeTimestamp(-1);
+                            setText('');
+                            return;
+                        }
+                        const ts = parseDateTextToTimestamp(v);
+                        if (ts !== -1) {
+                            onChangeTimestamp(ts);
+                            setText(toDateInput(ts));
+                        }
+                    }}
+                    onPaste={(e) => {
+                        const pasted = e.clipboardData.getData('text');
+                        if (!pasted) return;
+                        e.preventDefault();
+                        const normalized = normalizeDateText(pasted);
+                        setText(normalized);
+                        const ts = parseDateTextToTimestamp(normalized);
+                        if (ts !== -1) onChangeTimestamp(ts);
+                    }}
+                    className={`${className || ''} pr-12 ${isInvalid ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
+                    disabled={disabled}
+                />
+
+                {/* 日历图标（视觉） */}
+                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+                    <CalendarDaysIcon className="h-5 w-5" />
+                </div>
+
+                {/* 原生日期选择器（透明覆盖在图标区域上，保证手机/桌面都能点开） */}
+                <input
+                    type="date"
+                    value={toDateInput(value)}
+                    onChange={(e) => {
+                        const v = e.target.value;
+                        const ts = parseDateTextToTimestamp(v);
+                        if (ts !== -1) {
+                            onChangeTimestamp(ts);
+                            setText(toDateInput(ts));
+                        }
+                    }}
+                    disabled={disabled}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 opacity-0 cursor-pointer"
+                    aria-label="打开日期选择器"
+                    tabIndex={disabled ? -1 : 0}
+                />
+            </div>
+            {isInvalid && <p className="text-xs text-red-600">日期格式不正确，请输入 YYYY-MM-DD</p>}
+        </div>
+    );
+}
 
 export default function SalesEditPage() {
     const router = useRouter();
@@ -197,7 +309,8 @@ export default function SalesEditPage() {
                         student_first_name_pinyin: info.student_first_name_pinyin || '',
                         student_last_name_pinyin: info.student_last_name_pinyin || '',
                         student_sfz: info.student_sfz || '',
-                        gender: info.gender || 2,
+                        // 性别：0=男 1=女 2=未设置（后端返回 0 也要保留）
+                        gender: info.gender ?? 2,
                         email: info.email || '',
                         phone: info.phone || '',
                         wechat: info.wechat || '',
@@ -416,7 +529,18 @@ export default function SalesEditPage() {
         if (!isFieldRequired(fieldName)) return false;
         
         const value = formData[fieldName as keyof UpdateSalesParams];
-        return !value || value === '' || value === 0 || value === -1;
+        // 字段级别判空规则
+        if (fieldName === 'gender') {
+            // 0=男/1=女 为有效值，2=未设置 视为未填
+            return value === undefined || value === null || value === 2;
+        }
+        if (typeof value === 'number') {
+            return value === 0 || value === -1;
+        }
+        if (typeof value === 'string') {
+            return value.trim() === '';
+        }
+        return !value;
     };
 
     // 获取缺失的必填字段列表（用于显示错误提示）
@@ -492,7 +616,26 @@ export default function SalesEditPage() {
 
             for (const { field, name } of requiredFields) {
                 const value = formData[field as keyof UpdateSalesParams];
-                if (!value || value === '' || value === 0 || value === -1) {
+                // 字段级别判空规则（与 isFieldError 保持一致）
+                if (field === 'gender') {
+                    if (value === undefined || value === null || value === 2) {
+                        return `请填写${name}`;
+                    }
+                    continue;
+                }
+                if (typeof value === 'number') {
+                    if (value === 0 || value === -1) {
+                        return `请填写${name}`;
+                    }
+                    continue;
+                }
+                if (typeof value === 'string') {
+                    if (value.trim() === '') {
+                        return `请填写${name}`;
+                    }
+                    continue;
+                }
+                if (!value) {
                     return `请填写${name}`;
                 }
             }
@@ -788,6 +931,7 @@ export default function SalesEditPage() {
     }
 
     const info = salesInfo.info;
+    const yearList = salesInfo.year_list || [];
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -876,6 +1020,8 @@ export default function SalesEditPage() {
                                 setAdmissionParams((prev) => ({
                                     ...prev,
                                     campuses: currentCampusName,
+                                    // 默认带入学年下拉第一项，避免必填校验卡住
+                                    school_year: prev.school_year || yearList[0] || '',
                                 }));
                                 setShowAdmissionModal(true);
                             }}
@@ -886,7 +1032,14 @@ export default function SalesEditPage() {
                             {sendingAdmission ? '发送中...' : '发送录取通知'}
                         </button>
                         <button
-                            onClick={() => setShowRejectModal(true)}
+                            onClick={() => {
+                                setRejectError(null);
+                                setRejectParams((prev) => ({
+                                    ...prev,
+                                    school_year: prev.school_year || yearList[0] || '',
+                                }));
+                                setShowRejectModal(true);
+                            }}
                             disabled={sendingReject}
                             className="inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -1224,21 +1377,21 @@ export default function SalesEditPage() {
                                 {isFieldRequired('gender') && <RequiredMark />}
                             </label>
                             <select
-                                value={formData.gender || 2}
+                                value={formData.gender ?? 2}
                                 onChange={(e) => handleInputChange('gender', Number(e.target.value))}
                                 className={getInputClassName('gender')}
                                 disabled={!canEdit}
                             >
-                                <option value={1}>男</option>
-                                <option value={2}>女</option>
+                                <option value={2}>未设置</option>
+                                <option value={0}>男</option>
+                                <option value={1}>女</option>
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">生日</label>
-                            <input
-                                type="date"
-                                value={toDateInput(formData.birthday)}
-                                onChange={(e) => handleInputChange('birthday', toTimestamp(e.target.value))}
+                            <PasteableDateInput
+                                value={formData.birthday}
+                                onChangeTimestamp={(ts) => handleInputChange('birthday', ts)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={!canEdit}
                             />
@@ -1279,37 +1432,43 @@ export default function SalesEditPage() {
                                 disabled={!canEdit}
                             />
                         </div>
-                        <div className="md:col-span-2">
+                        {/* 省份 + 城市一行 */}
+                        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">省份</label>
+                                <input
+                                    type="text"
+                                    value={formData.province || ''}
+                                    onChange={(e) => handleInputChange('province', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    disabled={!canEdit}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">城市</label>
+                                <input
+                                    type="text"
+                                    value={formData.city || ''}
+                                    onChange={(e) => handleInputChange('city', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    disabled={!canEdit}
+                                />
+                            </div>
+                        </div>
+
+                        {/* 地址 textarea 独占一行 */}
+                        <div className="md:col-span-3">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 地址
                                 {isFieldRequired('address') && <RequiredMark />}
                             </label>
-                            <input
-                                type="text"
+                            <textarea
                                 value={formData.address || ''}
                                 onChange={(e) => handleInputChange('address', e.target.value)}
                                 className={getInputClassName('address')}
                                 disabled={!canEdit}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">省份</label>
-                            <input
-                                type="text"
-                                value={formData.province || ''}
-                                onChange={(e) => handleInputChange('province', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                disabled={!canEdit}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">城市</label>
-                            <input
-                                type="text"
-                                value={formData.city || ''}
-                                onChange={(e) => handleInputChange('city', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                disabled={!canEdit}
+                                rows={3}
+                                placeholder="请输入详细地址"
                             />
                         </div>
                     </div>
@@ -1478,10 +1637,9 @@ export default function SalesEditPage() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">注册时间</label>
-                            <input
-                                type="date"
-                                value={toDateInput(formData.registration_time)}
-                                onChange={(e) => handleInputChange('registration_time', toTimestamp(e.target.value))}
+                            <PasteableDateInput
+                                value={formData.registration_time}
+                                onChangeTimestamp={(ts) => handleInputChange('registration_time', ts)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={!canEdit}
                             />
@@ -1491,10 +1649,9 @@ export default function SalesEditPage() {
                                 入学日期
                                 <RequiredMark />
                             </label>
-                            <input
-                                type="date"
-                                value={toDateInput(formData.enrolment_date)}
-                                onChange={(e) => handleInputChange('enrolment_date', toTimestamp(e.target.value))}
+                            <PasteableDateInput
+                                value={formData.enrolment_date}
+                                onChangeTimestamp={(ts) => handleInputChange('enrolment_date', ts)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={!canEdit}
                             />
@@ -1504,10 +1661,9 @@ export default function SalesEditPage() {
                                 缴费日期
                                 <RequiredMark />
                             </label>
-                            <input
-                                type="date"
-                                value={toDateInput(formData.sales_pay_date)}
-                                onChange={(e) => handleInputChange('sales_pay_date', toTimestamp(e.target.value))}
+                            <PasteableDateInput
+                                value={formData.sales_pay_date}
+                                onChangeTimestamp={(ts) => handleInputChange('sales_pay_date', ts)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={!canEdit}
                             />
@@ -1517,10 +1673,9 @@ export default function SalesEditPage() {
                                 毕业日期
                                 <RequiredMark />
                             </label>
-                            <input
-                                type="date"
-                                value={toDateInput(formData.graduation_date)}
-                                onChange={(e) => handleInputChange('graduation_date', toTimestamp(e.target.value))}
+                            <PasteableDateInput
+                                value={formData.graduation_date}
+                                onChangeTimestamp={(ts) => handleInputChange('graduation_date', ts)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={!canEdit}
                             />
@@ -1642,30 +1797,27 @@ export default function SalesEditPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">还款时间1 (01-01-2020表示禁用)</label>
-                            <input
-                                type="date"
-                                value={toDateInput(formData.year_fee_reminder_time_1)}
-                                onChange={(e) => handleInputChange('year_fee_reminder_time_1', toTimestamp(e.target.value))}
+                            <PasteableDateInput
+                                value={formData.year_fee_reminder_time_1}
+                                onChangeTimestamp={(ts) => handleInputChange('year_fee_reminder_time_1', ts)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={!canEdit}
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">还款时间2 (01-01-2020表示禁用)</label>
-                            <input
-                                type="date"
-                                value={toDateInput(formData.year_fee_reminder_time_2)}
-                                onChange={(e) => handleInputChange('year_fee_reminder_time_2', toTimestamp(e.target.value))}
+                            <PasteableDateInput
+                                value={formData.year_fee_reminder_time_2}
+                                onChangeTimestamp={(ts) => handleInputChange('year_fee_reminder_time_2', ts)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={!canEdit}
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">还款时间3 (01-01-2020表示禁用)</label>
-                            <input
-                                type="date"
-                                value={toDateInput(formData.year_fee_reminder_time_3)}
-                                onChange={(e) => handleInputChange('year_fee_reminder_time_3', toTimestamp(e.target.value))}
+                            <PasteableDateInput
+                                value={formData.year_fee_reminder_time_3}
+                                onChangeTimestamp={(ts) => handleInputChange('year_fee_reminder_time_3', ts)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={!canEdit}
                             />
@@ -1783,14 +1935,30 @@ export default function SalesEditPage() {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             学年 <span className="text-red-500">*</span>
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={admissionParams.school_year || ''}
-                                            onChange={(e) => setAdmissionParams({ ...admissionParams, school_year: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                            placeholder="例如：2024-2025"
-                                            disabled={sendingAdmission}
-                                        />
+                                        {yearList.length > 0 ? (
+                                            <select
+                                                value={admissionParams.school_year || ''}
+                                                onChange={(e) => setAdmissionParams({ ...admissionParams, school_year: e.target.value })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                                disabled={sendingAdmission}
+                                            >
+                                                <option value="">请选择学年</option>
+                                                {yearList.map((y) => (
+                                                    <option key={y} value={y}>
+                                                        {y}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={admissionParams.school_year || ''}
+                                                onChange={(e) => setAdmissionParams({ ...admissionParams, school_year: e.target.value })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                                placeholder="例如：2024-2025"
+                                                disabled={sendingAdmission}
+                                            />
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1991,14 +2159,30 @@ export default function SalesEditPage() {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             学年 <span className="text-red-500">*</span>
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={rejectParams.school_year || ''}
-                                            onChange={(e) => setRejectParams({ ...rejectParams, school_year: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                            placeholder="例如：2024-2025"
-                                            disabled={sendingReject}
-                                        />
+                                        {yearList.length > 0 ? (
+                                            <select
+                                                value={rejectParams.school_year || ''}
+                                                onChange={(e) => setRejectParams({ ...rejectParams, school_year: e.target.value })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                                disabled={sendingReject}
+                                            >
+                                                <option value="">请选择学年</option>
+                                                {yearList.map((y) => (
+                                                    <option key={y} value={y}>
+                                                        {y}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={rejectParams.school_year || ''}
+                                                onChange={(e) => setRejectParams({ ...rejectParams, school_year: e.target.value })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                                placeholder="例如：2024-2025"
+                                                disabled={sendingReject}
+                                            />
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">

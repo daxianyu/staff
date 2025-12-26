@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { useRouter } from 'next/navigation';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
 import { 
   getClassroomList,
   addClassroom,
@@ -311,7 +312,7 @@ export default function ClassroomPage() {
                         <div className="flex items-center justify-end space-x-2">
                           {/* 查看课表按钮 */}
                           <button
-                            onClick={() => router.push(`/classroom/schedule?room_id=${classroom.id}`)}
+                            onClick={() => openUrlWithFallback(`/classroom/schedule?room_id=${classroom.id}`)}
                             className="flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-full transition-colors"
                             title="查看课表"
                           >

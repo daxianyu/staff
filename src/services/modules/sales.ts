@@ -99,6 +99,11 @@ export interface SalesInfo {
   can_add_students: number;
   staff_info: Record<number, string>;
   channel_list?: Array<{ key: number; name: string }>;
+  /**
+   * year_list: 学年下拉选项，例如 ["2025-2026","2024-2025",...]
+   * 来源: /api/sales/staff_sales_info/<contractId>
+   */
+  year_list?: string[];
   [key: string]: any;
   /**
    * mail_result 字段结构:

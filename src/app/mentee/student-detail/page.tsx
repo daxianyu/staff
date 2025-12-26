@@ -1715,8 +1715,8 @@ export default function StudentDetailPage() {
                             {examsInfo.table_2.map((exam, index) => (
                               <tr key={index} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.exam_name}</td>
-                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.score}</td>
                                 <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.result}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.second}</td>
                                 <td className="px-6 py-4 text-sm text-gray-900 break-words">{exam.grade}</td>
                               </tr>
                             ))}

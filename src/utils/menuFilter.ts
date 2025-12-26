@@ -437,7 +437,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'suspension-management',
-        label: 'Suspension Management',
+        label: 'Suspension',
         path: '/students/suspension',
         icon: 'clipboard-document-list',
         requiredPermissions: [PERMISSIONS.VIEW_LEAVE_SCHOOL],

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import {
@@ -247,11 +248,14 @@ export default function ClassEditPage() {
         name: studentInfo?.name || 'Unknown'
       };
     } else if (field === 'isTransfer') {
+      const nextIsTransfer = Boolean(value);
       newStudents[index] = {
         ...newStudents[index],
-        isTransfer: value,
-        start_time: value ? parseDate('') : -1,
-        end_time: value ? parseDate('') : -1
+        isTransfer: nextIsTransfer,
+        // 取消插班生：必须清空为 -1，确保保存时传递正确
+        // 勾选插班生：默认也从空开始，避免残留旧时间
+        start_time: nextIsTransfer ? -1 : -1,
+        end_time: nextIsTransfer ? -1 : -1
       };
     } else if (field === 'start_time' || field === 'end_time') {
       // 更新时间字段
@@ -266,6 +270,16 @@ export default function ClassEditPage() {
         [field]: value
       };
     }
+    setStudents(newStudents);
+  };
+
+  const clearStudentTransferTimes = (index: number) => {
+    const newStudents = [...students];
+    newStudents[index] = {
+      ...newStudents[index],
+      start_time: -1,
+      end_time: -1
+    };
     setStudents(newStudents);
   };
 
@@ -378,8 +392,9 @@ export default function ClassEditPage() {
         double_time: classInfo.double_time ? 1 : 0,
         students: students.map(s => ({
           student_id: s.student_id,
-          start_time: s.start_time,
-          end_time: s.end_time
+          // 非插班生：无论当前状态里是什么，都必须传 -1，避免残留旧时间
+          start_time: s.isTransfer ? s.start_time : -1,
+          end_time: s.isTransfer ? s.end_time : -1
         })),
         subjects: subjects.map(s => ({
           topic_id: s.topic_id,
@@ -539,7 +554,7 @@ export default function ClassEditPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.push(`/class/schedule?class_id=${classId}`)}
+                onClick={() => openUrlWithFallback(`/class/schedule?class_id=${classId}`)}
                 className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700"
               >
                 <ClockIcon className="h-4 w-4 mr-2" />
@@ -705,7 +720,7 @@ export default function ClassEditPage() {
                           <div className="inline-flex gap-1">
                             {student.student_id && (
                               <button
-                                onClick={() => router.push(`/students/schedule?studentId=${student.student_id}`)}
+                                onClick={() => openUrlWithFallback(`/students/schedule?studentId=${student.student_id}`)}
                                 className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
                                 title="查看学生课程安排"
                               >
@@ -725,7 +740,18 @@ export default function ClassEditPage() {
                       {student.isTransfer && (
                         <tr className="bg-blue-50">
                           <td colSpan={3} className="px-4 py-3">
-                            <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex flex-col gap-3">
+                              <div className="flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => clearStudentTransferTimes(index)}
+                                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                  title="清空插班生开始/结束时间"
+                                >
+                                  清空时间
+                                </button>
+                              </div>
+                              <div className="flex flex-col sm:flex-row gap-4">
                               <div className="flex-1">
                                 <label className="block text-xs font-medium text-gray-700 mb-1">
                                   开始时间
@@ -733,7 +759,10 @@ export default function ClassEditPage() {
                                 <input
                                   type="date"
                                   value={formatDate(student.start_time)}
-                                  onChange={(e) => updateStudent(index, 'start_time', parseDate(e.target.value))}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    updateStudent(index, 'start_time', v ? parseDate(v) : -1);
+                                  }}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                               </div>
@@ -744,10 +773,14 @@ export default function ClassEditPage() {
                                 <input
                                   type="date"
                                   value={formatDate(student.end_time)}
-                                  onChange={(e) => updateStudent(index, 'end_time', parseDate(e.target.value))}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    updateStudent(index, 'end_time', v ? parseDate(v) : -1);
+                                  }}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                               </div>
+                            </div>
                             </div>
                           </td>
                         </tr>
@@ -1086,9 +1119,7 @@ export default function ClassEditPage() {
                             <button
                               key={`${classId}-${studentId}`}
                               onClick={() => {
-                                const path = `/class/edit?id=${classId}`;
-                                const url = process.env.NODE_ENV === 'production' ? `/staff${path}` : path;
-                                window.open(url, '_blank');
+                                openUrlWithFallback(`/class/edit?id=${classId}`);
                               }}
                               className="text-left px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-300 transition-colors"
                             >

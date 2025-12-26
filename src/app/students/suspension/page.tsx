@@ -8,8 +8,9 @@ import {
   deleteLeaveSchool,
   editLeaveSchool,
   getLeaveSchool,
+  getStudentList,
 } from '@/services/auth';
-import type { LeaveSchoolRecord } from '@/services/auth';
+import type { LeaveSchoolRecord, StudentInfo } from '@/services/auth';
 import {
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
@@ -18,7 +19,10 @@ import {
   PlusIcon,
   TrashIcon,
   XMarkIcon,
+  CalendarDaysIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
+import SearchableSelect from '@/components/SearchableSelect';
 
 type ModalMode = 'add' | 'edit';
 
@@ -40,6 +44,103 @@ const safeString = (value: unknown): string => {
   }
 };
 
+const parseDateTextToYmd = (raw: string): string => {
+  const text = (raw || '').trim();
+  if (!text) return '';
+  const m = text.match(/(\d{4})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{1,2})/);
+  if (!m) return '';
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return '';
+  if (mo < 1 || mo > 12) return '';
+  if (d < 1 || d > 31) return '';
+  const date = new Date(y, mo - 1, d, 0, 0, 0, 0);
+  if (isNaN(date.getTime())) return '';
+  if (date.getFullYear() !== y || date.getMonth() !== mo - 1 || date.getDate() !== d) return '';
+  const mm = String(mo).padStart(2, '0');
+  const dd = String(d).padStart(2, '0');
+  return `${y}-${mm}-${dd}`;
+};
+
+function PasteableDateInput(props: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  className?: string;
+  placeholder?: string;
+}) {
+  const { value, onChange, disabled, className, placeholder } = props;
+  const [text, setText] = useState(value || '');
+
+  useEffect(() => {
+    setText(value || '');
+  }, [value]);
+
+  const normalized = text.trim() ? parseDateTextToYmd(text) : '';
+  const isInvalid = Boolean(text.trim()) && !normalized;
+
+  return (
+    <div className="space-y-1">
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder={placeholder || 'YYYY-MM-DD'}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={() => {
+            const v = text.trim();
+            if (!v) {
+              onChange('');
+              setText('');
+              return;
+            }
+            const ymd = parseDateTextToYmd(v);
+            if (ymd) {
+              onChange(ymd);
+              setText(ymd);
+            }
+          }}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData('text');
+            if (!pasted) return;
+            e.preventDefault();
+            const ymd = parseDateTextToYmd(pasted) || pasted.trim();
+            setText(ymd);
+            const normalizedPaste = parseDateTextToYmd(ymd);
+            if (normalizedPaste) onChange(normalizedPaste);
+          }}
+          className={`${className || ''} pr-12 ${isInvalid ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
+          disabled={disabled}
+        />
+        <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+          <CalendarDaysIcon className="h-5 w-5" />
+        </div>
+        <input
+          type="date"
+          value={value || ''}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v) {
+              onChange(v);
+              setText(v);
+            } else {
+              onChange('');
+              setText('');
+            }
+          }}
+          disabled={disabled}
+          className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 opacity-0 cursor-pointer"
+          aria-label="打开日期选择器"
+          tabIndex={disabled ? -1 : 0}
+        />
+      </div>
+      {isInvalid && <p className="text-xs text-red-600">日期格式不正确，请输入 YYYY-MM-DD</p>}
+    </div>
+  );
+}
+
 export default function SuspensionManagementPage() {
   const { user, hasPermission } = useAuth();
 
@@ -49,8 +150,11 @@ export default function SuspensionManagementPage() {
   const [rows, setRows] = useState<LeaveSchoolRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>('add');
@@ -60,31 +164,25 @@ export default function SuspensionManagementPage() {
   const [deletingRow, setDeletingRow] = useState<LeaveSchoolRecord | null>(null);
 
   // 表单字段（常用字段 + 额外JSON）
-  const [formStudentId, setFormStudentId] = useState<string>('');
-  const [formStartDay, setFormStartDay] = useState<string>('');
-  const [formEndDay, setFormEndDay] = useState<string>('');
-  const [formDesc, setFormDesc] = useState<string>('');
-  const [formExtraJson, setFormExtraJson] = useState<string>('{}');
+  const [formStudentId, setFormStudentId] = useState<number>(0);
+  const [formLeaveStartDate, setFormLeaveStartDate] = useState<string>('');
+  const [formLeaveEndDate, setFormLeaveEndDate] = useState<string>('');
+  const [formLeaveReason, setFormLeaveReason] = useState<string>('');
+  const [formRemark, setFormRemark] = useState<string>('');
+  // 复学相关字段
+  const [formIsReopened, setFormIsReopened] = useState<boolean>(false);
+  const [formActualReopenDate, setFormActualReopenDate] = useState<string>('');
+  const [formReapplyDate, setFormReapplyDate] = useState<string>('');
 
-  const extraJsonResult = useMemo(() => {
-    const raw = formExtraJson.trim();
-    if (!raw) {
-      return { obj: {} as Record<string, unknown>, error: null as string | null };
-    }
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return { obj: parsed as Record<string, unknown>, error: null as string | null };
-      }
-      return { obj: null as any, error: '额外字段必须是 JSON 对象（{}）' };
-    } catch (e) {
-      return { obj: null as any, error: e instanceof Error ? e.message : 'JSON 解析失败' };
-    }
-  }, [formExtraJson]);
+  // 学生搜索下拉
+  const [studentOptions, setStudentOptions] = useState<Array<{ id: number; name: string }>>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [studentsLoaded, setStudentsLoaded] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       const res = await getLeaveSchool();
       if (res.code !== 200) {
@@ -114,26 +212,100 @@ export default function SuspensionManagementPage() {
     return rows.filter(r => safeString(r).toLowerCase().includes(q));
   }, [rows, searchTerm]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, pageSize]);
+
+  const totalItems = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const paginatedRows = useMemo(() => {
+    const p = Math.min(Math.max(1, currentPage), totalPages);
+    const start = (p - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, currentPage, pageSize, totalPages]);
+
+  // 一次性拉取所有学生列表（用于本地搜索过滤）
+  const loadAllStudents = async () => {
+    try {
+      setLoadingStudents(true);
+      // disabled=1：包含停用学生
+      const limit = 200;
+      const maxPages = 200;
+      const maxTotal = 5000; // 安全上限，避免异常导致无限/过大
+      const map = new Map<number, string>();
+
+      for (let page = 1; page <= maxPages; page++) {
+        const res = await getStudentList({ page, limit, disabled: 1 });
+        if (res.code !== 200) break;
+        const listInfo = (res.data as any)?.list_info || [];
+        if (!Array.isArray(listInfo) || listInfo.length === 0) break;
+
+        for (const s of listInfo as StudentInfo[]) {
+          if (typeof s?.student_id !== 'number') continue;
+          const label = `${s.student_name} (ID: ${s.student_id})`;
+          map.set(s.student_id, label);
+          if (map.size >= maxTotal) break;
+        }
+
+        if (map.size >= maxTotal) break;
+        if (listInfo.length < limit) break;
+      }
+
+      const formatted = Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+      // 按 id 倒序（更接近“新学生在前”，可按需调整）
+      formatted.sort((a, b) => b.id - a.id);
+      setStudentOptions(formatted);
+      setStudentsLoaded(true);
+    } catch (e) {
+      console.error('加载学生列表失败:', e);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
   const openAdd = () => {
     setModalMode('add');
     setActiveRow(null);
-    setFormStudentId('');
-    setFormStartDay('');
-    setFormEndDay('');
-    setFormDesc('');
-    setFormExtraJson('{}');
+    setFormStudentId(0);
+    setFormLeaveStartDate('');
+    setFormLeaveEndDate('');
+    setFormLeaveReason('');
+    setFormRemark('');
+    setFormIsReopened(false);
+    setFormActualReopenDate('');
+    setFormReapplyDate('');
+    setError(null);
+    setSuccessMessage(null);
     setModalOpen(true);
+    // 初次打开加载全量学生列表
+    if (!studentsLoaded) loadAllStudents();
   };
 
   const openEdit = (row: LeaveSchoolRecord) => {
     setModalMode('edit');
     setActiveRow(row);
-    setFormStudentId(row.student_id !== undefined ? String(row.student_id) : '');
-    setFormStartDay(row.start_day ? String(row.start_day).slice(0, 10) : '');
-    setFormEndDay(row.end_day ? String(row.end_day).slice(0, 10) : '');
-    setFormDesc(row.desc ? String(row.desc) : '');
-    setFormExtraJson('{}');
+    const sid = row.student_id ? Number(row.student_id) : 0;
+    setFormStudentId(Number.isFinite(sid) ? sid : 0);
+    const start = row.leave_start_date || row.start_day || '';
+    const end = row.leave_end_date || row.end_day || '';
+    setFormLeaveStartDate(start ? String(start).slice(0, 10) : '');
+    setFormLeaveEndDate(end ? String(end).slice(0, 10) : '');
+    setFormLeaveReason(row.leave_reason ? String(row.leave_reason) : '');
+    setFormRemark(row.remark ? String(row.remark) : (row.desc ? String(row.desc) : ''));
+    // 复学相关字段
+    const isReopened = row.is_reopened === true || row.is_reopened === 1;
+    setFormIsReopened(isReopened);
+    setFormActualReopenDate(row.actual_reopen_date ? String(row.actual_reopen_date).slice(0, 10) : '');
+    setFormReapplyDate(row.reapply_date ? String(row.reapply_date).slice(0, 10) : '');
+    setError(null);
+    setSuccessMessage(null);
     setModalOpen(true);
+    // 确保当前行学生能回显（即使不在当前 options 里）
+    if (sid && !studentOptions.some(o => o.id === sid)) {
+      const name = row.student_name ? `${row.student_name} (ID: ${sid})` : `ID: ${sid}`;
+      setStudentOptions(prev => [{ id: sid, name }, ...prev]);
+    }
+    if (!studentsLoaded) loadAllStudents();
   };
 
   const closeModal = () => {
@@ -148,24 +320,68 @@ export default function SuspensionManagementPage() {
   const handleSave = async () => {
     if (!canEdit) return;
 
-    const studentIdNum = Number(formStudentId);
-    if (!Number.isFinite(studentIdNum) || studentIdNum <= 0) {
-      setError('student_id 必须是有效数字');
+    if (modalMode === 'add') {
+      if (!Number.isFinite(formStudentId) || formStudentId <= 0) {
+        setError('请选择学生');
+        return;
+      }
+    }
+
+    if (!formLeaveStartDate) {
+      setError('请填写 leave_start_date（开始日期）');
+      return;
+    }
+    if (!formLeaveEndDate) {
+      setError('请填写 leave_end_date（结束日期）');
+      return;
+    }
+    if (formLeaveEndDate < formLeaveStartDate) {
+      setError('leave_end_date 不能早于 leave_start_date');
+      return;
+    }
+    if (!formLeaveReason.trim()) {
+      setError('请填写 leave_reason（休复学原因）');
+      return;
+    }
+    if (!formRemark.trim()) {
+      setError('请填写 remark（备注）');
       return;
     }
 
-    if (extraJsonResult.error || !extraJsonResult.obj) return;
+    // 如果勾选了"已复学"，需要验证复学相关日期
+    if (formIsReopened) {
+      if (!formActualReopenDate) {
+        setError('已勾选"已复学"，请填写实际复学时间');
+        return;
+      }
+      if (!formReapplyDate) {
+        setError('已勾选"已复学"，请填写复学时间');
+        return;
+      }
+    }
 
     const basePayload: Record<string, unknown> = {
-      student_id: studentIdNum,
-      ...(formStartDay ? { start_day: formStartDay } : {}),
-      ...(formEndDay ? { end_day: formEndDay } : {}),
-      ...(formDesc ? { desc: formDesc } : {}),
-      ...extraJsonResult.obj,
+      leave_start_date: formLeaveStartDate,
+      leave_end_date: formLeaveEndDate,
+      leave_reason: formLeaveReason.trim(),
+      remark: formRemark.trim(),
+      is_reopened: formIsReopened ? 1 : 0,
     };
+
+    // 新增时需要 student_id，编辑时不需要
+    if (modalMode === 'add') {
+      basePayload.student_id = formStudentId;
+    }
+
+    // 如果已复学，添加复学相关日期
+    if (formIsReopened) {
+      basePayload.actual_reopen_date = formActualReopenDate;
+      basePayload.reapply_date = formReapplyDate;
+    }
 
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       if (modalMode === 'add') {
         const res = await addLeaveSchool(basePayload as any);
@@ -173,6 +389,7 @@ export default function SuspensionManagementPage() {
           setError(res.message || '新增休复学记录失败');
           return;
         }
+        setSuccessMessage('新增成功');
       } else {
         const recordId = getRowId(activeRow);
         if (!recordId) {
@@ -184,6 +401,7 @@ export default function SuspensionManagementPage() {
           setError(res.message || '编辑休复学记录失败');
           return;
         }
+        setSuccessMessage('保存成功');
       }
 
       closeModal();
@@ -206,6 +424,7 @@ export default function SuspensionManagementPage() {
 
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       const res = await deleteLeaveSchool({ record_id: recordId });
       if (res.code !== 200) {
@@ -214,6 +433,7 @@ export default function SuspensionManagementPage() {
       }
       setShowDeleteModal(false);
       setDeletingRow(null);
+      setSuccessMessage('删除成功');
       await loadData();
     } catch (e) {
       setError(e instanceof Error ? e.message : '删除失败');
@@ -246,7 +466,7 @@ export default function SuspensionManagementPage() {
         <div className="mb-6">
           <div className="flex items-center">
             <ClipboardDocumentListIcon className="h-8 w-8 text-blue-600 mr-3" />
-            <h1 className="text-3xl font-bold text-gray-900">Suspension Management</h1>
+            <h1 className="text-3xl font-bold text-gray-900">休复学管理</h1>
           </div>
         </div>
 
@@ -281,6 +501,12 @@ export default function SuspensionManagementPage() {
               </button>
             </div>
           </div>
+          {successMessage && (
+            <div className="mt-4 p-3 rounded-lg bg-green-50 text-green-800 text-sm border border-green-200 flex items-center">
+              <CheckCircleIcon className="h-5 w-5 mr-2" />
+              {successMessage}
+            </div>
+          )}
           {error && (
             <div className="mt-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200">
               {error}
@@ -299,30 +525,58 @@ export default function SuspensionManagementPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">student_name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">start_day</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">end_day</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">desc</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生姓名</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">开始日期</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">结束日期</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">是否已复学</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">复学时间</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">实际复学时间</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">休复学原因</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">备注</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredRows.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-500">
+                      <td colSpan={10} className="px-6 py-10 text-center text-sm text-gray-500">
                         暂无数据
                       </td>
                     </tr>
                   ) : (
-                    filteredRows.map((row, idx) => {
+                    paginatedRows.map((row, idx) => {
                       const rid = getRowId(row);
+                      const start = row.leave_start_date || row.start_day;
+                      const end = row.leave_end_date || row.end_day;
+                      const isReopened = row.is_reopened === true || row.is_reopened === 1;
+                      const reapplyDate = row.reapply_date ? String(row.reapply_date).slice(0, 10) : '-';
+                      const actualReopenDate = row.actual_reopen_date ? String(row.actual_reopen_date).slice(0, 10) : '-';
+                      const remarkText = row.remark ? safeString(row.remark) : (row.desc ? safeString(row.desc) : '-');
                       return (
                         <tr key={rid ?? idx} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.student_id ?? '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.student_name ?? '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.start_day ? String(row.start_day).slice(0, 10) : '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.end_day ? String(row.end_day).slice(0, 10) : '-'}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900 max-w-[18rem] truncate" title={safeString(row.desc)}>
-                            {row.desc ? safeString(row.desc) : '-'}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{start ? String(start).slice(0, 10) : '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{end ? String(end).slice(0, 10) : '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {isReopened ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                已复学
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                未复学
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reapplyDate}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{actualReopenDate}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 max-w-[14rem] truncate" title={safeString(row.leave_reason)}>
+                            {row.leave_reason ? safeString(row.leave_reason) : '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900 min-w-[12rem] max-w-[24rem] break-words" title={remarkText}>
+                            {remarkText}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex justify-end gap-2">
@@ -353,6 +607,59 @@ export default function SuspensionManagementPage() {
             </div>
           )}
         </div>
+
+        {/* 分页 */}
+        {!loading && totalItems > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="text-sm text-gray-600">
+                显示第{' '}
+                <span className="font-medium text-gray-900">
+                  {Math.min((currentPage - 1) * pageSize + 1, totalItems)}
+                </span>
+                {' - '}
+                <span className="font-medium text-gray-900">
+                  {Math.min(currentPage * pageSize, totalItems)}
+                </span>
+                {' 条，共 '}
+                <span className="font-medium text-gray-900">{totalItems}</span> 条记录
+              </div>
+              <div className="flex items-center gap-3 justify-end">
+                <select
+                  value={String(pageSize)}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    setPageSize(Number.isFinite(n) && n > 0 ? n : 10);
+                  }}
+                  className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  {[5, 10, 20, 50].map((n) => (
+                    <option key={n} value={String(n)}>
+                      {n} / 页
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                >
+                  上一页
+                </button>
+                <div className="text-sm text-gray-600">
+                  {currentPage} / {totalPages}
+                </div>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                >
+                  下一页
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}
@@ -372,67 +679,128 @@ export default function SuspensionManagementPage() {
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">student_id *</label>
-                  <input
-                    type="number"
-                    value={formStudentId}
-                    onChange={(e) => setFormStudentId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    placeholder="例如：12345"
-                  />
-                </div>
-                <div className="text-xs text-gray-500 flex items-end">
-                  <div className="w-full">
-                    record_id: <span className="text-gray-900">{modalMode === 'edit' ? (getRowId(activeRow) ?? '-') : '-'}</span>
+              {modalMode === 'add' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">学生 <span className="text-red-500">*</span></label>
+                    <SearchableSelect
+                      options={studentOptions}
+                      value={formStudentId}
+                      onValueChange={(val) => setFormStudentId(Number(val) || 0)}
+                      placeholder={loadingStudents ? '加载中...' : '搜索并选择学生'}
+                      searchPlaceholder="输入姓名或ID搜索..."
+                      disabled={loadingStudents || loading}
+                      className="w-full"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">输入姓名或ID可搜索（包含停用学生）</p>
                   </div>
                 </div>
-              </div>
+              )}
+              {modalMode === 'edit' && activeRow && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">学生</label>
+                      <div className="text-sm text-gray-900">
+                        {activeRow.student_name ? `${activeRow.student_name} (ID: ${activeRow.student_id ?? '-'})` : `ID: ${activeRow.student_id ?? '-'}`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">start_day</label>
-                  <input
-                    type="date"
-                    value={formStartDay}
-                    onChange={(e) => setFormStartDay(e.target.value)}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">休学开始日期 <span className="text-red-500">*</span></label>
+                  <PasteableDateInput
+                    value={formLeaveStartDate}
+                    onChange={setFormLeaveStartDate}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    disabled={loading}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">end_day</label>
-                  <input
-                    type="date"
-                    value={formEndDay}
-                    onChange={(e) => setFormEndDay(e.target.value)}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">休学结束日期 <span className="text-red-500">*</span></label>
+                  <PasteableDateInput
+                    value={formLeaveEndDate}
+                    onChange={setFormLeaveEndDate}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    disabled={loading}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">desc</label>
-                <textarea
-                  value={formDesc}
-                  onChange={(e) => setFormDesc(e.target.value)}
-                  rows={3}
+                <label className="block text-sm font-medium text-gray-700 mb-1">休复学原因 <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={formLeaveReason}
+                  onChange={(e) => setFormLeaveReason(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="备注/原因（如果后端字段不同，可填到额外JSON里）"
+                  placeholder="请输入休复学原因"
+                  disabled={loading}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">额外字段（JSON对象）</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">备注 <span className="text-red-500">*</span></label>
                 <textarea
-                  value={formExtraJson}
-                  onChange={(e) => setFormExtraJson(e.target.value)}
-                  rows={6}
-                  className="w-full font-mono text-xs px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder='例如：{"leave_type":1,"reason":"..."}'
+                  value={formRemark}
+                  onChange={(e) => setFormRemark(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  placeholder="请输入备注"
+                  disabled={loading}
                 />
-                {extraJsonResult.error && (
-                  <p className="mt-2 text-sm text-red-600">{extraJsonResult.error}</p>
+              </div>
+
+              {/* 复学相关字段 */}
+              <div className="border-t pt-4">
+                <div className="flex items-center mb-4">
+                  <input
+                    type="checkbox"
+                    id="is_reopened"
+                    checked={formIsReopened}
+                    onChange={(e) => {
+                      setFormIsReopened(e.target.checked);
+                      if (!e.target.checked) {
+                        setFormActualReopenDate('');
+                        setFormReapplyDate('');
+                      }
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    disabled={loading}
+                  />
+                  <label htmlFor="is_reopened" className="ml-2 block text-sm font-medium text-gray-700">
+                    是否已复学
+                  </label>
+                </div>
+
+                {formIsReopened && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        复学时间 <span className="text-red-500">*</span>
+                      </label>
+                      <PasteableDateInput
+                        value={formReapplyDate}
+                        onChange={setFormReapplyDate}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        disabled={loading}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        实际复学时间 <span className="text-red-500">*</span>
+                      </label>
+                      <PasteableDateInput
+                        value={formActualReopenDate}
+                        onChange={setFormActualReopenDate}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -446,7 +814,7 @@ export default function SuspensionManagementPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!canEdit || loading || !!extraJsonResult.error}
+                disabled={!canEdit || loading}
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 保存
@@ -497,5 +865,6 @@ export default function SuspensionManagementPage() {
     </div>
   );
 }
+
 
 

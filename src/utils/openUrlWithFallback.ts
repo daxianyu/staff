@@ -15,15 +15,20 @@ export function openUrlWithFallback(url: string) {
     return;
   }
 
-  // 尝试正常打开
-  const win = window.open(finalUrl, '_blank', 'noopener,noreferrer');
-  if (win) {
-    win.focus();
-    return;
+  // 浏览器：用链接方式打开新标签页（避免 window.open）
+  try {
+    const a = document.createElement('a');
+    a.href = finalUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    // 异常兜底：给出可复制链接
+    showCopyDialog(toAbsoluteUrl(finalUrl));
   }
-
-  // 被拦截，弹出自定义提示
-  showCopyDialog(finalUrl);
 }
 
 function showCopyDialog(url: string) {

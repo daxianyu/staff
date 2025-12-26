@@ -813,7 +813,7 @@ export default function MenteePage() {
       if (response.code === 200 && response.data?.file_path) {
         // Splice the full URL for the file path
         const fullUrl = `https://www.huayaopudong.com/${response.data.file_path}`;
-        window.open(fullUrl, '_blank', 'noopener');
+        openUrlWithFallback(fullUrl);
         alert('Report generated successfully');
       } else {
         alert(response.message || 'Failed to generate report');

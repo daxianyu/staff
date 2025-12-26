@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
 import { 
   ExclamationTriangleIcon,
   ArrowPathIcon,
@@ -208,7 +209,7 @@ export default function EnterExamGradesPage() {
 
   // 查看详情（跳转到详情页）
   const handleViewDetails = (examId: number) => {
-    router.push(`/school-info/enter-exam-grades?examId=${examId}`);
+    openUrlWithFallback(`/school-info/enter-exam-grades?examId=${examId}`);
   };
 
   // 返回列表
@@ -346,7 +347,7 @@ export default function EnterExamGradesPage() {
       if (result.code === 200 && result.data?.file_path) {
         // 拼接完整的文件URL
         const fileUrl = `https://www.huayaopudong.com/${result.data.file_path}`;
-        window.open(fileUrl, '_blank');
+        openUrlWithFallback(fileUrl);
       } else {
         setErrorMessage(result.message || '下载模板失败');
         setShowError(true);

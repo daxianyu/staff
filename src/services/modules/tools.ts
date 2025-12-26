@@ -162,6 +162,16 @@ export interface LeaveSchoolRecord {
   id?: number;
   student_id?: number;
   student_name?: string;
+  // 新版字段（后端必填）
+  leave_start_date?: string; // YYYY-MM-DD
+  leave_end_date?: string; // YYYY-MM-DD
+  leave_reason?: string;
+  remark?: string;
+  // 复学相关字段
+  is_reopened?: boolean | number; // 是否已复学
+  actual_reopen_date?: string; // 实际复学时间 YYYY-MM-DD
+  reapply_date?: string; // 复学时间 YYYY-MM-DD
+  // 兼容旧字段
   start_day?: string;
   end_day?: string;
   desc?: string;
@@ -175,14 +185,30 @@ export interface LeaveSchoolListResponse {
 
 export interface LeaveSchoolAddParams {
   student_id: number;
-  start_day?: string; // YYYY-MM-DD
-  end_day?: string; // YYYY-MM-DD
-  desc?: string;
+  // 后端必填字段（mentor_id 后端自动获取）
+  leave_start_date: string; // YYYY-MM-DD
+  leave_end_date: string; // YYYY-MM-DD
+  leave_reason: string;
+  remark: string;
+  // 复学相关字段（可选）
+  is_reopened?: boolean | number; // 是否已复学
+  actual_reopen_date?: string; // 实际复学时间 YYYY-MM-DD
+  reapply_date?: string; // 复学时间 YYYY-MM-DD
   [key: string]: any;
 }
 
-export interface LeaveSchoolEditParams extends LeaveSchoolAddParams {
+export interface LeaveSchoolEditParams {
   record_id: number;
+  // 编辑时不需要 student_id
+  leave_start_date: string; // YYYY-MM-DD
+  leave_end_date: string; // YYYY-MM-DD
+  leave_reason: string;
+  remark: string;
+  // 复学相关字段（可选）
+  is_reopened?: boolean | number; // 是否已复学
+  actual_reopen_date?: string; // 实际复学时间 YYYY-MM-DD
+  reapply_date?: string; // 复学时间 YYYY-MM-DD
+  [key: string]: any;
 }
 
 // 删除参数

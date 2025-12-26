@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
 import { 
   getClassList, 
   addClass,
@@ -671,7 +672,7 @@ export default function ClassesPage() {
                           {/* 主要操作按钮：Info 和 Edit */}
                           <button 
                             className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center"
-                            onClick={() => router.push(`/class/view?id=${classItem.id}`)}
+                            onClick={() => openUrlWithFallback(`/class/view?id=${classItem.id}`)}
                             title="View Class Details"
                           >
                             <EyeIcon className="h-4 w-4 mr-1" />
@@ -679,7 +680,7 @@ export default function ClassesPage() {
                           <span className="text-gray-300">|</span>
                           <button 
                             className="text-indigo-600 hover:text-indigo-800 text-sm font-medium inline-flex items-center"
-                            onClick={() => router.push(`/class/edit?id=${classItem.id}`)}
+                            onClick={() => openUrlWithFallback(`/class/edit?id=${classItem.id}`)}
                             title="Edit Class"
                           >
                             <PencilIcon className="h-4 w-4 mr-1" />
@@ -688,7 +689,7 @@ export default function ClassesPage() {
                           {/* Schedule */}
                           <button 
                             className="text-indigo-600 hover:text-indigo-800 text-sm font-medium inline-flex items-center"
-                            onClick={() => router.push(`/class/schedule?class_id=${classItem.id}`)}
+                            onClick={() => openUrlWithFallback(`/class/schedule?class_id=${classItem.id}`)}
                           >
                             <CalendarDaysIcon className="h-4 w-4 mr-2" />
                           </button>

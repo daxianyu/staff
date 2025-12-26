@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
 import { 
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
@@ -129,7 +130,7 @@ export default function ArchivesPage() {
 
   // 查看详情
   const handleViewDetail = (staffId: number) => {
-    router.push(`/core/archives/detail?staffId=${staffId}`);
+    openUrlWithFallback(`/core/archives/detail?staffId=${staffId}`);
   };
 
   // 生成页码按钮

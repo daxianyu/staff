@@ -11,10 +11,16 @@
 export function isWeChatMiniProgram(): boolean {
   if (typeof window === 'undefined') return false;
   const w = window as any;
-  // 微信官方推荐：__wxjs_environment === 'miniprogram'
+  /**
+   * 重要：当前项目注入了 wx JSSDK，因此普通网页里也可能存在 wx 对象/方法，
+   * 不能用 wx 是否存在来判断是否处于“小程序 web-view”环境，否则会误判。
+   *
+   * 可靠信号：微信官方标识 window.__wxjs_environment === 'miniprogram'
+   * 兜底：少数场景可能没有该字段，可用 UA 关键字辅助判断。
+   */
   if (w.__wxjs_environment === 'miniprogram') return true;
-  // 兜底：存在 wx.miniProgram
-  if (w.wx?.miniProgram && typeof w.wx.miniProgram.navigateTo === 'function') return true;
+  const ua = (window.navigator?.userAgent || '').toLowerCase();
+  if (ua.includes('miniprogram')) return true;
   return false;
 }
 
