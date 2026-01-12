@@ -230,6 +230,7 @@ export interface StudentLesson {
   can_report_leave: boolean;
   attendance_id: number;
   teacher_name: string;
+  topic_name: string;
   attendance_status: number;
 }
 

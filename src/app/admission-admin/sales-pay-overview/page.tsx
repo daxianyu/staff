@@ -25,6 +25,7 @@ import {
 } from '@/services/auth';
 import ChangeExamDateModal from './components/ChangeExamDateModal';
 import ChangeApplyModal from './components/ChangeApplyModal';
+import { buildFileUrl } from '@/config/env';
 
 export default function PaymentInfoPage() {
   const { hasPermission, user } = useAuth();
@@ -290,7 +291,7 @@ export default function PaymentInfoPage() {
           // 如果是相对路径，需要添加基础URL
           const downloadUrl = filePath.startsWith('http') 
             ? filePath 
-            : `https://www.huayaopudong.com${filePath}`;
+            : buildFileUrl(filePath);
           
           // 创建临时链接下载文件
           const link = document.createElement('a');

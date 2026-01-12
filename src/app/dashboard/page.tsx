@@ -7,12 +7,14 @@ import {
   updateAttendance,
   updateFeedback,
   cancelLesson,
+  getDashboardTodoList,
   type DashboardData,
   type AttendanceListItem,
   type FeedbackListItem,
   type UpdateAttendanceParams,
   type UpdateFeedbackParams,
-  type CancelLessonParams
+  type CancelLessonParams,
+  type DashboardTodoData
 } from '@/services/auth';
 import { 
   ChartBarIcon, 
@@ -22,10 +24,14 @@ import {
   ExclamationTriangleIcon,
   CheckIcon,
   XMarkIcon,
-  ChatBubbleLeftEllipsisIcon
+  ChatBubbleLeftEllipsisIcon,
+  ClipboardDocumentListIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
+import { withStaffBasePath } from '@/utils/withStaffBasePath';
 
-type TabType = 'attendance' | 'feedback';
+type TabType = 'attendance' | 'feedback' | 'todo';
 
 // 考勤状态枚举
 const ATTENDANCE_STATUS = {
@@ -44,8 +50,10 @@ const ATTENDANCE_STATUS_LABELS = {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('attendance');
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [todoData, setTodoData] = useState<DashboardTodoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingItems, setProcessingItems] = useState<Set<string>>(new Set());
@@ -61,14 +69,17 @@ export default function DashboardPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await getStaffDashboard();
+        const [dashboardResponse, todoResponse] = await Promise.all([
+          getStaffDashboard(),
+          getDashboardTodoList()
+        ]);
         
-        if (response.code === 200 && response.data) {
-          setDashboardData(response.data);
+        if (dashboardResponse.code === 200 && dashboardResponse.data) {
+          setDashboardData(dashboardResponse.data);
           
           // 初始化考勤状态为默认出席
           const initialStates: Record<string, number> = {};
-          response.data.attendance_list.forEach(item => {
+          dashboardResponse.data.attendance_list.forEach(item => {
             item.students.forEach(student => {
               const key = `${item.start_time}_${student.student_id}`;
               initialStates[key] = ATTENDANCE_STATUS.PRESENT; // 默认出席
@@ -76,7 +87,11 @@ export default function DashboardPage() {
           });
           setAttendanceStates(initialStates);
         } else {
-          setError(response.message || '获取dashboard数据失败');
+          setError(dashboardResponse.message || '获取dashboard数据失败');
+        }
+
+        if (todoResponse.code === 200 && todoResponse.data) {
+          setTodoData(todoResponse.data);
         }
       } catch (err) {
         setError('获取dashboard数据失败');
@@ -104,6 +119,87 @@ export default function DashboardPage() {
     const start = new Date(startTimestamp * 1000).toLocaleDateString('zh-CN');
     const end = new Date(endTimestamp * 1000).toLocaleDateString('zh-CN');
     return `${start} - ${end}`;
+  };
+
+  // 计算待办事项总数
+  const getTotalTodoCount = () => {
+    if (!todoData) return 0;
+    return (
+      (Number(todoData.class_change) || 0) +
+      (Number(todoData.out_count) || 0) +
+      (Number(todoData.evaluate_count) || 0) +
+      (Number(todoData.wishes_count) || 0) +
+      (Number(todoData.ps_polish) || 0) +
+      (Number(todoData.withdrawal_count) || 0) +
+      (Number(todoData.late_cashin) || 0) +
+      (Number(todoData.remarking) || 0)
+    );
+  };
+
+  // 待办事项配置
+  const todoItems = [
+    {
+      key: 'class_change',
+      label: 'Class Change',
+      count: Number(todoData?.class_change) || 0,
+      path: '/mentor/class-change',
+      icon: ClockIcon,
+    },
+    {
+      key: 'out_count',
+      label: '外出单审批',
+      count: Number(todoData?.out_count) || 0,
+      path: '/users/exit-permit',
+      icon: DocumentTextIcon,
+    },
+    {
+      key: 'evaluate_count',
+      label: '考试评语',
+      count: Number(todoData?.evaluate_count) || 0,
+      path: '/users/subject-evaluate',
+      icon: DocumentTextIcon,
+    },
+    {
+      key: 'wishes_count',
+      label: '毕业寄语',
+      count: Number(todoData?.wishes_count) || 0,
+      path: '/users/graduation-wishes',
+      icon: ChatBubbleLeftEllipsisIcon,
+    },
+    {
+      key: 'ps_polish',
+      label: 'PS Polish',
+      count: Number(todoData?.ps_polish) || 0,
+      path: '/users/ps-polish',
+      icon: DocumentTextIcon,
+    },
+    {
+      key: 'withdrawal_count',
+      label: '退考',
+      count: Number(todoData?.withdrawal_count) || 0,
+      path: '/users/withdrawal-overview',
+      icon: ExclamationTriangleIcon,
+    },
+    {
+      key: 'late_cashin',
+      label: 'Late Cashin',
+      count: Number(todoData?.late_cashin) || 0,
+      path: '/users/late-cashin-overview',
+      icon: ClockIcon,
+    },
+    {
+      key: 'remarking',
+      label: 'Remarking',
+      count: Number(todoData?.remarking) || 0,
+      path: '/users/remark-overview',
+      icon: DocumentTextIcon,
+    },
+  ];
+
+  const handleTodoClick = (path: string) => {
+    if (!path) return;
+    const finalHref = withStaffBasePath(path);
+    window.open(finalHref, '_blank', 'noopener,noreferrer');
   };
 
   // 处理考勤状态变更
@@ -299,7 +395,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* 头部欢迎区域 */}
-      <div className="bg-blue-500 rounded-xl p-4 sm:p-6 lg:p-8 text-white shadow-xl">
+      <div className="rounded-xl p-4 sm:p-6 lg:p-8 text-white shadow-xl" style={{ backgroundColor: 'var(--header-bg)' }}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-3">
@@ -342,7 +438,7 @@ export default function DashboardPage() {
                   ? 'bg-blue-100 text-blue-600' 
                   : 'bg-gray-200 text-gray-600'
               }`}>
-                {dashboardData.attendance_list.length}
+                {dashboardData?.attendance_list.length || 0}
               </span>
             </button>
             <button
@@ -361,8 +457,30 @@ export default function DashboardPage() {
                   ? 'bg-green-100 text-green-600' 
                   : 'bg-gray-200 text-gray-600'
               }`}>
-                {dashboardData.feed_back_list.length}
+                {dashboardData?.feed_back_list.length || 0}
               </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('todo')}
+              className={`flex-1 flex items-center justify-center px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 relative ${
+                activeTab === 'todo'
+                  ? 'bg-white text-purple-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <ClipboardDocumentListIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="hidden md:inline">ToDo</span>
+              <span className="md:hidden">ToDo</span>
+              <span className={`ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs rounded-full ${
+                activeTab === 'todo' 
+                  ? 'bg-purple-100 text-purple-600' 
+                  : 'bg-gray-200 text-gray-600'
+              }`}>
+                {getTotalTodoCount()}
+              </span>
+              {getTotalTodoCount() > 0 && (
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white"></span>
+              )}
             </button>
           </nav>
         </div>
@@ -608,6 +726,51 @@ export default function DashboardPage() {
                     </div>
                   );
                 })
+              )}
+            </div>
+          )}
+
+          {activeTab === 'todo' && (
+            <div className="space-y-4">
+              {getTotalTodoCount() === 0 ? (
+                <div className="text-center py-12">
+                  <ClipboardDocumentListIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-lg text-gray-500 mb-2">No pending tasks</p>
+                  <p className="text-sm text-gray-400">All tasks have been completed</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                  {todoItems
+                    .filter(item => item.count > 0)
+                    .map((item) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <div
+                          key={item.key}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleTodoClick(item.path);
+                          }}
+                          className="bg-purple-50 border border-purple-100 rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                        >
+                          <div className="flex items-center">
+                            <div className="bg-purple-100 rounded-full p-2 sm:p-3 mr-3 flex-shrink-0">
+                              <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 text-base sm:text-lg break-words">
+                                {item.label}
+                              </h3>
+                              <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                                {item.count}项待处理事项
+                              </p>
+                            </div>
+                            <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-purple-600 transition-colors ml-2 flex-shrink-0" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               )}
             </div>
           )}

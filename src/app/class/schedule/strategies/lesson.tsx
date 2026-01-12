@@ -85,24 +85,42 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
       return { ...room, hasConflict };
     });
 
+    // 获取当前选中的科目信息（用于只读模式显示）
+    const currentSubject = form.subject_id 
+      ? subjects.find((s: any) => s.id === form.subject_id)
+      : null;
+    const subjectDisplayText = currentSubject 
+      ? `${currentSubject.topic_name} - ${currentSubject.teacher_name}`
+      : (form.subject_id ? `科目ID: ${form.subject_id}` : '—');
+
     return (
       <>
-        {/* 科目选择（仅在新增模式或班级课表中显示） */}
-        {!readOnly && subjects.length > 0 && (
+        {/* 科目选择（班级课表中显示，只读模式下也显示） */}
+        {(subjects.length > 0 || readOnly || form.subject_id) && (
           <div className="mb-2">
             <label className="block text-xs font-medium text-gray-700 mb-1">科目</label>
-            <select
-              className="w-full px-3 py-1.5 text-sm border rounded border-gray-300"
-              value={form.subject_id || ''}
-              onChange={(e) => setForm({ subject_id: Number(e.target.value) || undefined })}
-            >
-              <option value="">请选择科目</option>
-              {subjects.map((subject: any) => (
-                <option key={subject.id} value={subject.id}>
-                  {subject.topic_name} - {subject.teacher_name}
-                </option>
-              ))}
-            </select>
+            {readOnly ? (
+              <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                {subjectDisplayText}
+              </p>
+            ) : subjects.length > 0 ? (
+              <select
+                className="w-full px-3 py-1.5 text-sm border rounded border-gray-300"
+                value={form.subject_id || ''}
+                onChange={(e) => setForm({ subject_id: Number(e.target.value) || undefined })}
+              >
+                <option value="">请选择科目</option>
+                {subjects.map((subject: any) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.topic_name} - {subject.teacher_name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="w-full px-3 py-1.5 text-sm text-gray-500 bg-gray-50 rounded-md border border-gray-200">
+                {form.subject_id ? `科目ID: ${form.subject_id}（科目列表未加载）` : '暂无可用科目'}
+              </p>
+            )}
           </div>
         )}
 

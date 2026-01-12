@@ -2,10 +2,16 @@
 const nextConfig = {
   productionBrowserSourceMaps: true,
   async rewrites() {
+    // 使用环境变量或默认值
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.huayaopudong.com';
     return [
       {
         source: '/api/:path*',
-        destination: 'https://www.huayaopudong.com/api/:path*' // 开发环境
+        destination: `${apiBaseUrl}/api/:path*` // 开发环境API代理
+      },
+      {
+        source: '/static/:path*',
+        destination: `${apiBaseUrl}/static/:path*` // 开发环境静态文件代理
       }
     ]
   },

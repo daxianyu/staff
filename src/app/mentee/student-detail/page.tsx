@@ -150,7 +150,10 @@ const LeaveModal: React.FC<LeaveModalProps> = ({
                         className="mr-3"
                       />
                       <div className="flex-1">
-                        <div className="font-medium">教师：{lesson.teacher_name}</div>
+                        <div className="font-medium">
+                          教师：{lesson.teacher_name}{' '}
+                          <span className="text-sm text-gray-500 font-normal ml-2">{lesson.topic_name}</span>
+                        </div>
                         <div className="text-sm text-gray-500">
                           {new Date(lesson.start_time * 1000).toLocaleString()} - {new Date(lesson.end_time * 1000).toLocaleString()}
                         </div>
@@ -1230,7 +1233,7 @@ export default function StudentDetailPage() {
                 {/* 考试信息 */}
                 {studentInfo.fee_pay && studentInfo.fee_pay.length > 0 && (
                   <div className="border-t pt-6">
-                    <h4 className="text-md font-semibold text-gray-900 mb-4">考试信息</h4>
+                    <h4 className="text-md font-semibold text-gray-900 mb-4">宿舍信息</h4>
                     <div className="space-y-2">
                       {studentInfo.fee_pay.map((exam, index) => (
                         <div key={index} className="text-sm text-gray-900">

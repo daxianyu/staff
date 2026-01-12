@@ -274,6 +274,31 @@ export const addNewArticle = async (articleData: {
 };
 
 /**
+ * 更新文章内容（新增或编辑）
+ * @param articleData 文章数据
+ */
+export const updateArticle = async (articleData: {
+  record_id?: number;
+  article_info: string;
+  title: string;
+  space_id: number;
+}): Promise<ApiResponse<string>> => {
+  try {
+    const { data } = await request('/api/library/update_article', {
+      method: 'POST',
+      body: articleData,
+    });
+    return normalizeApiResponse(data as any);
+  } catch (error) {
+    console.error('更新文章失败:', error);
+    return { 
+      code: 500, 
+      message: error instanceof Error ? error.message : '更新文章失败'
+    };
+  }
+};
+
+/**
  * 获取所有 pastpaper 的 select 选项（subject_leader/core_user）
  */
 export const getAllPastpaperSelect = async (): Promise<ApiResponse<PastpaperAllSelectData>> => {

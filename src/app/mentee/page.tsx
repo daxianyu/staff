@@ -35,6 +35,7 @@ import {
   type MenteeStudent,
   type EvaluateSelect,
 } from '@/services/auth';
+import { buildFileUrl } from '@/config/env';
 
 interface StudentStatusModalProps {
   isOpen: boolean;
@@ -812,7 +813,7 @@ export default function MenteePage() {
 
       if (response.code === 200 && response.data?.file_path) {
         // Splice the full URL for the file path
-        const fullUrl = `https://www.huayaopudong.com/${response.data.file_path}`;
+        const fullUrl = buildFileUrl(response.data.file_path);
         openUrlWithFallback(fullUrl);
         alert('Report generated successfully');
       } else {

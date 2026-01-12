@@ -15,7 +15,9 @@ export interface SubjectEvaluateItem {
   exam_name: string;
   topic_name: string;
   student_id: number;
-  grade: number;
+  grade: string | number;
+  result: string;
+  second: string;
   student_name: string;
   teacher_name: string;
   teacher_id: number;

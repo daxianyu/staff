@@ -33,6 +33,7 @@ import {
   type SelfSignupClassStudent,
   type SelfSignupClassEditInfo,
 } from '@/services/auth';
+import { buildFileUrl } from '@/config/env';
 
 export default function SelfSignupClassesPage() {
   const { hasPermission } = useAuth();
@@ -333,7 +334,7 @@ export default function SelfSignupClassesPage() {
   // 下载模板
   const handleDownloadTemplate = async () => {
     try {
-      const templateUrl = 'https://www.huayaopudong.com/static/template/self-signup-class-example.xlsx';
+      const templateUrl = buildFileUrl('/static/template/self-signup-class-example.xlsx');
       
       // 创建一个临时的a标签来触发下载
       const link = document.createElement('a');

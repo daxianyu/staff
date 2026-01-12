@@ -54,6 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userData = response.data as UserInfo;
           setUser(userData);
           localStorage.setItem('user', JSON.stringify(userData));
+          
+          // 根据用户类型进行重定向检查
+          await handleUserRedirect(userData, router);
         } else {
           // API返回失败，用户未登录，清除本地信息并跳转到登录页
           setUser(null);

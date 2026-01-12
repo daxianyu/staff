@@ -65,6 +65,7 @@ export interface EditServiceParams {
   mentor_id?: number;
   locked: number;
   graduate_year: number;
+  is_dormitory: number;
 }
 
 // 删除 Service 参数接口

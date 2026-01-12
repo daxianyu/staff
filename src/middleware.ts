@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// 获取API基础URL（服务端使用环境变量或默认值）
+const getApiBaseUrl = (): string => {
+  return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.huayaopudong.com';
+};
+
 export async function middleware(request: NextRequest) {
   // 只记录API请求
   if (request.nextUrl.pathname.startsWith('/api')) {
@@ -14,11 +19,12 @@ export async function middleware(request: NextRequest) {
       if (token) {
         headers.set('Authorization', token);
       }
-      // headers.set('Host', 'www.huayaopudong.com');
     }
-    console.log(`https://www.huayaopudong.com${request.nextUrl.pathname}`)
+    const apiBaseUrl = getApiBaseUrl();
+    const apiUrl = `${apiBaseUrl}${request.nextUrl.pathname}${request.nextUrl.search}`;
+    console.log(apiUrl);
     try {
-      const response = await fetch(`https://www.huayaopudong.com${request.nextUrl.pathname}${request.nextUrl.search}`, {
+      const response = await fetch(apiUrl, {
         method: request.method,
         headers: headers,
         body: request.method === 'GET' ? undefined : await request.text()

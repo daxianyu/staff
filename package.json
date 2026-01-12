@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "publish": "next build && rsync -avz /Users/tangjianfeng/WebstormProjects/staff/out/* root@47.116.180.112:/workspace/phy/staff && rsync -avz /Users/tangjianfeng/WebstormProjects/staff/out/* root@47.116.180.112:/workspace/bhy/staff"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -26,11 +27,13 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@types/file-saver": "^2.0.7",
+    "@types/markdown-it": "^14.1.2",
     "@types/react-big-calendar": "^1.16.2",
     "antd": "^6.0.0",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
+    "markdown-it": "^14.1.0",
     "moment": "^2.30.1",
     "moment-timezone": "^0.6.0",
     "next": "15.2.4",
@@ -40,6 +43,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.55.0",
     "react-markdown": "^10.1.0",
+    "react-markdown-editor-lite": "^1.3.4",
     "react-quill-new": "^3.6.0",
     "remark-gfm": "^4.0.1",
     "xlsx": "^0.18.5"
@@ -47,6 +51,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^20",
     "@types/react": "^19.1.15",
     "@types/react-dom": "^19",
@@ -62,8 +67,10 @@
   "browserslist": [
     ">0.2%",
     "not dead",
-    "ios >= 16",
-    "Android >= 7"
+    "ios >= 12",
+    "android >= 5",
+    "chrome >= 60",
+    "safari >= 12"
   ],
   "sideEffects": [
     "*.css",

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
@@ -22,9 +21,10 @@ import {
   getSalesInfo,
   type SalesRecord,
 } from '@/services/auth';
+import { buildFileUrl } from '@/config/env';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
 
 export default function AdmissionManagePage() {
-  const router = useRouter();
   const { hasPermission, user } = useAuth();
   const canView = hasPermission(PERMISSIONS.VIEW_ADMISSION_MANAGE) || 
                   hasPermission(PERMISSIONS.VIEW_SALES_INFO) || 
@@ -153,9 +153,9 @@ export default function AdmissionManagePage() {
     setShowAddModal(true);
   };
 
-  // 跳转到编辑页面
+  // 在新标签页打开编辑页面
   const handleEdit = (item: SalesRecord) => {
-    router.push(`/admission-admin/sales/edit?id=${item.sales_id}`);
+    openUrlWithFallback(`/admission-admin/sales/edit?id=${item.sales_id}`);
   };
 
   // 打开删除确认模态框
@@ -224,7 +224,7 @@ export default function AdmissionManagePage() {
       if (result.code === 200 && result.data) {
         const downloadUrl = result.data.startsWith('http') 
           ? result.data 
-          : `https://www.huayaopudong.com${result.data}`;
+          : buildFileUrl(result.data);
         
         // 更新列表中的数据：赋值下载地址，状态改为 2
         setSales(prev => prev.map(s => {
@@ -272,7 +272,7 @@ export default function AdmissionManagePage() {
       if (result.code === 200 && result.data) {
         const downloadUrl = result.data.startsWith('http') 
           ? result.data 
-          : `https://www.huayaopudong.com${result.data}`;
+          : buildFileUrl(result.data);
         
         // 更新列表中的数据：赋值下载地址，状态改为 2
         setSales(prev => prev.map(s => {

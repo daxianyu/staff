@@ -676,119 +676,223 @@ export default function ClassEditPage() {
               </button>
             </div>
 
-            <div className="overflow-hidden border border-gray-200 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/3">
-                      学生
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                      类型
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {students.map((student, index) => (
-                    <React.Fragment key={`student-${index}-${student.student_id || 'new'}`}>
-                      <tr className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-4">
-                          <SearchableSelect
-                            options={editData.student_info}
-                            value={student.student_id}
-                            onValueChange={(value) => updateStudent(index, 'student_id', value)}
-                            placeholder="请选择学生"
-                            searchPlaceholder="搜索学生..."
-                            className="w-full max-w-xs"
-                          />
-                        </td>
-                        <td className="px-4 py-4">
-                          <label className="inline-flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={student.isTransfer}
-                              onChange={(e) => updateStudent(index, 'isTransfer', e.target.checked)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            {/* 桌面端表格视图 */}
+            <div className="hidden sm:block border border-gray-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        学生
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        类型
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        操作
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {students.map((student, index) => (
+                      <React.Fragment key={`student-${index}-${student.student_id || 'new'}`}>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-4">
+                            <SearchableSelect
+                              options={editData.student_info}
+                              value={student.student_id}
+                              onValueChange={(value) => updateStudent(index, 'student_id', value)}
+                              placeholder="请选择学生"
+                              searchPlaceholder="搜索学生..."
+                              className="w-full max-w-xs"
                             />
-                            <span className="ml-2 text-sm text-gray-900">插班生</span>
-                          </label>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="inline-flex gap-1">
-                            {student.student_id && (
-                              <button
-                                onClick={() => openUrlWithFallback(`/students/schedule?studentId=${student.student_id}`)}
-                                className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
-                                title="查看学生课程安排"
-                              >
-                                <ClockIcon className="h-4 w-4" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => removeStudent(index)}
-                              className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                              title="删除学生"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {student.isTransfer && (
-                        <tr className="bg-blue-50">
-                          <td colSpan={3} className="px-4 py-3">
-                            <div className="flex flex-col gap-3">
-                              <div className="flex justify-end">
+                          </td>
+                          <td className="px-4 py-4">
+                            <label className="inline-flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={student.isTransfer}
+                                onChange={(e) => updateStudent(index, 'isTransfer', e.target.checked)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <span className="ml-2 text-sm text-gray-900 whitespace-nowrap">插班生</span>
+                            </label>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="inline-flex gap-1">
+                              {student.student_id && (
                                 <button
-                                  type="button"
-                                  onClick={() => clearStudentTransferTimes(index)}
-                                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                                  title="清空插班生开始/结束时间"
+                                  onClick={() => openUrlWithFallback(`/students/schedule?studentId=${student.student_id}`)}
+                                  className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                                  title="查看学生课程安排"
                                 >
-                                  清空时间
+                                  <ClockIcon className="h-4 w-4" />
                                 </button>
-                              </div>
-                              <div className="flex flex-col sm:flex-row gap-4">
-                              <div className="flex-1">
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  开始时间
-                                </label>
-                                <input
-                                  type="date"
-                                  value={formatDate(student.start_time)}
-                                  onChange={(e) => {
-                                    const v = e.target.value;
-                                    updateStudent(index, 'start_time', v ? parseDate(v) : -1);
-                                  }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  结束时间
-                                </label>
-                                <input
-                                  type="date"
-                                  value={formatDate(student.end_time)}
-                                  onChange={(e) => {
-                                    const v = e.target.value;
-                                    updateStudent(index, 'end_time', v ? parseDate(v) : -1);
-                                  }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                              </div>
-                            </div>
+                              )}
+                              <button
+                                onClick={() => removeStudent(index)}
+                                className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                                title="删除学生"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
                             </div>
                           </td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
+                        {student.isTransfer && (
+                          <tr className="bg-blue-50">
+                            <td colSpan={3} className="px-4 py-3">
+                              <div className="flex flex-col gap-3">
+                                <div className="flex justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => clearStudentTransferTimes(index)}
+                                    className="px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                    title="清空插班生开始/结束时间"
+                                  >
+                                    清空时间
+                                  </button>
+                                </div>
+                                <div className="flex flex-row gap-4">
+                                  <div className="flex-1">
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                      开始时间
+                                    </label>
+                                    <input
+                                      type="date"
+                                      value={formatDate(student.start_time)}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        updateStudent(index, 'start_time', v ? parseDate(v) : -1);
+                                      }}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                      结束时间
+                                    </label>
+                                    <input
+                                      type="date"
+                                      value={formatDate(student.end_time)}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        updateStudent(index, 'end_time', v ? parseDate(v) : -1);
+                                      }}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 移动端卡片视图 */}
+            <div className="sm:hidden space-y-4">
+              {students.map((student, index) => (
+                <div key={`student-${index}-${student.student_id || 'new'}`} className="bg-white border border-gray-200 rounded-lg p-4">
+                  {/* 学生选择 */}
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">学生</label>
+                    <SearchableSelect
+                      options={editData.student_info}
+                      value={student.student_id}
+                      onValueChange={(value) => updateStudent(index, 'student_id', value)}
+                      placeholder="请选择学生"
+                      searchPlaceholder="搜索学生..."
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* 类型选择 */}
+                  <div className="mb-3">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={student.isTransfer}
+                        onChange={(e) => updateStudent(index, 'isTransfer', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-900">插班生</span>
+                    </label>
+                  </div>
+
+                  {/* 操作按钮 */}
+                  <div className="mb-3 flex gap-2">
+                    {student.student_id && (
+                      <button
+                        onClick={() => openUrlWithFallback(`/students/schedule?studentId=${student.student_id}`)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                        title="查看学生课程安排"
+                      >
+                        <ClockIcon className="h-4 w-4 mr-2" />
+                        查看课程
+                      </button>
+                    )}
+                    <button
+                      onClick={() => removeStudent(index)}
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
+                      title="删除学生"
+                    >
+                      <TrashIcon className="h-4 w-4 mr-2" />
+                      删除
+                    </button>
+                  </div>
+
+                  {/* 插班生时间设置 */}
+                  {student.isTransfer && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 bg-blue-50 rounded-md p-3">
+                      <div className="flex justify-end mb-3">
+                        <button
+                          type="button"
+                          onClick={() => clearStudentTransferTimes(index)}
+                          className="px-3 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                          title="清空插班生开始/结束时间"
+                        >
+                          清空时间
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            开始时间
+                          </label>
+                          <input
+                            type="date"
+                            value={formatDate(student.start_time)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              updateStudent(index, 'start_time', v ? parseDate(v) : -1);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            结束时间
+                          </label>
+                          <input
+                            type="date"
+                            value={formatDate(student.end_time)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              updateStudent(index, 'end_time', v ? parseDate(v) : -1);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 

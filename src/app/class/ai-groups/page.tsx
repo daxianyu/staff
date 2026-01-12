@@ -23,6 +23,7 @@ import {
   CheckIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
+import { buildFileUrl } from '@/config/env';
 import {
   getScheduleSettings,
   updateScheduleSettings,
@@ -964,7 +965,7 @@ function GroupInfoTab({
           </button>
 
           <a
-            href="https://www.huayaopudong.com/static/template/blank-group.xlsx"
+            href={buildFileUrl('/static/template/blank-group.xlsx')}
             download="blank-group.xlsx"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >

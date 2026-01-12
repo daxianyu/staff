@@ -178,23 +178,37 @@ export const handleUserRedirect = async (userData: BasicUser, router: RouterLike
   if (!userData) return;
 
   try {
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    
+    // 1. 检查是否处于错误的系统路径下
+    const isStudentPath = pathname.startsWith('/student');
+    const isStaffPath = pathname.startsWith('/staff') || pathname === '/' || pathname === '/login';
+
+    // 如果是学生或预备学生类型
+    if (userData.type === USER_STUDENT || userData.type === USER_STUDENT_CANDIDATE) {
+      if (isStaffPath) {
+        // 在员工端路径下，强制跳转回学生端
+        window.location.href = userData.type === USER_STUDENT ? '/student/notification' : '/student/my-test';
+        return;
+      }
+      // 已经在学生端路径下，不做处理
+      return;
+    }
+
+    // 如果是员工类型
+    if (userData.type === USER_STAFF && isStudentPath) {
+      // 在学生端路径下，强制跳转到员工端
+      window.location.href = '/staff/dashboard';
+      return;
+    }
+
+    // 2. 在正确的系统路径内，处理首页或登录页的自动跳转
+    const isLandingPage = pathname === '/' || pathname === '/login' || pathname === '/staff' || pathname === '/staff/login' || pathname === '/staff/';
+    if (!isLandingPage) return;
+
     // 根据用户类型进行不同的跳转处理
     switch (userData.type) {
-      case USER_STUDENT: // 学生 - 跳转到学生系统
-        // 直接跳转到学生系统网站
-        window.location.href = '/student/notification';
-        break;
-      case USER_STUDENT_CANDIDATE: // 预备学生 - 跳转到学生系统
-        window.location.href = '/student/my-test';
-        break;
       case USER_PARENT: // 家长 - 暂时保持现状，跳转到dashboard
-        if (useWindowLocation) {
-          window.location.href = '/staff/dashboard';
-        } else {
-          router?.push('/dashboard');
-        }
-        break;
-        
       case USER_STAFF: // 员工 - 保持现状，跳转到dashboard
       default: // 其他未知类型默认也跳转到dashboard
         if (useWindowLocation) {
@@ -206,11 +220,14 @@ export const handleUserRedirect = async (userData: BasicUser, router: RouterLike
     }
   } catch (error) {
     console.error('处理用户重定向异常:', error);
-    // 出错时默认跳转到dashboard
-    if (useWindowLocation) {
-      window.location.href = '/staff/dashboard';
-    } else {
-      router?.push('/dashboard');
+    // 出错时不做强制跳转，或者在根目录时跳转到dashboard
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    if (pathname === '/' || pathname === '/login' || pathname === '/staff' || pathname === '/staff/login') {
+      if (useWindowLocation) {
+        window.location.href = '/staff/dashboard';
+      } else {
+        router?.push('/dashboard');
+      }
     }
   }
 };

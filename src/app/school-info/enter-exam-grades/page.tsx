@@ -32,6 +32,7 @@ import {
   type ExamStudent,
   type ExamEvaluateItem,
 } from '@/services/auth';
+import { buildFileUrl } from '@/config/env';
 
 export default function EnterExamGradesPage() {
   const searchParams = useSearchParams();
@@ -346,7 +347,7 @@ export default function EnterExamGradesPage() {
       const result = await getExamTemplate(examId);
       if (result.code === 200 && result.data?.file_path) {
         // 拼接完整的文件URL
-        const fileUrl = `https://www.huayaopudong.com/${result.data.file_path}`;
+        const fileUrl = buildFileUrl(result.data.file_path);
         openUrlWithFallback(fileUrl);
       } else {
         setErrorMessage(result.message || '下载模板失败');

@@ -117,12 +117,12 @@ const ServiceTable = memo(function ServiceTable({
                 <td className="px-2 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     <span
-                      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${service.dormitory_type === 1
+                      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${service.is_dormitory === 1
                           ? 'bg-blue-50 text-blue-700 border border-blue-200'
                           : 'bg-green-50 text-green-700 border border-green-200'
                         }`}
                     >
-                      {service.is_dormitory ? '宿舍' : '餐包'}
+                      {service.is_dormitory === 1 ? '宿舍' : '餐包'}
                     </span>
                   </div>
                 </td>
@@ -344,7 +344,7 @@ export default function ServicePage() {
         setBookedStudents(booked_info || []);
         setAllStudents(student_list || []);
         setAllDormitories(all_dormitory || []);
-
+        debugger
         setFormData({
           name: service_info.name,
           gender: service_info.gender,
@@ -352,7 +352,7 @@ export default function ServicePage() {
           price: service_info.price || 0,
           campus: service_info.campus,
           mentor_id: service_info.mentor_id || -1,
-          is_dormitory: service_info.dormitory_type || 1,
+          is_dormitory: service_info.is_dormitory,
           toilets: service_info.toilets || 0,
           start_time: service_info.start_time || Math.floor(Date.now() / 1000),
           end_time: service_info.end_time || Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60,
@@ -429,6 +429,7 @@ export default function ServicePage() {
         mentor_id: (formData.mentor_id ?? -1),
         locked: formData.locked,
         graduate_year: formData.graduate_year,
+        is_dormitory: formData.is_dormitory,
       };
 
       const response = await editService(params);

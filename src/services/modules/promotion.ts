@@ -1,5 +1,6 @@
 import { request, normalizeApiResponse, getAuthHeader } from '../apiClient';
 import type { ApiResponse, ApiEnvelope, SelectOption } from '../types';
+import { buildFileUrl } from '@/config/env';
 
 // 导师晋升select选项响应
 export interface MentorPromotionSelectResponse {
@@ -167,7 +168,7 @@ export const downloadMentorRecommendation = async (params: DownloadRecommendatio
     // 如果是相对路径，需要添加基础URL
     const downloadUrl = filePath.startsWith('http') 
       ? filePath 
-      : `https://www.huayaopudong.com/${filePath}`;
+      : buildFileUrl(filePath);
 
     // 创建下载链接
     const link = document.createElement('a');

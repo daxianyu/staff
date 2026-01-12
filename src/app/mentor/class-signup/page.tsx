@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getStaffClassList, getStudentSignupInfo, type ClassSignupItem } from '@/services/modules/subjects';
+import { buildFileUrl } from '@/config/env';
 import {
   BookOpenIcon,
   MagnifyingGlassIcon,
@@ -49,7 +50,7 @@ export default function ClassSignupPage() {
     setDownloadLoading(true);
     try {
       // 在新窗口/标签页中打开PDF文件
-      window.open('https://huayaopudong.com/static/course_book/1/book.pdf', '_blank');
+      window.open(buildFileUrl('/static/course_book/1/book.pdf'), '_blank');
     } catch (error) {
       console.error('打开失败:', error);
       alert('打开失败，请重试');

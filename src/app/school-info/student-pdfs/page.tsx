@@ -32,6 +32,7 @@ import PredictModal from './components/PredictModal';
 import CertificateModal from './components/CertificateModal';
 import TranscriptModal from './components/TranscriptModal';
 import AmReportModal from './components/AmReportModal';
+import { buildFileUrl } from '@/config/env';
 
 export default function StudentPdfsPage() {
   const { hasPermission } = useAuth();
@@ -329,7 +330,7 @@ export default function StudentPdfsPage() {
       });
 
       if (result && result.code === 200 && result.data?.file_path) {
-        const fileUrl = `https://www.huayaopudong.com/${result.data.file_path}`;
+        const fileUrl = buildFileUrl(result.data.file_path);
         window.open(fileUrl, '_blank');
         alert('报告生成成功');
         setShowPredictModal(false);
@@ -371,7 +372,7 @@ export default function StudentPdfsPage() {
       });
 
       if (result && result.code === 200 && result.data?.file_path) {
-        const fileUrl = `https://www.huayaopudong.com/${result.data.file_path}`;
+        const fileUrl = buildFileUrl(result.data.file_path);
         window.open(fileUrl, '_blank');
         alert('报告生成成功');
         setShowCertificateModal(false);
@@ -439,7 +440,7 @@ export default function StudentPdfsPage() {
       });
 
       if (result && result.code === 200 && result.data?.file_path) {
-        const fileUrl = `https://www.huayaopudong.com/${result.data.file_path}`;
+        const fileUrl = buildFileUrl(result.data.file_path);
         window.open(fileUrl, '_blank');
         alert('报告生成成功');
         setShowTranscriptModal(false);
@@ -507,7 +508,7 @@ export default function StudentPdfsPage() {
       });
 
       if (result && result.code === 200 && result.data?.file_path) {
-        const fileUrl = `https://www.huayaopudong.com/${result.data.file_path}`;
+        const fileUrl = buildFileUrl(result.data.file_path);
         window.open(fileUrl, '_blank');
         alert('报告生成成功');
         setShowAmReportModal(false);
@@ -541,7 +542,7 @@ export default function StudentPdfsPage() {
       });
 
       if (result && result.code === 200 && result.data?.file_path) {
-        const fileUrl = `https://www.huayaopudong.com/${result.data.file_path}`;
+        const fileUrl = buildFileUrl(result.data.file_path);
         window.open(fileUrl, '_blank');
         alert('报告生成成功');
         setShowReportModal(false);

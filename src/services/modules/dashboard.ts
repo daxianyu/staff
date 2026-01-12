@@ -96,3 +96,24 @@ export const cancelLesson = async (params: CancelLessonParams): Promise<ApiRespo
     return { code: 500, message: error instanceof Error ? error.message : '取消课程失败' };
   }
 };
+
+export interface DashboardTodoData {
+  class_change: number;
+  out_count: number;
+  evaluate_count: number;
+  wishes_count: number;
+  ps_polish: number;
+  withdrawal_count: number;
+  late_cashin: number;
+  remarking: number;
+}
+
+export const getDashboardTodoList = async (): Promise<ApiResponse<DashboardTodoData>> => {
+  try {
+    const { data } = await request('/api/user/get_dashboard_todo_list');
+    return normalizeApiResponse<DashboardTodoData>(data as any);
+  } catch (error) {
+    console.error('获取dashboard待办事项异常:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '获取dashboard待办事项失败' };
+  }
+};

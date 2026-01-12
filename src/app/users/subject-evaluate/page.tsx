@@ -180,37 +180,37 @@ export default function SubjectEvaluatePage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[150px]">
                       标题
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[120px]">
                       学生姓名
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[150px]">
                       考试名称
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      分数
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[80px]">
+                      等第
+                    </th>
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[80px]">
+                      得分
+                    </th>
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[80px]">
+                      总分
                     </th>
                     {activeTab === 'other' && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[120px]">
                         老师名称
                       </th>
                     )}
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[150px]">
                       Mentor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[300px]">
                       评价
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      发起时间
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      更新时间
-                    </th>
                     {canEdit && activeTab === 'owner' && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         操作
                       </th>
                     )}
@@ -219,39 +219,37 @@ export default function SubjectEvaluatePage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentData.map((item) => (
                     <tr key={item.evaluate_id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-4 text-sm text-gray-900 max-w-[180px] break-words">
                         {item.evaluate_title || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-4 text-sm text-gray-900 max-w-[100px] break-words">
                         {item.student_name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-4 text-sm text-gray-900 max-w-[150px] break-words">
                         {item.exam_name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-4 text-sm text-gray-900 max-w-[80px] break-words">
                         {item.grade || '-'}
                       </td>
+                      <td className="px-2 py-4 text-sm text-gray-900 max-w-[80px] break-words">
+                        {item.result || '-'}
+                      </td>
+                      <td className="px-2 py-4 text-sm text-gray-900 max-w-[80px] break-words">
+                        {item.second || '-'}
+                      </td>
                       {activeTab === 'other' && (
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-4 text-sm text-gray-900 max-w-[120px] break-words">
                           {item.teacher_name || '-'}
                         </td>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-4 text-sm text-gray-900 max-w-[150px] break-words">
                         {item.mentor_str}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
-                        <div className="truncate" title={item.evaluate}>
-                          {item.evaluate || '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.create_time}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.update_time || '-'}
+                      <td className="px-2 py-4 text-sm text-gray-900 max-w-[300px] break-words">
+                        {item.evaluate || '-'}
                       </td>
                       {canEdit && activeTab === 'owner' && (
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td className="px-2 py-4 whitespace-nowrap text-sm font-medium">
                           <button
                             onClick={() => handleEdit(item)}
                             className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
@@ -280,7 +278,12 @@ export default function SubjectEvaluatePage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">编辑评价</h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">编辑评价</h3>
+                  {editingItem?.student_name && (
+                    <p className="text-sm text-gray-600 mt-1">学生：{editingItem.student_name}</p>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setShowEditModal(false);
