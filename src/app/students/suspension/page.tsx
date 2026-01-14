@@ -144,8 +144,8 @@ function PasteableDateInput(props: {
 export default function SuspensionManagementPage() {
   const { user, hasPermission } = useAuth();
 
-  const canView = hasPermission(PERMISSIONS.VIEW_LEAVE_SCHOOL);
-  const canEdit = hasPermission(PERMISSIONS.EDIT_LEAVE_SCHOOL);
+  const canView = hasPermission(PERMISSIONS.VIEW_LEAVE_SCHOOL) || hasPermission(PERMISSIONS.FINANCE);
+  const canEdit = hasPermission(PERMISSIONS.EDIT_LEAVE_SCHOOL) || hasPermission(PERMISSIONS.FINANCE);
 
   const [rows, setRows] = useState<LeaveSchoolRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -449,7 +449,7 @@ export default function SuspensionManagementPage() {
           <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-500" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">权限不足</h3>
           <p className="mt-1 text-sm text-gray-500">
-            你没有访问休复学(suspension)管理的权限（需要 tool_user=真 或 core_user=真）。
+            你没有访问休复学(suspension)管理的权限。
           </p>
           <p className="mt-2 text-xs text-gray-400 break-all">
             当前用户：{user?.name ?? '-'}

@@ -1,5 +1,7 @@
 import { request, normalizeApiResponse } from '../apiClient';
 import type { ApiResponse, ApiEnvelope } from '../types';
+import type { RemarkConfRecord, RemarkConfListResponse, RemarkConfAddParams } from './remark';
+export type { RemarkConfRecord, RemarkConfListResponse, RemarkConfAddParams };
 
 // 空闲搜索相关类型定义
 export interface FreeSearchRecord {
@@ -90,25 +92,7 @@ export interface DoubleClassListResponse {
   total: number;
 }
 
-// Remark配置相关类型
-export interface RemarkConfRecord {
-  exam_center: string;
-  remark_type: string;
-  price: number;
-  in_use: string;
-  record_name: string;
-}
-
-export interface RemarkConfListResponse {
-  rows: RemarkConfRecord[];
-  total: number;
-}
-
-export interface RemarkConfAddParams {
-  exam_center: string;
-  conf_type: number;
-  price: number;
-}
+// Remark配置相关类型 - 已移至 modules/remark.ts
 
 // 权限复制参数
 export interface CopyRightParams {

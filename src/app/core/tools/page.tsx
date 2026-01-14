@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { 
@@ -99,6 +100,7 @@ const tools: Tool[] = [
 ];
 
 export default function ToolsOverviewPage() {
+  const router = useRouter();
   const { user, hasPermission } = useAuth();
   const canView = hasPermission(PERMISSIONS.VIEW_TOOLS_OVERVIEW);
   const [openModal, setOpenModal] = useState<string | null>(null);
@@ -120,6 +122,10 @@ export default function ToolsOverviewPage() {
   }
 
   const handleToolClick = (toolKey: string) => {
+    if (toolKey === 'remark_conf') {
+      router.push('/core/tools/remark-conf');
+      return;
+    }
     setOpenModal(toolKey);
   };
 

@@ -10,6 +10,7 @@ import {
   addNewExam,
   updateExamStatus,
   deleteExam,
+  getExamSelectInfo,
   type ExamListItem,
   type AddExamParams,
   getAuthHeader,
@@ -35,20 +36,9 @@ export default function ExamPage() {
   const { hasPermission } = useAuth();
   const canEdit = hasPermission(PERMISSIONS.EDIT_EXAMS);
 
-  // 考试期间和类型常量
-  const EXAM_PERIODS_DICT = {
-    0: "Summer",
-    1: "Winter",
-    2: "Spring",
-  };
-
-  const EXAM_TYPES = {
-    0: "Edexcel",
-    1: "CIE",
-    2: "AQA",
-    4: "PHY",
-    3: "OTHER",
-  };
+  // 考试期间和类型常量 (从API获取)
+  const [examPeriods, setExamPeriods] = useState<Record<string, string>>({});
+  const [examTypes, setExamTypes] = useState<Record<string, string>>({});
 
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState<ExamListItem[]>([]);
@@ -107,6 +97,8 @@ export default function ExamPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // 1. 获取考试列表数据
       const resp = await getExamList();
       if (resp.status === 200) {
         setExams(resp.data.active || []);
@@ -114,10 +106,16 @@ export default function ExamPage() {
         setInnerFirstFee(resp.data.inner_first_fee || []);
         setOutsideFirstFee(resp.data.outside_first_fee || []);
         setCanDownload(resp.data.can_download || 0);
-        // 计算总记录数
         setTotalRecords((resp.data.inner_first_fee || []).length + (resp.data.outside_first_fee || []).length);
       } else {
         setError(resp.message || 'Failed to load exams');
+      }
+
+      // 2. 获取下拉选项数据
+      const selectResp = await getExamSelectInfo();
+      if (selectResp.code === 200 && selectResp.data) {
+        setExamTypes(selectResp.data.exam_types || {});
+        setExamPeriods(selectResp.data.exam_periods || {});
       }
     } catch (e) {
       console.error(e);
@@ -492,9 +490,9 @@ export default function ExamPage() {
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">All Periods</option>
-                    <option value={0}>Summer</option>
-                    <option value={1}>Winter</option>
-                    <option value={2}>Spring</option>
+                    {Object.entries(examPeriods).map(([id, name]) => (
+                      <option key={id} value={id}>{name}</option>
+                    ))}
                   </select>
 
                   <select
@@ -503,11 +501,9 @@ export default function ExamPage() {
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">All Types</option>
-                    <option value={0}>Edexcel</option>
-                    <option value={1}>CIE</option>
-                    <option value={2}>AQA</option>
-                    <option value={4}>PHY</option>
-                    <option value={3}>OTHER</option>
+                    {Object.entries(examTypes).map(([id, name]) => (
+                      <option key={id} value={id}>{name}</option>
+                    ))}
                   </select>
 
                   <label className="inline-flex items-center text-sm text-gray-700">
@@ -587,9 +583,9 @@ export default function ExamPage() {
                         >
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
-                          <td className="px-3 py-4 text-sm text-gray-900 break-words">{EXAM_TYPES[exam.type as keyof typeof EXAM_TYPES] ?? '-'}</td>
+                          <td className="px-3 py-4 text-sm text-gray-900 break-words">{examTypes[String(exam.type)] ?? '-'}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.topic ?? '-'}</td>
-                          <td className="px-3 py-4 text-sm text-gray-900 break-words">{EXAM_PERIODS_DICT[exam.period as keyof typeof EXAM_PERIODS_DICT] ?? '-'}</td>
+                          <td className="px-3 py-4 text-sm text-gray-900 break-words">{examPeriods[String(exam.period)] ?? '-'}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">
                             {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}
                           </td>
@@ -718,9 +714,9 @@ export default function ExamPage() {
                           >
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
-                            <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.type ?? '-'}</td>
+                            <td className="px-3 py-4 text-sm text-gray-900 break-words">{examTypes[String(exam.type)] ?? '-'}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.topic ?? '-'}</td>
-                            <td className="px-3 py-4 text-sm text-gray-900 break-words">{['Summer', 'Winter', 'Spring'][exam.period ?? 0]}</td>
+                            <td className="px-3 py-4 text-sm text-gray-900 break-words">{examPeriods[String(exam.period)] ?? '-'}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">
                               {exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}
                             </td>

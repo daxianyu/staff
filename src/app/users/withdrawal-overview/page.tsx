@@ -13,7 +13,8 @@ import {
 } from '@/services/auth';
 import { 
   XMarkIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 // 退考状态常量定义
@@ -35,6 +36,13 @@ export default function WithdrawalOverviewPage() {
   const [statusForm, setStatusForm] = useState({
     status: '',
     reject_reason: ''
+  });
+
+  // 搜索相关状态
+  const [searchTerms, setSearchTerms] = useState({
+    student: '',
+    mentor: '',
+    subject: ''
   });
   
   // 分页相关状态
@@ -163,6 +171,14 @@ export default function WithdrawalOverviewPage() {
     }
   };
 
+  // 过滤数据
+  const filteredData = data.filter(item => {
+    const matchStudent = !searchTerms.student || item.student_name.toLowerCase().includes(searchTerms.student.toLowerCase());
+    const matchMentor = !searchTerms.mentor || (item.mentor_name || '').toLowerCase().includes(searchTerms.mentor.toLowerCase());
+    const matchSubject = !searchTerms.subject || (item.exam_name || '').toLowerCase().includes(searchTerms.subject.toLowerCase());
+    return matchStudent && matchMentor && matchSubject;
+  });
+
   if (!canView) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -185,17 +201,51 @@ export default function WithdrawalOverviewPage() {
 
         {/* 操作栏 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">共 {data.length} 条记录</span>
+          <div className="flex flex-col space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="搜索学生姓名..."
+                  value={searchTerms.student}
+                  onChange={(e) => setSearchTerms({ ...searchTerms, student: e.target.value })}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="搜索导师姓名..."
+                  value={searchTerms.mentor}
+                  onChange={(e) => setSearchTerms({ ...searchTerms, mentor: e.target.value })}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="搜索考试科目..."
+                  value={searchTerms.subject}
+                  onChange={(e) => setSearchTerms({ ...searchTerms, subject: e.target.value })}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleDownload}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-              >
-                下载Excel
-              </button>
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pt-2">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600">共 {filteredData.length} 条记录</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownload}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors"
+                >
+                  下载Excel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -252,7 +302,7 @@ export default function WithdrawalOverviewPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {data.map((item) => (
+                  {filteredData.map((item) => (
                     <tr key={item.record_id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {item.student_name}
@@ -338,7 +388,7 @@ export default function WithdrawalOverviewPage() {
                 </tbody>
               </table>
               
-              {data.length === 0 && (
+              {filteredData.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-gray-500">暂无数据</p>
                 </div>

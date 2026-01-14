@@ -4,7 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { getSubjectRelative } from '@/services/auth';
-import { BookOpenIcon, ExclamationTriangleIcon, AcademicCapIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { 
+  BookOpenIcon, 
+  ExclamationTriangleIcon, 
+  AcademicCapIcon, 
+  UserGroupIcon,
+  ArrowDownTrayIcon
+} from '@heroicons/react/24/outline';
+import { ExcelExporter, type ExportConfig } from '@/components/ExcelExporter';
 
 interface CampusEntry {
   gender: string;
@@ -105,6 +112,52 @@ export default function SubjectRelativePage() {
   // 校区切换处理函数
   const handleCampusChange = (campusId: number) => {
     setSelectedCampus(campusId);
+  };
+
+  // 导出配置
+  const getExportConfig = (): ExportConfig => {
+    const headers = [
+      'Student Name',
+      'Pinyin',
+      'Gender',
+      'Student ID',
+      'Mentor',
+      'Mentor Leader',
+      'Progress (%)',
+      'Sum',
+      'Sum Until Today',
+      'Contract Hours',
+      'Enrolment Date',
+      'Graduation Date',
+      'Year Fee'
+    ];
+
+    const data = filteredAndSortedEntries.map(entry => [
+      entry.student_name,
+      entry.student_pinyin_name,
+      entry.gender,
+      entry.long_id,
+      entry.mentor_name,
+      entry.mentor_leader_name,
+      `${entry.progress}%`,
+      entry.relative_sum,
+      entry.relative_sum_until_today,
+      entry.absolute_sum_until_today_present,
+      entry.enrolment_date,
+      entry.graduation_date,
+      entry.year_fee
+    ]);
+
+    return {
+      filename: `Subject_Relative_${currentCampus?.name || 'All'}`,
+      sheets: [
+        {
+          name: currentCampus?.name || 'Sheet1',
+          headers,
+          data
+        }
+      ]
+    };
   };
   
   // 过滤和排序数据
@@ -218,14 +271,24 @@ export default function SubjectRelativePage() {
             </div>
 
             {/* 搜索框 */}
-            <div className="relative flex-1 max-w-md">
-              <input
-                type="text"
-                placeholder="搜索学生姓名、导师或年级..."
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+            <div className="flex flex-1 max-w-2xl gap-4">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="搜索学生姓名、导师或年级..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <ExcelExporter 
+                config={getExportConfig()} 
+                disabled={loading || filteredAndSortedEntries.length === 0}
+              >
+                <ArrowDownTrayIcon className="h-5 w-5" />
+                导出 Excel
+              </ExcelExporter>
             </div>
           </div>
         </div>

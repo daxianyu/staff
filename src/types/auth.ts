@@ -241,6 +241,17 @@ export const PERMISSIONS = {
   VIEW_CORE_EXIT_PERMIT: 'view_core_exit_permit',
   EDIT_CORE_EXIT_PERMIT: 'edit_core_exit_permit',
 
+  // 教材预订管理权限
+  VIEW_TEXTBOOK_PURCHASE: 'view_textbook_purchase',
+  EDIT_TEXTBOOK_PURCHASE: 'edit_textbook_purchase',
+
+  // 导师变更记录权限
+  VIEW_MENTOR_CHANGE_RECORD: 'finance',
+
+  // Remark配置权限
+  VIEW_REMARK_CONF: 'view_remark_conf',
+  EDIT_REMARK_CONF: 'edit_remark_conf',
+
   // Admission Admin 相关权限
   VIEW_ADMISSION_MANAGE: 'core_admin', // 查看所有sales记录
   EDIT_ADMISSION_MANAGE: 'sales_admin', // 创建/删除sales记录
@@ -292,6 +303,9 @@ export const OPERATION_RIGHTS = {
 
   // Knowledge - Workspace 管理权限
   WORKSPACE_MANAGEMENT: 25,
+
+  // 教材领取/回滚权限
+  TEXTBOOK_OPERATION: 19,
 } as const;
 
 // 预定义角色常量（向后兼容）

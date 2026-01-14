@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import BaseModal from './BaseModal';
-import { remarkConfAdd, getRemarkConf } from '@/services/modules/tools';
-import type { RemarkConfRecord } from '@/services/modules/tools';
+import { 
+  addRemarkConf as remarkConfAdd, 
+  getRemarkConfTable as getRemarkConf,
+  type RemarkConfRecord 
+} from '@/services/auth';
 import { CheckCircleIcon, ExclamationCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 interface RemarkConfModalProps {
@@ -104,19 +107,19 @@ export default function RemarkConfModal({ isOpen, onClose }: RemarkConfModalProp
         </div>
 
         {showAddForm && (
-          <form onSubmit={handleAdd} className="bg-gray-50 p-4 rounded-md space-y-3">
+            <form onSubmit={handleAdd} className="bg-gray-50 p-4 rounded-md space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 考试局 <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.exam_center}
-                onChange={(e) => setFormData({ ...formData, exam_center: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, exam_center: e.target.value, conf_type: 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">请选择考试局</option>
-                {EXAM_CENTERS.map((center) => (
+                {['CAIE', 'Edexcel', 'AQA'].map((center) => (
                   <option key={center} value={center}>
                     {center}
                   </option>
@@ -135,11 +138,19 @@ export default function RemarkConfModal({ isOpen, onClose }: RemarkConfModalProp
                 required
               >
                 <option value={0}>请选择类型</option>
-                {REMARK_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
+                {(() => {
+                  let types: Record<number, string> = {};
+                  if (formData.exam_center === 'CAIE') {
+                    types = { 1: '看卷', 2: '看卷+复议' };
+                  } else if (formData.exam_center === 'Edexcel' || formData.exam_center === 'AQA') {
+                    types = { 1: '看卷', 3: '复议' };
+                  }
+                  return Object.entries(types).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ));
+                })()}
               </select>
             </div>
 
@@ -225,7 +236,7 @@ export default function RemarkConfModal({ isOpen, onClose }: RemarkConfModalProp
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {records.map((record, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
+                  <tr key={record.record_id || `modal-record-${index}`} className="hover:bg-gray-50">
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                       {record.exam_center}
                     </td>

@@ -260,6 +260,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       PERMISSIONS.ADD_LEAVE_SCHOOL,
       PERMISSIONS.EDIT_LEAVE_SCHOOL,
       PERMISSIONS.DELETE_LEAVE_SCHOOL,
+      PERMISSIONS.VIEW_REMARK_CONF,
+      PERMISSIONS.EDIT_REMARK_CONF,
     ];
     if (toolUserPermissions.includes(permission as any)) {
       return (user as any).tool_user === true || (user as any).tool_user === 1;
@@ -281,6 +283,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ];
     if (workspacePermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.WORKSPACE_MANAGEMENT) || isCoreUser;
+    }
+
+    // 教材预订管理权限
+    const textbookPermissions = [
+      PERMISSIONS.VIEW_TEXTBOOK_PURCHASE,
+      PERMISSIONS.EDIT_TEXTBOOK_PURCHASE,
+    ];
+    if (textbookPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.TEXTBOOK_OPERATION) || isCoreUser;
     }
     
     // 档案管理权限

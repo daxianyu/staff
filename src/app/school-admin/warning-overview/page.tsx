@@ -11,6 +11,8 @@ import {
   XMarkIcon,
   MagnifyingGlassIcon,
   ArrowDownTrayIcon,
+  UserGroupIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import {
   getWarningList,
@@ -55,6 +57,13 @@ export default function WarningOverviewPage() {
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [sortField, setSortField] = useState<'warn_time' | 'warning_count'>('warn_time');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [activeTab, setActiveTab] = useState<'records' | 'statistics'>('records');
+
+  // 统计表格排序状态
+  const [statSortField, setStatSortField] = useState<'oral' | 'written'>('written');
+  const [statSortDirection, setStatSortDirection] = useState<'desc' | 'asc'>('desc');
 
   // 权限检查
   const canView = true; // 所有staff都可以查看
@@ -97,18 +106,88 @@ export default function WarningOverviewPage() {
     warning.warn_reason.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 分页计算
-  const totalItems = filteredWarnings.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedWarnings = filteredWarnings.slice(startIndex, endIndex);
+  // 计算每个学生的警告统计
+  const studentStats = warnings.reduce((acc, curr) => {
+    if (!acc[curr.student_id]) {
+      acc[curr.student_id] = {
+        student_id: curr.student_id,
+        student_name: curr.student_name,
+        oral: 0,
+        written: 0,
+      };
+    }
+    if (curr.warn_type === 1) {
+      acc[curr.student_id].oral += 1;
+    } else if (curr.warn_type === 2) {
+      acc[curr.student_id].written += 1;
+    }
+    return acc;
+  }, {} as Record<number, { student_id: number; student_name: string; oral: number; written: number }>);
+
+  const studentStatList = Object.values(studentStats);
+
+  // 排序统计数据
+  const sortedStudentStats = [...studentStatList].sort((a, b) => {
+    const valA = a[statSortField];
+    const valB = b[statSortField];
+    return statSortDirection === 'asc' ? valA - valB : valB - valA;
+  });
+
+  // 统计信息
+  const uniqueStudents = studentStatList.length;
+  const totalWarnings = warnings.length;
+  const oralWarnings = warnings.filter(w => w.warn_type === 1).length;
+  const writtenWarnings = warnings.filter(w => w.warn_type === 2).length;
+
+  // 获取警告数量排名前5的学生 (按书面优先，然后口头)
+  const topStudents = [...studentStatList]
+    .sort((a, b) => (b.written * 10 + b.oral) - (a.written * 10 + a.oral))
+    .slice(0, 5);
 
   // 处理搜索
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
   };
+
+  const handleSort = (field: 'warn_time' | 'warning_count') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+    setCurrentPage(1);
+  };
+
+  const handleStatSort = (field: 'oral' | 'written') => {
+    if (statSortField === field) {
+      setStatSortDirection(statSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setStatSortField(field);
+      setStatSortDirection('desc');
+    }
+  };
+
+  // 排序记录数据
+  const sortedWarnings = [...filteredWarnings].sort((a, b) => {
+    if (sortField === 'warning_count') {
+      const countA = (studentStats[a.student_id]?.oral || 0) + (studentStats[a.student_id]?.written || 0);
+      const countB = (studentStats[b.student_id]?.oral || 0) + (studentStats[b.student_id]?.written || 0);
+      return sortDirection === 'asc' ? countA - countB : countB - countA;
+    }
+    // 默认按警告时间排序
+    const timeA = new Date(a.warn_time).getTime();
+    const timeB = new Date(b.warn_time).getTime();
+    return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
+  });
+
+  // 分页计算
+  const totalItems = sortedWarnings.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedWarnings = sortedWarnings.slice(startIndex, endIndex);
 
   // 处理新增
   const handleAdd = () => {
@@ -250,6 +329,97 @@ export default function WarningOverviewPage() {
           <p className="mt-2 text-sm text-gray-600">管理学生警告信息</p>
         </div>
 
+        {/* 统计卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div className="flex items-center">
+              <UserGroupIcon className="h-10 w-10 text-blue-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500 text-nowrap">涉及学生总数</p>
+                <p className="text-2xl font-bold text-gray-900">{uniqueStudents}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+            <div className="flex items-center">
+              <ExclamationTriangleIcon className="h-10 w-10 text-red-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500 text-nowrap">警告记录总数</p>
+                <p className="text-2xl font-bold text-gray-900">{totalWarnings}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+            <div className="flex items-center">
+              <DocumentTextIcon className="h-10 w-10 text-yellow-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500 text-nowrap">口头警告数</p>
+                <p className="text-2xl font-bold text-gray-900">{oralWarnings}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+            <div className="flex items-center">
+              <DocumentTextIcon className="h-10 w-10 text-purple-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500 text-nowrap">书面警告数</p>
+                <p className="text-2xl font-bold text-gray-900">{writtenWarnings}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 警告排行 */}
+        <div className="bg-white rounded-lg shadow mb-8 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
+            <UserGroupIcon className="h-5 w-5 text-gray-500" />
+            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">警告数量排行 (Top 5)</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
+            {topStudents.map((student, index) => (
+              <div key={student.student_id} className="p-4 flex flex-col items-center justify-center">
+                <span className="text-xs text-gray-400 mb-1">NO.{index + 1}</span>
+                <span className="text-sm font-bold text-gray-900 mb-1">{student.student_name}</span>
+                <div className="flex gap-1">
+                  <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-[10px] font-bold rounded border border-yellow-100">
+                    口头:{student.oral}
+                  </span>
+                  <span className="px-2 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded border border-red-100">
+                    书面:{student.written}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {topStudents.length === 0 && (
+              <div className="col-span-5 py-4 text-center text-sm text-gray-500">暂无统计数据</div>
+            )}
+          </div>
+        </div>
+
+        {/* 标签页切换 */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setActiveTab('records')}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'records'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            警告记录
+          </button>
+          <button
+            onClick={() => setActiveTab('statistics')}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'statistics'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            学生统计
+          </button>
+        </div>
+
         {/* 搜索和操作栏 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -281,7 +451,7 @@ export default function WarningOverviewPage() {
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-          ) : (
+          ) : activeTab === 'records' ? (
             <>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -289,6 +459,17 @@ export default function WarningOverviewPage() {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         学生
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 group"
+                        onClick={() => handleSort('warning_count')}
+                      >
+                        <div className="flex items-center gap-1">
+                          警告总数
+                          <span className={`${sortField === 'warning_count' ? 'text-blue-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
+                            {sortField === 'warning_count' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                          </span>
+                        </div>
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         校区
@@ -302,8 +483,16 @@ export default function WarningOverviewPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         其他原因说明
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        时间
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 group"
+                        onClick={() => handleSort('warn_time')}
+                      >
+                        <div className="flex items-center gap-1">
+                          时间
+                          <span className={`${sortField === 'warn_time' ? 'text-blue-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
+                            {sortField === 'warn_time' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                          </span>
+                        </div>
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         操作人员
@@ -324,6 +513,11 @@ export default function WarningOverviewPage() {
                       <tr key={warning.record_id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{warning.student_name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-full border border-red-100">
+                            {(studentStats[warning.student_id]?.oral || 0) + (studentStats[warning.student_id]?.written || 0)} 次
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{warning.campus_name}</div>
@@ -462,6 +656,61 @@ export default function WarningOverviewPage() {
                 </div>
               )}
             </>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生姓名</th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 group"
+                      onClick={() => handleStatSort('oral')}
+                    >
+                      <div className="flex items-center gap-1">
+                        口头警告次数
+                        <span className={`${statSortField === 'oral' ? 'text-blue-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
+                          {statSortField === 'oral' ? (statSortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                        </span>
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 group"
+                      onClick={() => handleStatSort('written')}
+                    >
+                      <div className="flex items-center gap-1">
+                        书面警告次数
+                        <span className={`${statSortField === 'written' ? 'text-blue-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
+                          {statSortField === 'written' ? (statSortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                        </span>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sortedStudentStats.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-12 text-center text-gray-500 text-sm">暂无统计数据</td>
+                    </tr>
+                  ) : (
+                    sortedStudentStats.map((stat) => (
+                      <tr key={stat.student_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{stat.student_name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${stat.oral > 0 ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 'bg-gray-100 text-gray-400'}`}>
+                            {stat.oral} 次
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${stat.written > 0 ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-gray-100 text-gray-400'}`}>
+                            {stat.written} 次
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 

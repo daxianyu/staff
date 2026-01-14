@@ -181,6 +181,8 @@ export class MenuFilter {
       PERMISSIONS.ADD_LEAVE_SCHOOL,
       PERMISSIONS.EDIT_LEAVE_SCHOOL,
       PERMISSIONS.DELETE_LEAVE_SCHOOL,
+      PERMISSIONS.VIEW_REMARK_CONF,
+      PERMISSIONS.EDIT_REMARK_CONF,
     ];
     if (toolUserPermissions.includes(permission as any)) {
       return (this.user as any).tool_user === true || (this.user as any).tool_user === 1;
@@ -237,6 +239,15 @@ export class MenuFilter {
     ];
     if (corePermissions.includes(permission as any)) {
       return isCoreUser;
+    }
+
+    // 需要 operation_right为19 或 core_user=1 的权限 (教材操作)
+    const textbookPermissions = [
+      PERMISSIONS.VIEW_TEXTBOOK_PURCHASE,
+      PERMISSIONS.EDIT_TEXTBOOK_PURCHASE,
+    ];
+    if (textbookPermissions.includes(permission as any)) {
+      return operationRights.includes(OPERATION_RIGHTS.TEXTBOOK_OPERATION) || isCoreUser;
     }
 
     // 需要 edit_classes 或 sales_admin 权限
@@ -440,7 +451,7 @@ export const defaultMenuConfig: MenuItem[] = [
         label: 'Suspension',
         path: '/students/suspension',
         icon: 'clipboard-document-list',
-        requiredPermissions: [PERMISSIONS.VIEW_LEAVE_SCHOOL],
+        requiredPermissions: [PERMISSIONS.VIEW_LEAVE_SCHOOL, PERMISSIONS.FINANCE],
       },
     ],
   },
@@ -714,6 +725,13 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'user-group',
         requiredPermissions: ['finance', 'sales_person'],
       },
+      {
+        key: 'mentor-change-record',
+        label: 'Mentor Change Record',
+        path: '/core/mentor-change-record',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_MENTOR_CHANGE_RECORD],
+      },
     ],
   },
   {
@@ -974,6 +992,13 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/core/exit-permit',
         icon: 'map-pin',
         requiredPermissions: [PERMISSIONS.VIEW_CORE_EXIT_PERMIT],
+      },
+      {
+        key: 'textbook-purchase',
+        label: 'Textbook Purchase',
+        path: '/core/textbook',
+        icon: 'book',
+        requiredPermissions: [PERMISSIONS.EDIT_BOOKS],
       },
     ],
   }, {

@@ -24,6 +24,7 @@ export * from './modules/classroom';
 export * from './modules/subjects';
 export * from './modules/textbook';
 export * from './modules/library';
+export * from './modules/remark';
 export * from './modules/schoolInfo';
 export { genCertificateReport, type GenCertificateReportParams } from './modules/schoolInfo';
 export * from './modules/sales';

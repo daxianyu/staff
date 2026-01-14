@@ -757,6 +757,30 @@ export const getExamList = async (): Promise<ExamListResponse> => {
   }
 };
 
+export const getExamSelectInfo = async (): Promise<ApiResponse<{
+  exam_types: Record<string, string>;
+  exam_periods: Record<string, string>;
+}>> => {
+  try {
+    const response = await fetch('/api/exam/get_exam_select_info', {
+      method: 'GET',
+      headers: getAuthHeader(),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取考试选择信息失败:', error);
+    return {
+      code: 500,
+      message: '获取考试选择信息失败',
+    };
+  }
+};
+
 export interface AddExamParams {
   exam_name: string;
   exam_location: string;
