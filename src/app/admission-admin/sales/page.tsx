@@ -31,6 +31,7 @@ export default function AdmissionManagePage() {
                   hasPermission(PERMISSIONS.VIEW_CONTRACTS_INFO);
   const canEdit = hasPermission(PERMISSIONS.EDIT_ADMISSION_MANAGE);
   const canDelete = hasPermission(PERMISSIONS.EDIT_ADMISSION_MANAGE);
+  const canAdd = hasPermission(PERMISSIONS.EDIT_ADMISSION_MANAGE) || hasPermission(PERMISSIONS.SALES_PERSON);
 
   // 状态管理
   const [sales, setSales] = useState<SalesRecord[]>([]);
@@ -149,6 +150,10 @@ export default function AdmissionManagePage() {
 
   // 打开添加模态框
   const handleAdd = () => {
+    if (!canAdd) {
+      alert('您没有权限新增记录');
+      return;
+    }
     setFormData({});
     setShowAddModal(true);
   };
@@ -166,6 +171,10 @@ export default function AdmissionManagePage() {
 
   // 提交表单
   const handleSubmit = async () => {
+    if (!canAdd) {
+      alert('您没有权限新增记录');
+      return;
+    }
     try {
         if (!formData.student_name) {
           alert('请输入学生姓名');
@@ -361,7 +370,7 @@ export default function AdmissionManagePage() {
                   </span>
                 )}
               </div>
-              {canEdit && (
+              {canAdd && (
                 <button
                   onClick={handleAdd}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"

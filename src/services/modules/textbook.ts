@@ -8,12 +8,13 @@ export interface TextbookCampusInfo {
 
 // 教材相关类型定义
 export interface TextbookItem {
-  id: number;
+  id?: number;
+  textbook_id: number;
   name: string;
   type: string;
   price: number;
   paid_count: number;
-  campus_id: number;
+  campus_id?: number;
   inventory_info: TextbookCampusInfo[]
 }
 
@@ -44,13 +45,18 @@ export const getTextbookList = async (): Promise<ApiResponse<TextbookItem[]>> =>
 };
 
 export interface TextbookPurchase {
-  id: number;
-  student_id: number;
-  student_name: string;
-  textbook_id: number;
-  textbook_name: string;
-  status: number; // 0: 待付款, 1: 已付款, 2: 已取消, 3: 已领取
-  create_time: string;
+  record_id: number;
+  user_type: string;
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  campus_id: number;
+  price: number;
+  state: number; // 0: 待付款, 1: 已付款, 2: 已取消, 3: 已领取
+  state_name: string;
+  signup_time: number;
+  signup_time_str: string;
 }
 
 /**

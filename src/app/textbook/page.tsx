@@ -20,13 +20,13 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  ShoppingCartIcon,
   XMarkIcon,
-  CheckIcon,
   ExclamationTriangleIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
+import { withStaffBasePath } from '@/utils/withStaffBasePath';
 
 export default function TextbookPage() {
   const { hasPermission } = useAuth();
@@ -166,6 +166,13 @@ export default function TextbookPage() {
     setShowAddModal(true);
   };
 
+  // 跳转到详情页
+  const handleViewDetail = (textbookId: number) => {
+    const targetPath = `/core/textbook/detail?id=${textbookId}`;
+    const finalPath = withStaffBasePath(targetPath);
+    window.open(finalPath, '_blank', 'noopener,noreferrer');
+  };
+
   // 打开编辑模态框
   const handleEditModal = async (textbook: Textbook) => {
     try {
@@ -246,6 +253,7 @@ export default function TextbookPage() {
       loadCampusInfo();
       loadTextbooks();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canView]);
 
   // 当textbooks数据更新时，重新过滤
@@ -253,6 +261,7 @@ export default function TextbookPage() {
     if (textbooks.length > 0) {
       filterTextbooks(searchTerm, currentPage, pageSize);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textbooks, searchTerm, currentPage, pageSize]);
 
   // 权限检查失败显示
@@ -325,6 +334,9 @@ export default function TextbookPage() {
                       Price
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Paid Count
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Inventory
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -347,6 +359,9 @@ export default function TextbookPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         ¥{textbook.price}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                        {textbook.paid_count} 人
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="space-y-1">
                           {textbook.inventory_info.map((inventory) => (
@@ -361,6 +376,13 @@ export default function TextbookPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleViewDetail(textbook.textbook_id)}
+                            className="w-8 h-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center"
+                            title="View Details"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </button>
                           {canEdit && (
                             <button
                               onClick={() => handleEditModal(textbook)}

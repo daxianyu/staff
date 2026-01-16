@@ -119,7 +119,7 @@ export default function TextbookPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredTextbooks.map((textbook, index) => (
-                    <tr key={textbook.id || `textbook-${index}`} className="hover:bg-gray-50">
+                    <tr key={textbook.textbook_id || `textbook-${index}`} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="flex-shrink-0">
@@ -130,7 +130,7 @@ export default function TextbookPage() {
                               {textbook.name}
                             </div>
                             <div className="text-sm text-gray-500">
-                              ID: {textbook.id}
+                              ID: {textbook.textbook_id}
                             </div>
                           </div>
                         </div>

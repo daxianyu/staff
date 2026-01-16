@@ -224,7 +224,7 @@ export default function DashboardLayout({
         {/* 左侧菜单栏 */}
         <div 
           className={`
-            fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out transform flex flex-col
+            fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out transform flex flex-col min-h-0 overflow-y-auto overflow-x-hidden
             ${isMP 
               ? (sidebarOpen ? 'translate-x-0 w-full' : '-translate-x-full w-full') 
               : (sidebarOpen ? 'translate-x-0 w-72 shadow-xl md:static md:w-64 md:translate-x-0 md:h-full md:shadow-none' : '-translate-x-full w-72 md:translate-x-0 md:static md:w-64 md:h-full')
@@ -249,7 +249,7 @@ export default function DashboardLayout({
             </div>
           )}
 
-          <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30">
+          <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30">
             <div className="py-2 px-2">
               <div className="space-y-1">
                 {authorizedNavigation.map((item) => {
@@ -263,7 +263,7 @@ export default function DashboardLayout({
                       <button
                         onClick={() => hasChildren ? toggleSubmenu(item.key) : item.path && (router.push(item.path), isMP && setSidebarOpen(false))}
                         className={`
-                          group flex w-full items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium 
+                          group flex w-full items-center justify-between px-3 py-2.5 rounded-lg md:text-base text-sm font-medium 
                           transition-all duration-200 ease-in-out
                           ${
                             isActive
@@ -294,16 +294,14 @@ export default function DashboardLayout({
                       
                       {/* 二级菜单 */}
                       {hasChildren && isExpanded && item.children && (
-                        <div className="ml-4 mt-1 space-y-1 pl-4 border-l border-white/10">
+                        <div className="ml-4 mt-1 space-y-1 border-l border-white/10">
                           {item.children.map((child) => {
                             const ChildIconComponent = getIcon(child.icon);
                             return (
                               <button
                                 key={child.key}
                                 onClick={() => child.path && (router.push(child.path), isMP && setSidebarOpen(false))}
-                                className={`
-                                  group flex w-full items-center px-3 py-2 rounded-md text-xs font-medium
-                                  transition-all duration-200 ease-in-out
+                                className={`group flex w-full items-center px-3 py-2 rounded-md md:text-sm text-xs font-medium transition-all duration-200 ease-in-out
                                   ${
                                     child.path && isChildActive(child.path)
                                       ? 'bg-white/20'
@@ -325,7 +323,9 @@ export default function DashboardLayout({
                                   }}
                                   aria-hidden="true"
                                 />
-                                {child.label}
+                                <span className="text-left">
+                                  {child.label}
+                                </span>
                               </button>
                             );
                           })}

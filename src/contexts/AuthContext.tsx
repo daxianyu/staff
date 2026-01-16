@@ -316,6 +316,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return operationRights.includes(OPERATION_RIGHTS.ARCHIVES_MANAGEMENT_EDIT) || isCoreUser;
     }
     
+    // 需要 operation_right为14 或 core_user=1 的权限 (证书管理)
+    if (permission === PERMISSIONS.VIEW_CERTIFICATE_OVERVIEW) {
+      return operationRights.includes(OPERATION_RIGHTS.CERTIFICATE_MANAGEMENT);
+    }
+
+    // 需要 edit_classes 或 sales_admin 权限
+    const selfSignupPermissions = [
+      PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES,
+      PERMISSIONS.EDIT_SELF_SIGNUP_CLASSES,
+    ];
+    if (selfSignupPermissions.includes(permission as any)) {
+      return rights.includes('edit_classes') || rights.includes('sales_admin');
+    }
+
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,

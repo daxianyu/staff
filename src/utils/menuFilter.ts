@@ -548,7 +548,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'group-assignment-requests',
-        label: 'Group Assignment Requests',
+        label: 'Group Assignment',
         path: '/school-admin/group-assignment-requests',
         icon: 'user-group',
         requiredPermissions: [PERMISSIONS.EDIT_CLASSES, PERMISSIONS.SALES_ADMIN],
@@ -695,7 +695,7 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/mentor/textbook',
         icon: 'book',
         requiredPermissions: [],
-      }
+      },
     ],
   },
   {
@@ -992,13 +992,6 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/core/exit-permit',
         icon: 'map-pin',
         requiredPermissions: [PERMISSIONS.VIEW_CORE_EXIT_PERMIT],
-      },
-      {
-        key: 'textbook-purchase',
-        label: 'Textbook Purchase',
-        path: '/core/textbook',
-        icon: 'book',
-        requiredPermissions: [PERMISSIONS.EDIT_BOOKS],
       },
     ],
   }, {

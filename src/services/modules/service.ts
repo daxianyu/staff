@@ -215,8 +215,13 @@ export const deleteService = async (params: DeleteServiceParams): Promise<ApiRes
     const data = await response.json();
     console.log('删除Service响应:', data);
 
+    // 接口返回 status 字段：0 表示成功，非 0 表示失败
+    // 兼容 code 字段（如果存在）
+    const status = data.status !== undefined ? data.status : (data.code !== undefined ? data.code : 0);
+    const isSuccess = status === 0;
+
     return {
-      code: data.code || 0,
+      code: isSuccess ? 0 : status,
       message: data.message || '',
       data: data.data,
     };
