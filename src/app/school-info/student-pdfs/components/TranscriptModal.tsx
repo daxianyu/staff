@@ -132,7 +132,7 @@ export default function TranscriptModal({
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    if (!namePinyin || !nameHanzi || !birthday || !durationFrom || !graduationDate) {
+    if (!namePinyin || !nameHanzi || !birthday || !durationFrom) {
       alert('请填写必填项');
       return;
     }
@@ -240,14 +240,13 @@ export default function TranscriptModal({
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Graduation Date *
+                Graduation Date
               </label>
               <input
                 type="date"
                 value={graduationDate}
                 onChange={(e) => setGraduationDate(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
               />
             </div>
             

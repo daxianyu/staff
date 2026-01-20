@@ -149,19 +149,29 @@ export default function LessonOverviewPage() {
     return tableData;
   };
 
-  // 生成按科目统计数据
+  // 生成按 topic 统计数据
   const generateSubjectStats = () => {
     if (!data) return [];
     
-    const subjectStats: { [key: string]: number } = {};
+    // 使用 topic_id 作为键，存储 topic_name 和总时长
+    const topicStats: { [topicId: number]: { topicName: string; totalTime: number } } = {};
     
     Object.entries(data.subjects).forEach(([subjectId, subject]) => {
-      const subjectName = getSubjectName(subject.class_name);
-      subjectStats[subjectName] = (subjectStats[subjectName] || 0) + subject.total_lesson_length;
+      const topicId = subject.topic_id;
+      const topicName = (subject as any).topic_name || subject.description || `Topic ${topicId}`;
+      
+      if (!topicStats[topicId]) {
+        topicStats[topicId] = {
+          topicName,
+          totalTime: 0
+        };
+      }
+      
+      topicStats[topicId].totalTime += subject.total_lesson_length;
     });
     
-    return Object.entries(subjectStats).map(([subject, totalTime]) => ({
-      subject,
+    return Object.values(topicStats).map(({ topicName, totalTime }) => ({
+      topic: topicName,
       totalTime: formatDuration(totalTime)
     }));
   };
@@ -347,23 +357,23 @@ export default function LessonOverviewPage() {
               </div>
             </div>
 
-            {/* 第二个表格：按科目统计课时 */}
+            {/* 第二个表格：按 topic 统计课时 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Teaching Hours per Subject</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Teaching Hours per Topic</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Lesson Time</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {subjectStats.map((row, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.subject}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.topic}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.totalTime}</td>
                       </tr>
                     ))}

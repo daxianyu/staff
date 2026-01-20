@@ -93,6 +93,23 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
       ? `${currentSubject.topic_name} - ${currentSubject.teacher_name}`
       : (form.subject_id ? `科目ID: ${form.subject_id}` : '—');
 
+    // 获取监考信息
+    const teacherInvigilate = scheduleData?.teacher_invigilate || {};
+    const currentTeacherId = currentSubject?.teacher_id ? String(currentSubject.teacher_id) : null;
+    const invigilateList = currentTeacherId ? (teacherInvigilate[currentTeacherId] || []) : [];
+    
+    // 格式化监考时间显示
+    const formatInvigilateTime = (timestamp: number) => {
+      const date = new Date(timestamp * 1000);
+      return date.toLocaleString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    };
+
     return (
       <>
         {/* 科目选择（班级课表中显示，只读模式下也显示） */}
@@ -120,6 +137,27 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
               <p className="w-full px-3 py-1.5 text-sm text-gray-500 bg-gray-50 rounded-md border border-gray-200">
                 {form.subject_id ? `科目ID: ${form.subject_id}（科目列表未加载）` : '暂无可用科目'}
               </p>
+            )}
+          </div>
+        )}
+
+        {/* 监考信息提示 */}
+        {currentSubject && invigilateList.length > 0 && (
+          <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
+            <div className="text-xs font-medium text-amber-800 mb-1">
+              ⚠️ 该老师有监考安排：
+            </div>
+            <div className="text-xs text-amber-700 space-y-1">
+              {invigilateList.map((inv: any, idx: number) => (
+                <div key={idx}>
+                  {formatInvigilateTime(inv.start_time)} - {formatInvigilateTime(inv.end_time)}
+                </div>
+              ))}
+            </div>
+            {subjects.length > 1 && (
+              <div className="text-xs text-amber-600 mt-1 italic">
+                提示：由于班级有多个科目，监考时间未自动加入不可用时间范围
+              </div>
             )}
           </div>
         )}

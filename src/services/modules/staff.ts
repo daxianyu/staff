@@ -436,6 +436,7 @@ export interface SubjectData {
   campus_id: number;
   campus_name: string;
   topic_id: number;
+  topic_name: string;
   description: string;
   students: number[];
   lessons: LessonData[];

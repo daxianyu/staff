@@ -129,10 +129,10 @@ export default function DashboardPage() {
       (Number(todoData.out_count) || 0) +
       (Number(todoData.evaluate_count) || 0) +
       (Number(todoData.wishes_count) || 0) +
-      (Number(todoData.ps_polish) || 0) +
+      (Number(todoData.ps_count) || 0) +
       (Number(todoData.withdrawal_count) || 0) +
-      (Number(todoData.late_cashin) || 0) +
-      (Number(todoData.remarking) || 0)
+      (Number(todoData.late_cashin_count) || 0) +
+      (Number(todoData.remarking_count) || 0)
     );
   };
 
@@ -167,9 +167,9 @@ export default function DashboardPage() {
       icon: ChatBubbleLeftEllipsisIcon,
     },
     {
-      key: 'ps_polish',
+      key: 'ps_count',
       label: 'PS Polish',
-      count: Number(todoData?.ps_polish) || 0,
+      count: Number(todoData?.ps_count) || 0,
       path: '/users/ps-polish',
       icon: DocumentTextIcon,
     },
@@ -181,16 +181,16 @@ export default function DashboardPage() {
       icon: ExclamationTriangleIcon,
     },
     {
-      key: 'late_cashin',
+      key: 'late_cashin_count',
       label: 'Late Cashin',
-      count: Number(todoData?.late_cashin) || 0,
+      count: Number(todoData?.late_cashin_count) || 0,
       path: '/users/late-cashin-overview',
       icon: ClockIcon,
     },
     {
-      key: 'remarking',
+      key: 'remarking_count',
       label: 'Remarking',
-      count: Number(todoData?.remarking) || 0,
+      count: Number(todoData?.remarking_count) || 0,
       path: '/users/remark-overview',
       icon: DocumentTextIcon,
     },

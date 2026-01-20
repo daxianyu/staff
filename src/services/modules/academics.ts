@@ -44,6 +44,11 @@ export interface ClassScheduleData {
     room_id: number;
     subject_id: number;
   }>;
+  teacher_invigilate?: Record<string, Array<{
+    invigilate_id: number;
+    start_time: number;
+    end_time: number;
+  }>>;
 }
 
 export interface ClassScheduleResponse {

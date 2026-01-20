@@ -482,6 +482,11 @@ export interface ClassEditData {
   topics: Topic[];
   class_student: ClassStudentEdit[];
   exam_info: ClassExamInfo[];
+  teacher_invigilate?: Record<string, Array<{
+    invigilate_id: number;
+    start_time: number;
+    end_time: number;
+  }>>;
 }
 
 // 获取class编辑信息

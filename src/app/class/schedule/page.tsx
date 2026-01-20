@@ -94,15 +94,12 @@ export default function SchedulePage() {
 
   // 拉取班级课表数据
   const fetchClassSchedule = useCallback(async () => {
-    console.log('fetchClassSchedule called:', { classId, view, weekNum });
     if (!classId || view !== Views.WEEK) {
       console.log('fetchClassSchedule skipped:', { classId, viewIsWeek: view === Views.WEEK });
       return;
     }
-    console.log('Calling getClassSchedule with:', classId, weekNum);
     try {
       const resp = await getClassSchedule(classId, weekNum);
-      console.log('getClassSchedule response:', resp);
       if (resp.status === 200 && resp.data) {
         setClassInfo(resp.data);
         
@@ -124,17 +121,32 @@ export default function SchedulePage() {
         setRoomUsage(resp.data.room_taken);
         
         // 解析 lesson_data 为占用的时间范围
+        let occupied: Array<{start: Date; end: Date}> = [];
         if (resp.data.lesson_data && resp.data.lesson_data.length > 0) {
-          const occupied = resp.data.lesson_data.map(ld => ({
+          occupied = resp.data.lesson_data.map(ld => ({
             start: moment.unix(ld.start_time).toDate(),
             end: moment.unix(ld.end_time).toDate()
           }));
-          console.log('Parsed occupied ranges from lesson_data:', occupied);
-          setOccupiedRanges(occupied);
-        } else {
-          console.log('No lesson_data found, setting empty occupied ranges');
-          setOccupiedRanges([]);
         }
+        
+        // 如果只有一个 subject，将监考时间加入不可用时间范围
+        const classSubjects = resp.data.class_subjects || [];
+        const teacherInvigilate = resp.data.teacher_invigilate;
+        if (classSubjects.length === 1 && teacherInvigilate) {
+          const subject = classSubjects[0];
+          const teacherId = String(subject.teacher_id);
+          const invigilateList = teacherInvigilate[teacherId] || [];
+          if (invigilateList.length > 0) {
+            const invigilateRanges = invigilateList.map((inv: any) => ({
+              start: moment.unix(inv.start_time).toDate(),
+              end: moment.unix(inv.end_time).toDate()
+            }));
+            occupied = [...occupied, ...invigilateRanges];
+            console.log('Added invigilate ranges to occupied ranges:', invigilateRanges);
+          }
+        }
+        
+        setOccupiedRanges(occupied);
       }
     } catch (error) {
       console.error('获取班级课表失败:', error);
@@ -151,7 +163,6 @@ export default function SchedulePage() {
     
     // 延迟执行，确保日历已渲染
     const timer = setTimeout(() => {
-      console.log('Applying occupied time shading, ranges:', occupiedRanges);
       
       // 清除之前的样式
       document.querySelectorAll('.occupied-time').forEach(el => {
@@ -178,12 +189,9 @@ export default function SchedulePage() {
       // 为每个日期列匹配对应的日期
       dateColumns.forEach((column, colIndex) => {
         const columnDate = startOfWeek.clone().add(colIndex, 'days');
-        
-        console.log(`Column ${colIndex} represents date: ${columnDate.format('YYYY-MM-DD')}`);
-        
+                
         // 在这个日期列中查找时间槽
         const slots = column.querySelectorAll('.rbc-time-slot');
-        console.log(`Column ${colIndex} has ${slots.length} time slots`);
         
         // 处理这个日期列中的时间槽
         slots.forEach((slot, slotIndex) => {
@@ -215,12 +223,9 @@ export default function SchedulePage() {
                 const slotEnd = slotStart + 15; // 每个格子是15分钟
                 const rangeStart = rangeHour * 60 + rangeMin;
                 const rangeEnd = rangeEndHour * 60 + rangeEndMin;
-                
-                console.log(`Checking slot ${hour}:${minute} (${slotStart}-${slotEnd}) on ${columnDate.format('YYYY-MM-DD')}, Range: ${rangeStart}-${rangeEnd}`);
-                
+                                
                 // 如果时间槽与占用范围有重叠，添加样式
                 if (slotStart < rangeEnd && slotEnd > rangeStart) {
-                  console.log('Adding occupied-time class to slot');
                   slotElement.classList.add('occupied-time');
                   slotElement.style.backgroundColor = 'rgba(239, 68, 68, 0.3)';
                   slotElement.style.border = '2px solid rgba(239, 68, 68, 0.5)';

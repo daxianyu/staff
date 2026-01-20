@@ -102,10 +102,10 @@ export interface DashboardTodoData {
   out_count: number;
   evaluate_count: number;
   wishes_count: number;
-  ps_polish: number;
+  ps_count: number;
   withdrawal_count: number;
-  late_cashin: number;
-  remarking: number;
+  late_cashin_count: number;
+  remarking_count: number;
 }
 
 export const getDashboardTodoList = async (): Promise<ApiResponse<DashboardTodoData>> => {

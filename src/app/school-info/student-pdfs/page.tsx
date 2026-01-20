@@ -879,7 +879,7 @@ export default function StudentPdfsPage() {
                                         className="inline-flex items-center px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
                                       >
                                         <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-                                        成绩单
+                                        期中期末成绩报告
                                       </button>
                                     )}
 

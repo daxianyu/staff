@@ -353,8 +353,9 @@ export default function EditExamPage() {
 
     const file = e.target.files[0];
     // Simple validation
-    if (!file.name.endsWith('.csv')) {
-      alert('请上传CSV文件');
+    const isValidExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+    if (!isValidExcel) {
+      alert('请上传Excel文件 (.xlsx 或 .xls)');
       return;
     }
 
@@ -929,7 +930,7 @@ export default function EditExamPage() {
                       <div className="relative">
                         <input
                           type="file"
-                          accept=".csv"
+                          accept=".xlsx,.xls"
                           onChange={handleBatchUpload}
                           className="hidden"
                           id="batch-upload-input"
