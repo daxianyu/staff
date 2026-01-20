@@ -234,6 +234,27 @@ export interface StudentLesson {
   attendance_status: number;
 }
 
+export interface StudentLeaveRecord {
+  record_id: number;
+  student_id: number;
+  student_name: string;
+  lesson_id: number;
+  start_time: number;
+  end_time: number;
+  teacher_name: string;
+  topic_name: string;
+  room_name: string;
+  comment: string;
+  create_time: number;
+  status: number;
+  status_name: string;
+}
+
+export interface StudentLeaveListResponse {
+  rows: StudentLeaveRecord[];
+  total: number;
+}
+
 export interface StudentReportPayload {
   student_id: number;
   title: string;
@@ -619,6 +640,38 @@ export const studentReportLeave = async (payload: {
   } catch (error) {
     console.error('学生请假失败:', error);
     return { code: 500, message: error instanceof Error ? error.message : '学生请假失败' };
+  }
+};
+
+/**
+ * 获取学生请假记录列表
+ */
+export const getStudentLeaveRecords = async (studentId: string): Promise<ApiResponse<StudentLeaveListResponse>> => {
+  try {
+    const { data } = await request(`/api/mentee/get_student_leave_records/${studentId}`);
+    return normalizeApiResponse(data as ApiEnvelope<StudentLeaveListResponse>);
+  } catch (error) {
+    console.error('获取学生请假记录失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '获取学生请假记录失败' };
+  }
+};
+
+/**
+ * 撤销学生请假
+ */
+export const cancelStudentLeave = async (payload: {
+  student_id: number;
+  record_id: number;
+}): Promise<ApiResponse<string>> => {
+  try {
+    const { data } = await request('/api/mentee/cancel_student_leave', {
+      method: 'POST',
+      body: payload,
+    });
+    return normalizeApiResponse(data as ApiEnvelope<any>);
+  } catch (error) {
+    console.error('撤销学生请假失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '撤销学生请假失败' };
   }
 };
 

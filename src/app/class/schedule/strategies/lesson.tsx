@@ -220,6 +220,25 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
       errs.push('请选择科目');
     }
     
+    // 检查监考时间冲突（如果选择了 subject）
+    if (form.subject_id && ctx.start && ctx.end && ctx.scheduleData?.teacher_invigilate) {
+      const subject = ctx.scheduleData.class_subjects?.find((s: any) => s.id === form.subject_id);
+      if (subject) {
+        const teacherId = String(subject.teacher_id);
+        const invigilateList = ctx.scheduleData.teacher_invigilate[teacherId] || [];
+        const startSec = Math.floor(ctx.start.getTime() / 1000);
+        const endSec = Math.floor(ctx.end.getTime() / 1000);
+        
+        const hasInvigilateConflict = invigilateList.some((inv: any) => {
+          return startSec < inv.end_time && endSec > inv.start_time;
+        });
+        
+        if (hasInvigilateConflict) {
+          errs.push('所选时间段与老师的监考时间冲突，请选择其他时间');
+        }
+      }
+    }
+    
     // 检查房间冲突
     if (form.pickRoom && ctx.start && ctx.end && ctx.scheduleData?.room_taken) {
       const roomTaken = ctx.scheduleData.room_taken;

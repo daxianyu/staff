@@ -173,7 +173,7 @@ export default function WithdrawalOverviewPage() {
 
   // 过滤数据
   const filteredData = data.filter(item => {
-    const matchStudent = !searchTerms.student || item.student_name.toLowerCase().includes(searchTerms.student.toLowerCase());
+    const matchStudent = !searchTerms.student || (item.student_name || '').toLowerCase().includes(searchTerms.student.toLowerCase());
     const matchMentor = !searchTerms.mentor || (item.mentor_name || '').toLowerCase().includes(searchTerms.mentor.toLowerCase());
     const matchSubject = !searchTerms.subject || (item.exam_name || '').toLowerCase().includes(searchTerms.subject.toLowerCase());
     return matchStudent && matchMentor && matchSubject;

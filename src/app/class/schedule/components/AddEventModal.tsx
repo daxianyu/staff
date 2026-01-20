@@ -292,10 +292,39 @@ export default function AddEventModal({
   const hasStrategy = !!typeRegistry && !!allowedTypes?.length;
   const strategy = hasStrategy ? typeRegistry![eventType] : undefined;
   const [formMap, setFormMap] = useState<Record<string, any>>({});
+  
+  // 动态计算 unavailableRangesSec：如果选择了 subject，加入对应老师的监考时间
+  const dynamicUnavailableRangesSec = useMemo(() => {
+    let ranges = unavailableRangesSec || [];
+    
+    // 如果是 lesson 类型且选择了 subject，检查是否需要加入监考时间
+    if (eventType === 'lesson' && scheduleData?.teacher_invigilate && scheduleData?.class_subjects) {
+      const form = formMap['lesson'] || {};
+      const subjectId = form.subject_id;
+      
+      if (subjectId) {
+        const subject = scheduleData.class_subjects.find((s: any) => s.id === subjectId);
+        if (subject) {
+          const teacherId = String(subject.teacher_id);
+          const invigilateList = scheduleData.teacher_invigilate[teacherId] || [];
+          
+          // 将监考时间加入不可用范围
+          const invigilateRanges = invigilateList.map((inv: any) => ({
+            start_time: inv.start_time,
+            end_time: inv.end_time
+          }));
+          ranges = [...ranges, ...invigilateRanges];
+        }
+      }
+    }
+    
+    return ranges;
+  }, [unavailableRangesSec, eventType, scheduleData, formMap]);
+  
   const ctx: StrategyCtx | undefined = useMemo(() => {
     if (!hasStrategy || !start || !end) return undefined as any;
-    return { mode, readOnly, scheduleData, initialEvent, selectedDate, start, end, unavailableRangesSec };
-  }, [hasStrategy, mode, readOnly, scheduleData, initialEvent, selectedDate, start, end, unavailableRangesSec]);
+    return { mode, readOnly, scheduleData, initialEvent, selectedDate, start, end, unavailableRangesSec: dynamicUnavailableRangesSec };
+  }, [hasStrategy, mode, readOnly, scheduleData, initialEvent, selectedDate, start, end, dynamicUnavailableRangesSec]);
 
   // 策略验证状态
   const validationErrors = useMemo(() => {

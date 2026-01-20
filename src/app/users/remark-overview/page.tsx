@@ -164,7 +164,7 @@ export default function RemarkOverviewPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-10 bg-gray-50 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
                       学生
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -218,8 +218,8 @@ export default function RemarkOverviewPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {data.map((item) => (
-                    <tr key={item.record_id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <tr key={item.record_id} className="hover:bg-gray-50 transition-colors group">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.1)] group-hover:bg-gray-50 transition-colors">
                         {item.student_name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -450,7 +450,7 @@ export default function RemarkOverviewPage() {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {statusForm.status === '1' ? '通过申请' : '拒绝申请'}
+                  {statusForm.status === '4' ? '通过申请' : '拒绝申请'}
                 </h3>
                 <button
                   onClick={() => setShowStatusModal(false)}
@@ -470,7 +470,7 @@ export default function RemarkOverviewPage() {
                       考试：<strong>{selectedRecord.exam_name}</strong>
                     </p>
                   </div>
-                  {statusForm.status === '2' && (
+                  {statusForm.status === '5' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         拒绝原因
@@ -498,12 +498,12 @@ export default function RemarkOverviewPage() {
                 <button
                   onClick={handleStatusUpdate}
                   className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md ${
-                    statusForm.status === '1' 
+                    statusForm.status === '4' 
                       ? 'bg-green-600 hover:bg-green-700' 
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
-                  {statusForm.status === '1' ? '通过' : '拒绝'}
+                  {statusForm.status === '4' ? '通过' : '拒绝'}
                 </button>
               </div>
             </div>

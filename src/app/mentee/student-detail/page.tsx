@@ -19,6 +19,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import {
   getMenteeStudentInfo,
@@ -41,6 +42,8 @@ import {
   deleteNormalExam,
   getStudentInfoSelect,
   updateSingle,
+  getStudentLeaveRecords,
+  cancelStudentLeave,
   type MenteeStudentInfo,
   type MenteeClassInfo,
   type AssignmentInfo,
@@ -52,6 +55,7 @@ import {
   type LanguageExamInfo,
   type NormalExamInfo,
   type StudentLesson,
+  type StudentLeaveRecord,
 } from '@/services/auth';
 
 // 请假模态框组件
@@ -74,8 +78,43 @@ const LeaveModal: React.FC<LeaveModalProps> = ({
 }) => {
   const [selectedLessons, setSelectedLessons] = useState<number[]>([]);
   const [comment, setComment] = useState('');
+  const [leaveRecords, setLeaveRecords] = useState<StudentLeaveRecord[]>([]);
+  const [loadingRecords, setLoadingRecords] = useState(false);
 
-  // 不再过滤课程，显示所有课程
+  // 加载请假记录
+  useEffect(() => {
+    if (isOpen) {
+      const loadLeaveRecords = async () => {
+        setLoadingRecords(true);
+        try {
+          const result = await getStudentLeaveRecords(studentId.toString());
+          if (result.code === 200 && result.data) {
+            setLeaveRecords(result.data.rows || []);
+          }
+        } catch (error) {
+          console.error('加载请假记录失败:', error);
+        } finally {
+          setLoadingRecords(false);
+        }
+      };
+      loadLeaveRecords();
+    }
+  }, [isOpen, studentId]);
+
+  // 获取已请假的课程ID集合
+  const leaveLessonIds = new Set(leaveRecords.map(record => record.lesson_id));
+  
+  // 过滤掉已经请过假且课程未开始的课程
+  const availableLessons = lessons.filter(lesson => {
+    // 如果已经请过假，检查课程是否已开始
+    if (leaveLessonIds.has(lesson.lesson_id)) {
+      const now = Math.floor(Date.now() / 1000);
+      // 如果课程已经开始，不显示；如果未开始，也不显示（因为已经请过假了）
+      return false;
+    }
+    // 未请过假的课程，根据 can_report_leave 判断
+    return lesson.can_report_leave;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +135,11 @@ const LeaveModal: React.FC<LeaveModalProps> = ({
       });
 
       if (result.code === 200) {
+        // 重新加载请假记录
+        const leaveRecordsResult = await getStudentLeaveRecords(studentId.toString());
+        if (leaveRecordsResult.code === 200 && leaveRecordsResult.data) {
+          setLeaveRecords(leaveRecordsResult.data.rows || []);
+        }
         onSuccess();
         onClose();
         setSelectedLessons([]);
@@ -130,16 +174,19 @@ const LeaveModal: React.FC<LeaveModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               选择要请假的课程
             </label>
-            {lessons.length > 0 ? (
+            {loadingRecords ? (
+              <div className="p-4 text-center text-gray-500 border border-gray-300 rounded-md">
+                加载中...
+              </div>
+            ) : availableLessons.length > 0 ? (
               <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-md">
-                {lessons
+                {availableLessons
                   .sort((a, b) => a.start_time - b.start_time)
                   .map((lesson) => (
-                    <label key={lesson.lesson_id} className={`flex items-center p-3 hover:bg-gray-50 ${!lesson.can_report_leave ? 'opacity-50' : ''}`}>
+                    <label key={lesson.lesson_id} className="flex items-center p-3 hover:bg-gray-50">
                       <input
                         type="checkbox"
                         checked={selectedLessons.includes(lesson.lesson_id)}
-                        disabled={!lesson.can_report_leave}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedLessons([...selectedLessons, lesson.lesson_id]);
@@ -158,16 +205,13 @@ const LeaveModal: React.FC<LeaveModalProps> = ({
                           {new Date(lesson.start_time * 1000).toLocaleString()} - {new Date(lesson.end_time * 1000).toLocaleString()}
                         </div>
                         <div className="text-sm text-gray-500">{lesson.room_name}</div>
-                        {!lesson.can_report_leave && (
-                          <div className="text-sm text-red-500 mt-1">不可请假</div>
-                        )}
                       </div>
                     </label>
                   ))}
               </div>
             ) : (
               <div className="p-4 text-center text-gray-500 border border-gray-300 rounded-md">
-                暂无课程信息
+                暂无可请假的课程（已请假的课程不会显示）
               </div>
             )}
           </div>
@@ -704,6 +748,7 @@ export default function StudentDetailPage() {
   const [lessons, setLessons] = useState<StudentLesson[]>([]);
   const [examsInfo, setExamsInfo] = useState<{ table_1: any[], table_2: any[] } | null>(null);
   const [selectOptions, setSelectOptions] = useState<any>(null);
+  const [leaveRecords, setLeaveRecords] = useState<StudentLeaveRecord[]>([]);
 
   // 模态框状态
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -740,6 +785,7 @@ export default function StudentDetailPage() {
           lessonsResult,
           examsInfoResult,
           selectOptionsResult,
+          leaveRecordsResult,
         ] = await Promise.all([
           getMenteeStudentInfo(studentId),
           getClasses(studentId),
@@ -754,6 +800,7 @@ export default function StudentDetailPage() {
           getStudentLessons(studentId),
           getExamsInfo(studentId),
           getStudentInfoSelect(),
+          getStudentLeaveRecords(studentId),
         ]);
 
         if (studentInfoResult.code === 200 && studentInfoResult.data) setStudentInfo(studentInfoResult.data);
@@ -769,6 +816,7 @@ export default function StudentDetailPage() {
         if (lessonsResult.code === 200 && lessonsResult.data) setLessons(lessonsResult.data);
         if (examsInfoResult.code === 200 && examsInfoResult.data) setExamsInfo(examsInfoResult.data);
         if (selectOptionsResult.code === 200 && selectOptionsResult.data) setSelectOptions(selectOptionsResult.data);
+        if (leaveRecordsResult.code === 200 && leaveRecordsResult.data) setLeaveRecords(leaveRecordsResult.data.rows || []);
 
       } catch (error) {
         console.error('加载数据失败:', error);
@@ -976,7 +1024,7 @@ export default function StudentDetailPage() {
           {activeTab === 'option' && (
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">操作选项</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <button
                   onClick={() => setShowLeaveModal(true)}
                   className="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -991,6 +1039,93 @@ export default function StudentDetailPage() {
                   <ChatBubbleBottomCenterTextIcon className="h-6 w-6 mr-2 text-red-600" />
                   <span>提交投诉</span>
                 </button>
+              </div>
+
+              {/* 请假记录列表 */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">请假记录</h3>
+                {leaveRecords.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">教师</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">科目</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">上课时间</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">教室</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">请假原因</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">提交时间</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {leaveRecords
+                          .sort((a, b) => b.create_time - a.create_time)
+                          .map((record) => {
+                            const now = Math.floor(Date.now() / 1000);
+                            const canCancel = record.start_time > now; // 课程未开始可以撤销
+                            return (
+                              <tr key={record.record_id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{record.teacher_name}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{record.topic_name}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">
+                                  {new Date(record.start_time * 1000).toLocaleString()} - {new Date(record.end_time * 1000).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{record.room_name}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{record.comment || '-'}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">{record.status_name}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 break-words">
+                                  {new Date(record.create_time * 1000).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  {canCancel ? (
+                                    <button
+                                      onClick={() => {
+                                        if (confirm('确定要撤销这条请假记录吗？')) {
+                                          cancelStudentLeave({
+                                            student_id: parseInt(studentId || '0'),
+                                            record_id: record.record_id,
+                                          }).then(result => {
+                                            if (result.code === 200) {
+                                              alert('撤销成功');
+                                              // 重新加载数据
+                                              if (studentId) {
+                                                getStudentLeaveRecords(studentId).then(result => {
+                                                  if (result.code === 200 && result.data) {
+                                                    setLeaveRecords(result.data.rows || []);
+                                                  }
+                                                });
+                                                getStudentLessons(studentId).then(result => {
+                                                  if (result.code === 200 && result.data) {
+                                                    setLessons(result.data);
+                                                  }
+                                                });
+                                              }
+                                            } else {
+                                              alert('撤销失败: ' + result.message);
+                                            }
+                                          });
+                                        }
+                                      }}
+                                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                                    >
+                                      <TrashIcon className="h-4 w-4 mr-1" />
+                                      撤销
+                                    </button>
+                                  ) : (
+                                    <span className="text-gray-400 text-sm">已开始</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">暂无请假记录</p>
+                )}
               </div>
             </div>
           )}
@@ -1748,11 +1883,17 @@ export default function StudentDetailPage() {
           studentName={studentInfo.student_name}
           lessons={lessons}
           onSuccess={() => {
-            // 重新加载课程数据
+            // 重新加载课程数据和请假记录
             if (studentId) {
-              getStudentLessons(studentId).then(result => {
-                if (result.code === 200 && result.data) {
-                  setLessons(result.data);
+              Promise.all([
+                getStudentLessons(studentId),
+                getStudentLeaveRecords(studentId),
+              ]).then(([lessonsResult, leaveRecordsResult]) => {
+                if (lessonsResult.code === 200 && lessonsResult.data) {
+                  setLessons(lessonsResult.data);
+                }
+                if (leaveRecordsResult.code === 200 && leaveRecordsResult.data) {
+                  setLeaveRecords(leaveRecordsResult.data.rows || []);
                 }
               });
             }
