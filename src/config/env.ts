@@ -13,7 +13,6 @@ export const getBaseUrl = (): string => {
     // 客户端：使用当前访问的域名
     return window.location.origin;
   }
-  // 服务端：使用环境变量或默认值
   return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.huayaopudong.com';
 };
 

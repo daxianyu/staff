@@ -1,0 +1,46 @@
+{
+  "name": "蓝色主题",
+  "description": "蓝色主题配色方案",
+  "colors": {
+    "primary": {
+      "background": "#1994bd",
+      "text": "#ffffff"
+    },
+    "sidebar": {
+      "background": "#1994bd",
+      "activeBackground": "#63bbcf",
+      "text": "#ffffff",
+      "activeIndicator": "#ffffff"
+    },
+    "header": {
+      "background": "#1994bd",
+      "text": "#ffffff"
+    },
+    "content": {
+      "background": "#f4f4f4",
+      "cardBackground": "#ffffff",
+      "border": "#E5E5E5",
+      "text": "#000000"
+    },
+    "button": {
+      "primary": {
+        "background": "#63bbcf",
+        "text": "#ffffff"
+      }
+    }
+  },
+  "cssVariables": {
+    "--header-bg": "#1994bd",
+    "--header-text": "#ffffff",
+    "--sidebar-bg": "#1994bd",
+    "--sidebar-text": "#ffffff",
+    "--sidebar-active-bg": "#63bbcf",
+    "--content-bg": "#f4f4f4",
+    "--card-bg": "#ffffff",
+    "--border-color": "#E5E5E5",
+    "--text-color": "#000000",
+    "--button-primary-bg": "#63bbcf",
+    "--button-primary-text": "#ffffff",
+    "--button-primary-hover": "#52a8bb"
+  }
+}

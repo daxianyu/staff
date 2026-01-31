@@ -35,7 +35,6 @@ const exportHeaders = [
   'Type',
   'User Name',
   'Amount',
-  'Out Trade No',
   'Subject',
   'Account',
   'Refund Status',
@@ -342,7 +341,6 @@ export default function TradeInfoPage() {
                           r.type_name,
                           r.user_name || '',
                           r.price,
-                          r.out_trade_no,
                           r.subject,
                           r.account_name,
                           r.refund_status,
@@ -363,7 +361,7 @@ export default function TradeInfoPage() {
 
                 <button
                   onClick={loadList}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <ArrowPathIcon className="h-4 w-4" />
                   <span className="font-medium">刷新</span>
@@ -471,7 +469,7 @@ export default function TradeInfoPage() {
               </button>
               <button
                 onClick={loadList}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
+                className="btn-primary inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <MagnifyingGlassIcon className="h-4 w-4" />
                 查询
@@ -501,10 +499,7 @@ export default function TradeInfoPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Out Trade No
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                       Subject
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -533,7 +528,7 @@ export default function TradeInfoPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedRows.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={11} className="px-6 py-8 text-center text-gray-500">
                         暂无数据
                       </td>
                     </tr>
@@ -545,8 +540,7 @@ export default function TradeInfoPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {formatMoney(r.price)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{r.out_trade_no}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{r.subject}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900 w-48 break-words">{r.subject}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{r.account_name}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span

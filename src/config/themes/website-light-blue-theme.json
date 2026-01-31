@@ -1,0 +1,39 @@
+{
+  "name": "Website浅蓝色主题",
+  "description": "Website项目浅蓝色主题配色方案",
+  "colors": {
+    "primary": {
+      "background": "#63bbcf",
+      "text": "#ffffff"
+    },
+    "sidebar": {
+      "background": "#63bbcf",
+      "text": "#ffffff"
+    },
+    "header": {
+      "background": "#1994bd",
+      "text": "#ffffff"
+    },
+    "content": {
+      "background": "#f7f9fc",
+      "cardBackground": "#ffffff",
+      "border": "#e5e9ef",
+      "text": "rgba(0, 0, 0, 0.88)"
+    },
+    "button": {
+      "primary": {
+        "background": "#63bbcf",
+        "text": "#ffffff"
+      }
+    }
+  },
+  "cssVariables": {
+    "--header-bg": "#1994bd",
+    "--header-text": "#ffffff",
+    "--sidebar-bg": "#63bbcf",
+    "--sidebar-text": "#ffffff",
+    "--button-primary-bg": "#63bbcf",
+    "--button-primary-text": "#ffffff",
+    "--button-primary-hover": "#52a8bb"
+  }
+}

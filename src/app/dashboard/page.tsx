@@ -132,7 +132,8 @@ export default function DashboardPage() {
       (Number(todoData.ps_count) || 0) +
       (Number(todoData.withdrawal_count) || 0) +
       (Number(todoData.late_cashin_count) || 0) +
-      (Number(todoData.remarking_count) || 0)
+      (Number(todoData.remarking_count) || 0) +
+      (Number(todoData.locker_return_count) || 0)
     );
   };
 
@@ -193,6 +194,13 @@ export default function DashboardPage() {
       count: Number(todoData?.remarking_count) || 0,
       path: '/users/remark-overview',
       icon: DocumentTextIcon,
+    },
+    {
+      key: 'locker_return_count',
+      label: 'Locker return',
+      count: Number(todoData?.locker_return_count) || 0,
+      path: '/locker-return',
+      icon: ClipboardDocumentListIcon,
     },
   ];
 

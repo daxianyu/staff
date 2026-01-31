@@ -24,6 +24,7 @@ import CopyRightModal from './components/CopyRightModal';
 import ReportTimeModal from './components/ReportTimeModal';
 import StartTimeModal from './components/StartTimeModal';
 import FreeSearchModal from './components/FreeSearchModal';
+import UploadCooksbookModal from './components/UploadCooksbookModal';
 
 interface Tool {
   name: string;
@@ -96,6 +97,11 @@ const tools: Tool[] = [
     name: '查询空闲时间',
     description: '查询教师或学生在指定时间段内的空闲时间',
     key: 'free_search',
+  },
+  {
+    name: '上传选课说明',
+    description: '上传选课说明文件（cooksbook）',
+    key: 'upload_cooksbook',
   },
 ];
 
@@ -202,6 +208,7 @@ export default function ToolsOverviewPage() {
       <ReportTimeModal isOpen={openModal === 'report_time'} onClose={handleCloseModal} />
       <StartTimeModal isOpen={openModal === 'start_time'} onClose={handleCloseModal} />
       <FreeSearchModal isOpen={openModal === 'free_search'} onClose={handleCloseModal} />
+      <UploadCooksbookModal isOpen={openModal === 'upload_cooksbook'} onClose={handleCloseModal} />
     </div>
   );
 }

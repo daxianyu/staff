@@ -106,6 +106,7 @@ export interface DashboardTodoData {
   withdrawal_count: number;
   late_cashin_count: number;
   remarking_count: number;
+  locker_return_count: number;
 }
 
 export const getDashboardTodoList = async (): Promise<ApiResponse<DashboardTodoData>> => {

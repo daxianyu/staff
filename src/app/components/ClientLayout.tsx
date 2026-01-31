@@ -5,8 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 import { setGlobalRouter } from '@/services/auth';
-
-// 定义SalesInfo接口已移动到SalesInfoContext中
+import { initTheme } from '@/utils/theme';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -17,6 +16,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   useEffect(() => {
     setGlobalRouter(router);
   }, [router]);
+
+  // 页面初始化时加载主题
+  useEffect(() => {
+    initTheme();
+  }, []);
   
   // 不需要权限检查的路由
   const publicRoutes = ['/login', '/403'];

@@ -582,3 +582,21 @@ export const deleteLeaveSchool = async (params: DeleteParams): Promise<ApiRespon
     return { code: 500, message: error instanceof Error ? error.message : '删除休复学记录失败' };
   }
 };
+
+// 上传选课说明文件
+export const uploadCooksbookFile = async (campusId: number, file: File): Promise<ApiResponse<string>> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data } = await request(`/api/tools/upload_cooksbook_file/${campusId}`, {
+      method: 'POST',
+      body: formData,
+      auth: true,
+    });
+    return normalizeApiResponse(data as ApiEnvelope<string>);
+  } catch (error) {
+    console.error('上传选课说明文件失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '上传选课说明文件失败' };
+  }
+};

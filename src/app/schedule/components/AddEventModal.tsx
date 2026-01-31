@@ -35,16 +35,25 @@ function useDebouncedConflict(
   return conflicts;
 }
 
+// ScheduleEvent 类型定义（与 page.tsx 保持一致）
 interface ScheduleEvent {
   id: string;
-  title: string; // 添加title字段
+  title: string;
   start: Date;
   end: Date;
-  teacherId: string;
-  teacherName: string;
-  type: 'lesson' | 'unavailable' | 'invigilate';  // 添加监考类型
+  teacher: string;
+  type: 'lesson' | 'unavailable' | 'selected' | 'selectedRepeat' | 'invigilate';
   description?: string;
-  repeat?: 'none' | 'weekly';
+  subject_id?: number;
+  room_id?: number;
+  class_id?: number;
+  class_name?: string;
+  students?: string;
+  student_ids?: number[];
+  room_name?: string;
+  student_name?: string;
+  topic_id?: string;
+  note?: string;
 }
 
 interface AddEventModalProps {
@@ -76,6 +85,9 @@ interface AddEventModalProps {
   onDelete?: (repeat_num?: number) => void; // 支持删除多周
   onDeleteUnavailable?: (conflicts: Array<{ start: Date; end: Date }>) => void;
   onEditFromReadOnly?: () => void; // 从只读模式进入编辑的回调
+  events?: ScheduleEvent[]; // 所有事件，用于过滤已排课的教室
+  classroomList?: Array<{ id: number; name: string }>; // 教室列表
+  classroomOwnerMap?: Record<string, string>; // 教室ID到负责人名称的映射
 }
 
 export default function AddEventModal({
@@ -95,7 +107,10 @@ export default function AddEventModal({
   initialEvent,
   onDelete,
   onDeleteUnavailable,
-  onEditFromReadOnly
+  onEditFromReadOnly,
+  events = [],
+  classroomList = [],
+  classroomOwnerMap = {}
 }: AddEventModalProps) {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('09:15');
@@ -342,6 +357,46 @@ export default function AddEventModal({
     minTime: startTime > DAY_START_TIME ? startTime : DAY_START_TIME,
     maxTime: DAY_END_TIME
   }), [startTime]);
+
+  // 计算过滤和排序后的可选教室列表
+  const availableRooms = useMemo(() => {
+    if (!scheduleData?.room_info || !selectedDate || !start || !end) {
+      return [];
+    }
+
+    // 获取当前时间段内已排课的教室ID
+    const bookedRoomIds = new Set<number>();
+    events.forEach(event => {
+      // 只检查课程类型的事件
+      if (event.type === 'lesson' && event.room_id) {
+        // 检查时间段是否重叠
+        if (start < event.end && end > event.start) {
+          bookedRoomIds.add(event.room_id);
+        }
+      }
+    });
+
+    // 过滤并排序教室
+    const roomEntries = Object.entries(scheduleData.room_info as Record<string, string>);
+    
+    return roomEntries
+      .filter(([id, name]) => {
+        // 过滤掉已排课的教室（编辑模式下，如果是当前教室则不过滤）
+        if (mode === 'edit' && initialEvent?.room_id?.toString() === id) {
+          return true;
+        }
+        return !bookedRoomIds.has(Number(id));
+      })
+      .map(([id, name]) => ({
+        id,
+        name,
+        owner: classroomOwnerMap[id] || ''
+      }))
+      .sort((a, b) => {
+        // 按教室名称升序排序
+        return a.name.localeCompare(b.name, 'zh-CN');
+      });
+  }, [scheduleData?.room_info, selectedDate, start, end, events, mode, initialEvent?.room_id, classroomOwnerMap]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -874,10 +929,21 @@ export default function AddEventModal({
                                 onChange={(e) => setSelectedRoom(e.target.value)}
                                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
                               >
-                                {Object.entries(scheduleData.room_info as Record<string, string>).map(([id, name]) => (
-                                  <option key={id} value={id}>{name}</option>
-                                ))}
+                                {availableRooms.length === 0 ? (
+                                  <option value="">暂无可用教室</option>
+                                ) : (
+                                  availableRooms.map(({ id, name, owner }) => (
+                                    <option key={id} value={id}>
+                                      {name}{owner ? ` (${owner})` : ''}
+                                    </option>
+                                  ))
+                                )}
                               </select>
+                              {availableRooms.length === 0 && selectedDate && start && end && (
+                                <p className="mt-1 text-xs text-red-600">
+                                  该时间段内所有教室已被占用
+                                </p>
+                              )}
                             </div>
                           )}
                           {/* 新增字段：replace room when booked - 编辑模式下不显示 */}

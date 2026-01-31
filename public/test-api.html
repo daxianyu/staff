@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Echo Params 测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+        .section h2 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        button {
+            background: #3b7bc0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-left: 4px solid #4caf50;
+        }
+        .error {
+            border-left: 4px solid #f44336;
+        }
+        .info {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .status-200 {
+            background: #4caf50;
+            color: white;
+        }
+        .status-error {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 API Echo Params 接口测试</h1>
+        
+        <div class="section">
+            <h2>1. POST 请求 - 存储数据</h2>
+            <textarea id="postData" placeholder='请输入JSON数据，例如: {"message":"Hello","number":123}'>{"test":"测试数据","timestamp":"2026-01-31","value":12345}</textarea>
+            <button onclick="testPost()">发送 POST 请求</button>
+            <div id="postResponse" class="response" style="display:none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. GET 请求 - 读取数据</h2>
+            <button onclick="testGet()">发送 GET 请求</button>
+            <div id="getResponse" class="response" style="display:none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. 完整测试流程</h2>
+            <button onclick="testFullFlow()">执行完整测试（POST → GET）</button>
+            <div id="fullResponse" class="response" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/site/api-echo-params';
+
+        function formatResponse(data, status, time) {
+            const statusClass = status === 200 ? 'status-200' : 'status-error';
+            return `<span class="status ${statusClass}">${status}</span>
+<strong>响应时间:</strong> ${time}ms
+<strong>响应数据:</strong>
+${JSON.stringify(data, null, 2)}`;
+        }
+
+        async function testPost() {
+            const postDataEl = document.getElementById('postData');
+            const responseEl = document.getElementById('postResponse');
+            const button = event.target;
+            
+            let data;
+            try {
+                data = JSON.parse(postDataEl.value);
+            } catch (e) {
+                responseEl.innerHTML = `<div class="error">❌ JSON格式错误: ${e.message}</div>`;
+                responseEl.style.display = 'block';
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = '发送中...';
+            responseEl.style.display = 'block';
+            responseEl.className = 'response';
+            responseEl.textContent = '请求中...';
+
+            const startTime = performance.now();
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                const result = await response.json();
+                
+                responseEl.className = 'response success';
+                responseEl.innerHTML = formatResponse(result, response.status, responseTime);
+            } catch (error) {
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                responseEl.className = 'response error';
+                responseEl.innerHTML = `<div class="error">❌ 请求失败: ${error.message}</div>
+<strong>响应时间:</strong> ${responseTime}ms`;
+            } finally {
+                button.disabled = false;
+                button.textContent = '发送 POST 请求';
+            }
+        }
+
+        async function testGet() {
+            const responseEl = document.getElementById('getResponse');
+            const button = event.target;
+            
+            button.disabled = true;
+            button.textContent = '发送中...';
+            responseEl.style.display = 'block';
+            responseEl.className = 'response';
+            responseEl.textContent = '请求中...';
+
+            const startTime = performance.now();
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                const result = await response.json();
+                
+                responseEl.className = 'response success';
+                responseEl.innerHTML = formatResponse(result, response.status, responseTime);
+                
+                if (Object.keys(result.data || {}).length === 0) {
+                    responseEl.innerHTML += '\n\n⚠️ 注意: 返回的数据为空，可能数据未存储或已被清除';
+                }
+            } catch (error) {
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                responseEl.className = 'response error';
+                responseEl.innerHTML = `<div class="error">❌ 请求失败: ${error.message}</div>
+<strong>响应时间:</strong> ${responseTime}ms`;
+            } finally {
+                button.disabled = false;
+                button.textContent = '发送 GET 请求';
+            }
+        }
+
+        async function testFullFlow() {
+            const responseEl = document.getElementById('fullResponse');
+            const button = event.target;
+            
+            button.disabled = true;
+            button.textContent = '测试中...';
+            responseEl.style.display = 'block';
+            responseEl.className = 'response';
+            
+            let log = '=== 完整测试流程 ===\n\n';
+            
+            // 步骤1: POST
+            log += '📤 步骤1: POST 存储数据\n';
+            const testData = {
+                test: '完整测试',
+                timestamp: new Date().toISOString(),
+                random: Math.random()
+            };
+            
+            const postStartTime = performance.now();
+            try {
+                const postResponse = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                const postEndTime = performance.now();
+                const postResult = await postResponse.json();
+                const postTime = Math.round(postEndTime - postStartTime);
+                
+                log += `✅ POST 成功 (${postTime}ms)\n`;
+                log += `发送数据: ${JSON.stringify(testData, null, 2)}\n`;
+                log += `返回数据: ${JSON.stringify(postResult, null, 2)}\n\n`;
+                
+                // 等待一下
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // 步骤2: GET
+                log += '📥 步骤2: GET 读取数据\n';
+                const getStartTime = performance.now();
+                const getResponse = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const getEndTime = performance.now();
+                const getResult = await getResponse.json();
+                const getTime = Math.round(getEndTime - getStartTime);
+                
+                log += `✅ GET 成功 (${getTime}ms)\n`;
+                log += `返回数据: ${JSON.stringify(getResult, null, 2)}\n\n`;
+                
+                // 对比
+                log += '🔍 数据对比:\n';
+                const postDataStr = JSON.stringify(postResult.data || {});
+                const getDataStr = JSON.stringify(getResult.data || {});
+                
+                if (postDataStr === getDataStr) {
+                    log += '✅ POST和GET返回的数据一致，存储功能正常！\n';
+                    responseEl.className = 'response success';
+                } else {
+                    log += '❌ POST和GET返回的数据不一致！\n';
+                    log += `POST返回: ${postDataStr}\n`;
+                    log += `GET返回: ${getDataStr}\n`;
+                    log += '\n⚠️ 可能的问题:\n';
+                    log += '  1. 数据未真正存储\n';
+                    log += '  2. GET请求未实现读取逻辑\n';
+                    log += '  3. 数据存储基于会话/用户，当前会话不匹配\n';
+                    responseEl.className = 'response error';
+                }
+            } catch (error) {
+                log += `❌ 测试失败: ${error.message}\n`;
+                responseEl.className = 'response error';
+            }
+            
+            responseEl.textContent = log;
+            button.disabled = false;
+            button.textContent = '执行完整测试（POST → GET）';
+        }
+    </script>
+</body>
+</html>

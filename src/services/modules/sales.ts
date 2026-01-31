@@ -395,11 +395,18 @@ export const sendEntranceReject = async (
   }
 };
 
+export interface AddSalesToStudentResult {
+  email: string;
+  password: string;
+}
+
 // 添加sales到students
-export const addSalesToStudent = async (contractId: number): Promise<ApiResponse<void>> => {
+export const addSalesToStudent = async (
+  contractId: number
+): Promise<ApiResponse<AddSalesToStudentResult>> => {
   try {
     const url = `/api/sales/add_to_student`;
-    const { data } = await request<ApiEnvelope<void>>(url, {
+    const { data } = await request<ApiEnvelope<AddSalesToStudentResult>>(url, {
       method: 'POST',
       body: { contract_id: contractId },
     });

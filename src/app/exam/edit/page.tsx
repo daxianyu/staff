@@ -36,6 +36,25 @@ import {
 } from '@heroicons/react/24/outline';
 import SearchableSelect from '@/components/SearchableSelect';
 
+// 时间戳转日期字符串（本地时区）
+const timestampToDateString = (timestamp: number): string => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp * 1000);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// 日期字符串转时间戳（本地时区午夜）
+const dateStringToTimestamp = (dateString: string): number => {
+  if (!dateString) return 0;
+  // 将日期字符串解析为本地时区的午夜时间
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return Math.floor(date.getTime() / 1000);
+};
+
 export default function EditExamPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -106,7 +125,7 @@ export default function EditExamPage() {
         if (resp.data.price_data) {
           const formattedPriceChanges = resp.data.price_data.map((item: any) => ({
             id: item.id,
-            date: item.time ? new Date(item.time * 1000).toISOString().slice(0, 10) : '',
+            date: item.time ? timestampToDateString(item.time) : '',
             price: item.price !== undefined ? String(item.price) : '',
             time: item.time || 0
           }));
@@ -166,7 +185,7 @@ export default function EditExamPage() {
     }
 
     try {
-      const timestamp = Math.floor(new Date(change.date).getTime() / 1000);
+      const timestamp = dateStringToTimestamp(change.date);
       if (change.id) {
         // 更新现有价格变动
         const resp = await updateChangePrice({
@@ -195,7 +214,7 @@ export default function EditExamPage() {
           if (dataResp.code === 200 && dataResp.data?.price_data) {
             const formattedPriceChanges = dataResp.data.price_data.map((item: any) => ({
               id: item.id,
-              date: item.time ? new Date(item.time * 1000).toISOString().slice(0, 10) : '',
+              date: item.time ? timestampToDateString(item.time) : '',
               price: item.price !== undefined ? String(item.price) : '',
               time: item.time || 0
             }));
@@ -732,10 +751,9 @@ export default function EditExamPage() {
                         <input
                           type="date"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-9 bg-gray-50 focus:bg-white transition-colors"
-                          value={form.exam_time ? new Date(Number(form.exam_time) * 1000).toISOString().slice(0, 10) : ''}
+                          value={timestampToDateString(form.exam_time)}
                           onChange={(e) => {
-                            const timestamp = e.target.value ? Math.floor(new Date(e.target.value).getTime() / 1000) : 0;
-                            console.log(timestamp)
+                            const timestamp = dateStringToTimestamp(e.target.value);
                             setForm({ ...form, exam_time: timestamp });
                           }}
                         />
@@ -751,9 +769,9 @@ export default function EditExamPage() {
                         <input
                           type="date"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-9 bg-gray-50 focus:bg-white transition-colors"
-                          value={form.exam_time_2 ? new Date(Number(form.exam_time_2) * 1000).toISOString().slice(0, 10) : ''}
+                          value={timestampToDateString(form.exam_time_2)}
                           onChange={(e) => {
-                            const timestamp = e.target.value ? Math.floor(new Date(e.target.value).getTime() / 1000) : 0;
+                            const timestamp = dateStringToTimestamp(e.target.value);
                             setForm({ ...form, exam_time_2: timestamp });
                           }}
                         />
@@ -769,9 +787,9 @@ export default function EditExamPage() {
                         <input
                           type="date"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-9 bg-gray-50 focus:bg-white transition-colors"
-                          value={form.exam_time_3 ? new Date(Number(form.exam_time_3) * 1000).toISOString().slice(0, 10) : ''}
+                          value={timestampToDateString(form.exam_time_3)}
                           onChange={(e) => {
-                            const timestamp = e.target.value ? Math.floor(new Date(e.target.value).getTime() / 1000) : 0;
+                            const timestamp = dateStringToTimestamp(e.target.value);
                             setForm({ ...form, exam_time_3: timestamp });
                           }}
                         />
@@ -991,7 +1009,7 @@ export default function EditExamPage() {
                                 </span>
                               ) : ''}
                             </td>
-                            <td className="px-4 py-4 text-sm text-gray-900">{student.campus || '-'}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.campus_name || '-'}</td>
                             <td className="px-4 py-4 text-sm text-gray-900">
                               {new Date(student.signup_time * 1000).toLocaleDateString('zh-CN')}
                             </td>

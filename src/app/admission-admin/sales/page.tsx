@@ -39,7 +39,7 @@ export default function AdmissionManagePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(200); // 每页显示50条
+  const [pageSize, setPageSize] = useState(200);
   
   // 模态框状态
   const [showAddModal, setShowAddModal] = useState(false);
@@ -533,6 +533,10 @@ export default function AdmissionManagePage() {
                 {/* 每页显示数量选择器 */}
                 <select
                   value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setCurrentPage(1);
+                  }}
                   className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                 >
                   <option value={50}>50 条/页</option>

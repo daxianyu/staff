@@ -392,7 +392,7 @@ export const defaultMenuConfig: MenuItem[] = [
   },
   {
     key: 'staff',
-    label: 'Staff Management',
+    label: 'Staff',
     icon: 'users',
     requiredPermissions: ['view_staff', PERMISSIONS.VIEW_ARCHIVES],
     children: [
@@ -414,7 +414,7 @@ export const defaultMenuConfig: MenuItem[] = [
   },
   {
     key: 'students',
-    label: 'Student Management',
+    label: 'Student',
     icon: 'graduation-cap',
     requiredPermissions: ['view_students', PERMISSIONS.STUDENT_PDFS],
     children: [
@@ -427,7 +427,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'warning-overview',
-        label: 'Warning Overview',
+        label: 'Warning',
         path: '/school-admin/warning-overview',
         icon: 'exclamation-triangle',
         requiredPermissions: [],
@@ -441,7 +441,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'certificate-overview',
-        label: 'Certificate Overview',
+        label: 'Certificate',
         path: '/students/certificate-overview',
         icon: 'academic-cap',
         requiredPermissions: [PERMISSIONS.VIEW_CERTIFICATE_OVERVIEW],
@@ -457,7 +457,7 @@ export const defaultMenuConfig: MenuItem[] = [
   },
   {
     key: 'mentees',
-    label: 'Mentee Management',
+    label: 'Mentee',
     icon: 'user-group',
     requiredPermissions: [PERMISSIONS.VIEW_MENTEE],
     children: [
@@ -608,7 +608,7 @@ export const defaultMenuConfig: MenuItem[] = [
   },
   {
     key: 'services',
-    label: 'Service Management',
+    label: 'Service',
     icon: 'home',
     requiredPermissions: ['edit_books', 'view_locker', 'view_dormitory', PERMISSIONS.VIEW_RETURN_LOCKER, PERMISSIONS.VIEW_COMMITMENT, PERMISSIONS.VIEW_WEEKEND_PLAN, PERMISSIONS.VIEW_WEEKEND_SPECIAL_DATE, PERMISSIONS.VIEW_CARD_BIND, PERMISSIONS.VIEW_CARD_CONSUME, 'view_classrooms'],
     children: [
@@ -621,7 +621,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'lockers',
-        label: 'Locker Management',
+        label: 'Locker',
         path: '/locker',
         icon: 'building-office',
         requiredPermissions: ['view_locker'],
@@ -642,14 +642,14 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'commitment-management',
-        label: 'Commitment Manage',
+        label: 'Commitment',
         path: '/commitment',
         icon: 'clipboard-document-list',
         requiredPermissions: [PERMISSIONS.VIEW_COMMITMENT],
       },
       {
         key: 'weekend-plan-overview',
-        label: 'Weekend Plan Overview',
+        label: 'Weekend Plan',
         path: '/school-admin/weekend-plan-overview',
         icon: 'calendar',
         requiredPermissions: [PERMISSIONS.VIEW_WEEKEND_PLAN],
@@ -736,7 +736,7 @@ export const defaultMenuConfig: MenuItem[] = [
   },
   {
     key: 'front-page-admin',
-    label: 'Front Page Admin',
+    label: 'Front Page',
     icon: 'home',
     requiredPermissions: [PERMISSIONS.EDIT_FRONT_PAGE],
     children: [
@@ -784,7 +784,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'sales-pay-overview',
-        label: 'Sales Pay Overview',
+        label: 'Sales Pay',
         path: '/admission-admin/sales-pay-overview',
         icon: 'dollar-sign',
         requiredPermissions: [PERMISSIONS.VIEW_PAYMENT_INFO],
@@ -925,7 +925,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'class-change-overview',
-        label: 'Class Change Overview',
+        label: 'Class Change',
         path: '/core/class-change-overview',
         icon: 'calendar',
         requiredPermissions: [PERMISSIONS.VIEW_CLASS_CHANGE_OVERVIEW],
@@ -1055,7 +1055,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'graduation-wishes-send',
-        label: 'Graduation Wishes Details',
+        label: 'Graduation Wishes',
         path: '/users/graduation-wishes-send',
         icon: 'graduation-cap',
         requiredPermissions: [PERMISSIONS.VIEW_GRADUATION_WISHES],

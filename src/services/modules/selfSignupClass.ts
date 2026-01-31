@@ -173,7 +173,7 @@ export const downloadSelfSignupClassTemplate = async (): Promise<void> => {
     
     if (response.status === 0 && response.data) {
       // API返回文件路径，拼接成完整可访问链接后触发下载
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || window.location.origin;
+      const baseUrl = window.location.origin || process.env.NEXT_PUBLIC_API_BASE_URL;
       const fileUrl = response.data.startsWith('http')
         ? response.data
         : new URL(response.data, baseUrl).toString();

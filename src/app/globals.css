@@ -7,6 +7,11 @@
   /* linear-gradient(180deg, #4a90e2, #357abd); */
   --sidebar-text: #fff;
 
+  /* 按钮主题变量 */
+  --button-primary-bg: #1e3965;
+  --button-primary-text: #ffffff;
+  --button-primary-hover: #2a4a75;
+
   /* 安全区域变量 - 默认 0px 以确保在不支持 env() 的旧机型上正常显示 */
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -74,4 +79,40 @@ body {
 .flex-1-safe {
   flex: 1 1 0%;
   min-height: 0;
+}
+
+/* 统一的主要操作按钮样式 - 使用主题颜色 */
+.btn-primary {
+  background-color: var(--button-primary-bg) !important;
+  color: var(--button-primary-text) !important;
+  border: none !important;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out !important;
+  font-weight: 500;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--button-primary-hover) !important;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.btn-primary:focus {
+  outline: 2px solid var(--button-primary-bg) !important;
+  outline-offset: 2px !important;
+}
+
+/* Tailwind 工具类 - 主要操作按钮（使用主题颜色） */
+.bg-primary {
+  background-color: var(--button-primary-bg) !important;
+}
+
+.text-primary {
+  color: var(--button-primary-text) !important;
+}
+
+.hover\:bg-primary-hover:hover {
+  background-color: var(--button-primary-hover) !important;
 }

@@ -1,0 +1,48 @@
+{
+  "name": "橙色主题",
+  "description": "橙色/桃色主题配色方案",
+  "colors": {
+    "primary": {
+      "background": "#fc9a55",
+      "text": "#ffffff"
+    },
+    "sidebar": {
+      "background": "#fc9a55",
+      "lightBackground": "#fce4ce",
+      "text": "#ffffff",
+      "inactiveText": "#606060",
+      "activeIndicator": "#ffffff"
+    },
+    "header": {
+      "background": "#fc9a55",
+      "text": "#ffffff"
+    },
+    "content": {
+      "background": "#f4f4f4",
+      "cardBackground": "#ffffff",
+      "border": "#E5E5E5",
+      "text": "#606060"
+    },
+    "button": {
+      "primary": {
+        "background": "#fc9a55",
+        "text": "#ffffff"
+      }
+    }
+  },
+  "cssVariables": {
+    "--header-bg": "#fc9a55",
+    "--header-text": "#ffffff",
+    "--sidebar-bg": "#fc9a55",
+    "--sidebar-text": "#ffffff",
+    "--sidebar-light-bg": "#fce4ce",
+    "--sidebar-inactive-text": "#606060",
+    "--content-bg": "#f4f4f4",
+    "--card-bg": "#ffffff",
+    "--border-color": "#E5E5E5",
+    "--text-color": "#606060",
+    "--button-primary-bg": "#fc9a55",
+    "--button-primary-text": "#ffffff",
+    "--button-primary-hover": "#e88a45"
+  }
+}

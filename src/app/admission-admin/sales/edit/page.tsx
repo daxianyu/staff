@@ -234,6 +234,8 @@ export default function SalesEditPage() {
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showAddToStudentModal, setShowAddToStudentModal] = useState(false);
+    const [showStudentAccountModal, setShowStudentAccountModal] = useState(false);
+    const [studentAccount, setStudentAccount] = useState<{ email: string; password: string } | null>(null);
 
     // 模态框独立错误状态
     const [admissionError, setAdmissionError] = useState<string | null>(null);
@@ -795,8 +797,14 @@ export default function SalesEditPage() {
         try {
             const result = await addSalesToStudent(Number(contractId));
             if (result.code === 200) {
-                alert('已成功添加到Students');
+                const account = result.data;
                 setShowAddToStudentModal(false);
+                if (account?.email && account?.password) {
+                    setStudentAccount({ email: account.email, password: account.password });
+                    setShowStudentAccountModal(true);
+                } else {
+                    alert('已成功添加到Students');
+                }
                 const refreshResult = await getSalesInfo(Number(contractId));
                 if (refreshResult.code === 200 && refreshResult.data) {
                     setSalesInfo(refreshResult.data);
@@ -2273,6 +2281,44 @@ export default function SalesEditPage() {
                                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
                                 >
                                     {addingToStudent ? '添加中...' : '确认添加'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Students账号信息弹窗 */}
+                {showStudentAccountModal && studentAccount && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                            <div className="p-6 sm:flex sm:items-start">
+                                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                                </div>
+                                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                    <h3 className="text-lg font-medium text-gray-900">已成功添加到Students</h3>
+                                    <div className="mt-2 text-sm text-gray-600 space-y-2">
+                                        <p>请记录以下账号信息：</p>
+                                        <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-left">
+                                            <div className="text-sm text-gray-700">
+                                                账号邮箱：<span className="font-mono text-gray-900">{studentAccount.email}</span>
+                                            </div>
+                                            <div className="text-sm text-gray-700 mt-1">
+                                                密码：<span className="font-mono text-gray-900">{studentAccount.password}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-3 p-6 border-t">
+                                <button
+                                    onClick={() => {
+                                        setShowStudentAccountModal(false);
+                                        setStudentAccount(null);
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                >
+                                    确定
                                 </button>
                             </div>
                         </div>

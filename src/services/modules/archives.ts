@@ -121,9 +121,16 @@ export const getArchivesBaseInfo = async (staffId: number): Promise<ApiResponse<
 // 更新基础信息
 export const editArchivesBaseInfo = async (params: ArchivesBaseInfo): Promise<ApiResponse<unknown>> => {
   try {
+    const payload = { ...params } as Record<string, unknown>;
+    if (payload.tc_status === undefined && payload.teacher_certification_status !== undefined) {
+      payload.tc_status = payload.teacher_certification_status;
+    }
+    if (payload.teacher_base_position === undefined && payload.base_position !== undefined) {
+      payload.teacher_base_position = payload.base_position;
+    }
     const { data } = await request('/api/archives/edit_archives_base_info', {
       method: 'POST',
-      body: params,
+      body: payload,
     });
     return normalizeApiResponse<unknown>(data as ApiEnvelope<unknown>);
   } catch (error) {

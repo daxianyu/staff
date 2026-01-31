@@ -273,7 +273,7 @@ export default function DashboardLayout({
                         `}
                         style={{ color: isActive ? 'var(--sidebar-text)' : 'rgba(255,255,255,0.9)' }}
                       >
-                        <div className="flex items-center">
+                        <div className="flex items-center min-w-0 flex-1">
                           <IconComponent
                             className="mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200"
                             style={{ 
@@ -281,11 +281,11 @@ export default function DashboardLayout({
                             }}
                             aria-hidden="true"
                           />
-                          {item.label}
+                          <span className="truncate text-left">{item.label}</span>
                         </div>
                         {hasChildren && (
                           <ChevronDownIcon
-                            className={`h-4 w-4 transition-transform duration-200 ${
+                            className={`h-4 w-4 flex-shrink-0 ml-2 transition-transform duration-200 ${
                               isExpanded ? 'rotate-180' : ''
                             }`}
                           />
@@ -323,7 +323,7 @@ export default function DashboardLayout({
                                   }}
                                   aria-hidden="true"
                                 />
-                                <span className="text-left">
+                                <span className="text-left truncate min-w-0 flex-1">
                                   {child.label}
                                 </span>
                               </button>

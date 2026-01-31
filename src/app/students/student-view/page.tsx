@@ -610,24 +610,9 @@ export default function StudentViewPage() {
                       <div key={`${item.id}-${item.timestamp}`} className="p-4 border rounded-lg bg-white shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="text-sm font-medium text-gray-900">{item.teacher || 'Unknown Teacher'}</div>
-                          <div className="text-xs text-gray-500">{formatDateTimeMs(item.timestamp)}</div>
                         </div>
                         <div className="text-xs text-gray-600 mt-1">{item.topic_name || '-'}</div>
                         <div className="text-xs text-gray-500 mt-1">{`${item.time_range_start || '-'} ~ ${item.time_range_end || '-'}`}</div>
-                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-600">
-                          <div>
-                            <span className="font-medium text-gray-900">Attendance:</span> {item.student_attendance ?? '-'}
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-900">Behaviour:</span> {item.student_behaviour ?? '-'}
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-900">Homework:</span> {item.student_homework_completion ?? '-'}
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-900">Subject:</span> {item.topic_name || item.subject_id || '-'}
-                          </div>
-                        </div>
                         <div className="mt-3 text-sm text-gray-800 whitespace-pre-wrap">
                           {item.note ? item.note : <span className="text-gray-500">No content</span>}
                         </div>

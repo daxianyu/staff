@@ -8,6 +8,7 @@ import './schedule.css';
 import { PlusIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import AddEventModal from './components/AddEventModal';
 import { getStaffSchedule, getStaffInfo, type StaffInfo } from '@/services/auth';
+import { getClassroomList, type Classroom } from '@/services/auth';
 import { useSearchParams } from 'next/navigation';
 import {
   addStaffLesson, editStaffLesson, deleteStaffLesson, updateStaffUnavailable,
@@ -155,6 +156,10 @@ export default function SchedulePage() {
   const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
   const [staffInfoLoading, setStaffInfoLoading] = useState(false);
 
+  // 新增：教室列表和负责人信息状态
+  const [classroomList, setClassroomList] = useState<Classroom[]>([]);
+  const [classroomOwnerMap, setClassroomOwnerMap] = useState<Record<string, string>>({});
+
   // 获取用户信息
   const fetchStaffInfo = useCallback(async () => {
     if (!staffId) return;
@@ -171,6 +176,24 @@ export default function SchedulePage() {
       setStaffInfoLoading(false);
     }
   }, [staffId]);
+
+  // 获取教室列表和负责人信息
+  const fetchClassroomList = useCallback(async () => {
+    try {
+      const response = await getClassroomList();
+      if (response.status === 200 && response.data) {
+        setClassroomList(response.data.room_list || []);
+        // 构建教室ID到负责人名称的映射
+        const ownerMap: Record<string, string> = {};
+        response.data.room_list.forEach((room: Classroom) => {
+          ownerMap[room.id.toString()] = room.owner_name || '';
+        });
+        setClassroomOwnerMap(ownerMap);
+      }
+    } catch (error) {
+      console.error('获取教室列表失败:', error);
+    }
+  }, []);
 
   // 合并重叠的时间段
   const mergeOverlappingTimeRanges = useCallback((timeRanges: Array<{ start: Date; end: Date }>) => {
@@ -1118,6 +1141,11 @@ export default function SchedulePage() {
     fetchStaffInfo();
   }, [fetchStaffInfo]);
 
+  // 获取教室列表
+  useEffect(() => {
+    fetchClassroomList();
+  }, [fetchClassroomList]);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 overflow-auto">
       {/* 头部导航 */}
@@ -1329,6 +1357,9 @@ export default function SchedulePage() {
         isSaving={isSaving}
         mode="add"
         onDeleteUnavailable={handleDeleteUnavailable}
+        events={events as any}
+        classroomList={classroomList}
+        classroomOwnerMap={classroomOwnerMap}
       />
       {showEditModal && editingEvent && (
         <AddEventModal
@@ -1358,6 +1389,9 @@ export default function SchedulePage() {
             // 从只读模式进入编辑模式
             setIsReadOnlyMode(false);
           }}
+          events={events}
+          classroomList={classroomList}
+          classroomOwnerMap={classroomOwnerMap}
         />
       )}
     </div>
