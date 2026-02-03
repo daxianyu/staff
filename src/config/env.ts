@@ -6,21 +6,21 @@ export const ENV = {
 /**
  * 获取基础域名
  * 客户端：运行时从 window.location.origin 获取
- * 服务端：从环境变量获取，默认使用 huayaopudong.com
+ * 服务端：从环境变量获取，默认使用 bhyone.com
  */
 export const getBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
     // 客户端：使用当前访问的域名
     return window.location.origin;
   }
-  return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.huayaopudong.com';
+  return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.bhyone.com';
 };
 
 /**
  * 获取API基础URL（用于开发环境代理和服务端请求）
  */
 export const getApiBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.huayaopudong.com';
+  return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.bhyone.com';
 };
 
 /**

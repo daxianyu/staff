@@ -116,3 +116,73 @@ body {
 .hover\:bg-primary-hover:hover {
   background-color: var(--button-primary-hover) !important;
 }
+
+/* 覆盖 Tailwind 的蓝色按钮类，让它们使用主题颜色 */
+/* 针对按钮和链接元素，让 bg-blue-600 等类使用 CSS 变量 */
+button.bg-blue-600,
+button.bg-blue-500,
+button.bg-blue-700,
+a.bg-blue-600,
+a.bg-blue-500,
+a.bg-blue-700,
+[role="button"].bg-blue-600,
+[role="button"].bg-blue-500,
+[role="button"].bg-blue-700 {
+  background-color: var(--button-primary-bg) !important;
+  color: var(--button-primary-text) !important;
+}
+
+button.bg-blue-600:hover:not(:disabled),
+button.bg-blue-500:hover:not(:disabled),
+button.bg-blue-700:hover:not(:disabled),
+a.bg-blue-600:hover:not(:disabled),
+a.bg-blue-500:hover:not(:disabled),
+a.bg-blue-700:hover:not(:disabled),
+[role="button"].bg-blue-600:hover:not(:disabled),
+[role="button"].bg-blue-500:hover:not(:disabled),
+[role="button"].bg-blue-700:hover:not(:disabled) {
+  background-color: var(--button-primary-hover) !important;
+}
+
+/* 覆盖 hover:bg-blue-700 等 hover 类 */
+button.hover\:bg-blue-700:hover:not(:disabled),
+button.hover\:bg-blue-600:hover:not(:disabled),
+a.hover\:bg-blue-700:hover:not(:disabled),
+a.hover\:bg-blue-600:hover:not(:disabled),
+[role="button"].hover\:bg-blue-700:hover:not(:disabled),
+[role="button"].hover\:bg-blue-600:hover:not(:disabled) {
+  background-color: var(--button-primary-hover) !important;
+}
+
+/* 覆盖 border-blue-600 等边框颜色 */
+button.border-blue-600,
+button.border-blue-500,
+button.border-blue-700,
+a.border-blue-600,
+a.border-blue-500,
+a.border-blue-700,
+[role="button"].border-blue-600,
+[role="button"].border-blue-500,
+[role="button"].border-blue-700 {
+  border-color: var(--button-primary-bg) !important;
+}
+
+/* 注意：不覆盖 text-blue-600，因为 tab 按钮等非 primary 按钮需要使用蓝色文字 */
+/* 真正的 primary 按钮应该使用 text-white，而不是 text-blue-600 */
+
+/* 覆盖 focus:ring-blue-500 等 focus 环颜色 */
+button.focus\:ring-blue-500:focus,
+a.focus\:ring-blue-500:focus,
+[role="button"].focus\:ring-blue-500:focus {
+  --tw-ring-color: var(--button-primary-bg) !important;
+}
+
+/* 覆盖包含 text-white 的蓝色按钮（常见组合） */
+button.bg-blue-600.text-white,
+button.bg-blue-500.text-white,
+button.bg-blue-700.text-white,
+a.bg-blue-600.text-white,
+a.bg-blue-500.text-white,
+a.bg-blue-700.text-white {
+  color: var(--button-primary-text) !important;
+}

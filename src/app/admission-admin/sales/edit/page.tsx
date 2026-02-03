@@ -21,6 +21,8 @@ import {
     type RejectMailParams,
     type ContractPreviewData,
 } from '@/services/auth';
+import { getSiteConfig, type SiteConfig } from '@/services/modules/tools';
+import { getApiBaseUrl } from '@/config/env';
 import {
     ArrowLeftIcon,
     ExclamationTriangleIcon,
@@ -229,6 +231,9 @@ export default function SalesEditPage() {
     const [loadingContractPreview, setLoadingContractPreview] = useState(false);
     const [sendingContract, setSendingContract] = useState(false);
     const [contractError, setContractError] = useState<string | null>(null);
+    
+    // 网站配置
+    const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
 
     // 确认模态框状态
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
@@ -380,6 +385,21 @@ export default function SalesEditPage() {
 
         loadData();
     }, [contractId]);
+
+    // 加载网站配置
+    useEffect(() => {
+        const loadSiteConfig = async () => {
+            try {
+                const result = await getSiteConfig();
+                if (result.code === 200 && result.data) {
+                    setSiteConfig(result.data);
+                }
+            } catch (error) {
+                console.error('加载网站配置失败:', error);
+            }
+        };
+        loadSiteConfig();
+    }, []);
 
     // 处理输入变化
     const handleInputChange = (field: keyof UpdateSalesParams, value: any) => {
@@ -842,7 +862,33 @@ export default function SalesEditPage() {
         try {
             const result = await generateContractPreview(Number(contractId));
             if (result.code === 200 && result.data) {
-                setContractPreviewData(result.data);
+                // 确保 iframe URL 是完整的绝对路径，避免相对路径导致无限嵌套
+                const data = result.data;
+                
+                // 处理 iframe1 和 iframe2 的 URL
+                const normalizeIframeUrl = (url: string): string => {
+                    if (!url) return '';
+                    // 如果已经是完整 URL，直接返回
+                    if (url.startsWith('http://') || url.startsWith('https://')) {
+                        return url;
+                    }
+                    // 如果是相对路径，转换为绝对路径
+                    // 在客户端使用 window.location.origin，确保 iframe 加载正确的域名
+                    if (url.startsWith('/')) {
+                        const baseUrl = typeof window !== 'undefined' 
+                            ? window.location.origin 
+                            : getApiBaseUrl();
+                        return `${baseUrl}${url}`;
+                    }
+                    // 其他情况直接返回
+                    return url;
+                };
+                
+                setContractPreviewData({
+                    ...data,
+                    iframe1: normalizeIframeUrl(data.iframe1),
+                    iframe2: normalizeIframeUrl(data.iframe2),
+                });
                 setShowContractPreviewModal(true);
             } else {
                 setError('生成合同预览失败: ' + result.message);
@@ -863,15 +909,15 @@ export default function SalesEditPage() {
         // link格式: /api/sales/finalize_signing_request/<contract_id>/<file_ids>/<version>?sub_company=<sub_company>
         const link = contractPreviewData.link;
         const match = link.match(/\/finalize_signing_request\/(\d+)\/([^\/]+)\/(\d+)(?:\?sub_company=(.+))?/);
-        
-        if (!match) {
-            setContractError('合同链接格式错误');
-            return;
-        }
 
-        const fileIds = match[2];
-        const version = parseInt(match[3], 10);
-        const subCompany = match[4] || undefined;
+        let fileIds = match?.[2] || '';
+        const version = parseInt(match?.[3] || '0', 10);
+        const subCompany = match?.[4] || undefined;
+
+        // 如果配置了简化模式，则只取第一个 fileId（只发送服务协议）
+        if (siteConfig?.sales_simplified_mode && fileIds.includes('--')) {
+            fileIds = fileIds.split('--')[0];
+        }
 
         setSendingContract(true);
         setContractError(null);
@@ -890,7 +936,15 @@ export default function SalesEditPage() {
                 // 重新加载数据
                 const refreshResult = await getSalesInfo(Number(contractId));
                 if (refreshResult.code === 200 && refreshResult.data) {
-                    setSalesInfo(refreshResult.data);
+                    const refreshData = refreshResult.data;
+                    setSalesInfo(refreshData);
+                    // 同步更新 formData 中的 signing_request_state 和 signing_request_state_2，确保按钮状态正确更新
+                    // 发送合同后，这两个状态会从 0 变为非 0，按钮会自动隐藏
+                    setFormData(prev => ({
+                        ...prev,
+                        signing_request_state: refreshData.info.signing_request_state,
+                        signing_request_state_2: refreshData.info.signing_request_state_2
+                    }));
                 }
             } else {
                 setContractError(result.message || '发送合同失败');
@@ -2369,17 +2423,19 @@ export default function SalesEditPage() {
                                         </div>
                                     </div>
 
-                                    {/* 咨询协议预览 */}
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-700 mb-2">咨询协议</h4>
-                                        <div className="border border-gray-300 rounded-lg overflow-hidden" style={{ height: '600px' }}>
-                                            <iframe
-                                                src={contractPreviewData.iframe2}
-                                                className="w-full h-full"
-                                                title="咨询协议预览"
-                                            />
+                                    {/* 咨询协议预览 - 根据配置决定是否显示 */}
+                                    {!siteConfig?.sales_simplified_mode && (
+                                        <div>
+                                            <h4 className="text-sm font-medium text-gray-700 mb-2">咨询协议</h4>
+                                            <div className="border border-gray-300 rounded-lg overflow-hidden" style={{ height: '600px' }}>
+                                                <iframe
+                                                    src={contractPreviewData.iframe2}
+                                                    className="w-full h-full"
+                                                    title="咨询协议预览"
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 

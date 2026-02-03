@@ -23,6 +23,7 @@ import {
 } from '@/services/auth';
 import { buildFileUrl } from '@/config/env';
 import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
+import { getSiteConfig, type SiteConfig } from '@/services/modules/tools';
 
 export default function AdmissionManagePage() {
   const { hasPermission, user } = useAuth();
@@ -49,6 +50,9 @@ export default function AdmissionManagePage() {
   
   // 合同检查状态 - 使用 Map 存储每个记录的检查状态
   const [checkingContracts, setCheckingContracts] = useState<Map<number, 'service' | 'consult' | null>>(new Map());
+  
+  // 网站配置
+  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
 
   // 权限检查页面
   if (!canView) {
@@ -84,7 +88,20 @@ export default function AdmissionManagePage() {
 
   useEffect(() => {
     loadData();
+    loadSiteConfig();
   }, []);
+
+  // 加载网站配置
+  const loadSiteConfig = async () => {
+    try {
+      const result = await getSiteConfig();
+      if (result.code === 200 && result.data) {
+        setSiteConfig(result.data);
+      }
+    } catch (error) {
+      console.error('加载网站配置失败:', error);
+    }
+  };
 
   // 防抖搜索
   useEffect(() => {
@@ -480,29 +497,33 @@ export default function AdmissionManagePage() {
                               <ArrowDownTrayIcon className="h-4 w-4" />
                             </button>
                           )}
-                          {/* 咨询协议按钮 */}
-                          {item.signing_request_state_2 === 1 && (
-                            <button
-                              onClick={() => handleCheckConsultContract(item)}
-                              disabled={checkingContracts.get(item.sales_id) === 'consult'}
-                              className="inline-flex items-center justify-center w-8 h-8 text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="咨询协议"
-                            >
-                              {checkingContracts.get(item.sales_id) === 'consult' ? (
-                                <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <ArrowPathIcon className="h-4 w-4" />
+                          {/* 咨询协议按钮 - 根据配置决定是否显示 */}
+                          {!siteConfig?.sales_simplified_mode && (
+                            <>
+                              {item.signing_request_state_2 === 1 && (
+                                <button
+                                  onClick={() => handleCheckConsultContract(item)}
+                                  disabled={checkingContracts.get(item.sales_id) === 'consult'}
+                                  className="inline-flex items-center justify-center w-8 h-8 text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="咨询协议"
+                                >
+                                  {checkingContracts.get(item.sales_id) === 'consult' ? (
+                                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <ArrowPathIcon className="h-4 w-4" />
+                                  )}
+                                </button>
                               )}
-                            </button>
-                          )}
-                          {item.signing_request_state_2 === 2 && item.consult_file && (
-                            <button
-                              onClick={() => handleDownloadConsultContract(item)}
-                              className="inline-flex items-center justify-center w-8 h-8 text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
-                              title="下载咨询协议"
-                            >
-                              <ArrowDownTrayIcon className="h-4 w-4" />
-                            </button>
+                              {item.signing_request_state_2 === 2 && item.consult_file && (
+                                <button
+                                  onClick={() => handleDownloadConsultContract(item)}
+                                  className="inline-flex items-center justify-center w-8 h-8 text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
+                                  title="下载咨询协议"
+                                >
+                                  <ArrowDownTrayIcon className="h-4 w-4" />
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>

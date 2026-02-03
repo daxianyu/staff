@@ -3,7 +3,7 @@ const nextConfig = {
   productionBrowserSourceMaps: true,
   async rewrites() {
     // 使用环境变量或默认值
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.huayaopudong.com';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.bhyone.com';
     return [
       {
         source: '/api/:path*',

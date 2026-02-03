@@ -732,6 +732,13 @@ export const defaultMenuConfig: MenuItem[] = [
         icon: 'clipboard-document-list',
         requiredPermissions: [PERMISSIONS.VIEW_MENTOR_CHANGE_RECORD],
       },
+      {
+        key: 'card-list',
+        label: 'Card List',
+        path: '/accounting/card-list',
+        icon: 'dollar-sign',
+        requiredPermissions: [PERMISSIONS.FINANCE],
+      },
     ],
   },
   {

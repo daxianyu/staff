@@ -280,15 +280,19 @@ export const addSingleGroup = async (
   }
 };
 
-// 批量新增group
+// 批量新增group（通过文件上传）
 export const addBatchGroup = async (
   campusId: number,
-  groups: Group[]
+  file: File
 ): Promise<ApiResponse> => {
   try {
+    const formData = new FormData();
+    formData.append('file', file);
+    // campus_id 从 URL 路径中获取，不需要在 FormData 中添加
+
     const { data } = await request(`/api/groups/add_batch_group/${campusId}`, {
       method: 'POST',
-      body: { groups },
+      body: formData,
     });
 
     return normalizeApiResponse(data as ApiEnvelope);

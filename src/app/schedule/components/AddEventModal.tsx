@@ -4,6 +4,7 @@ import { TableActionLink } from '@/components/TableActionLink';
 import TimePicker from '../../../components/TimePicker';
 import Button from '../../../components/Button';
 import NumberInput from '../../../components/NumberInput';
+import SearchableSelect from '@/components/SearchableSelect';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 
@@ -364,28 +365,71 @@ export default function AddEventModal({
       return [];
     }
 
-    // 获取当前时间段内已排课的教室ID
-    const bookedRoomIds = new Set<number>();
+    // 获取当前时间段内已排课的教室ID（使用字符串Set，因为room_info的key是字符串）
+    const bookedRoomIds = new Set<string>();
+    const selectedDateStr = moment(selectedDate).format('YYYY-MM-DD');
+    
+    // 调试日志
+    console.log('[教室过滤] 选中的日期:', selectedDateStr);
+    console.log('[教室过滤] 选中的时间段:', moment(start).format('HH:mm'), '-', moment(end).format('HH:mm'));
+    console.log('[教室过滤] 总事件数:', events.length);
+    
     events.forEach(event => {
       // 只检查课程类型的事件
       if (event.type === 'lesson' && event.room_id) {
-        // 检查时间段是否重叠
-        if (start < event.end && end > event.start) {
-          bookedRoomIds.add(event.room_id);
+        // 检查是否在同一天
+        const eventDateStr = moment(event.start).format('YYYY-MM-DD');
+        if (eventDateStr === selectedDateStr) {
+          // 检查时间段是否重叠
+          // 时间段重叠的条件：start < event.end && end > event.start
+          if (start < event.end && end > event.start) {
+            // 统一转换为字符串进行比较
+            const roomIdStr = String(event.room_id);
+            bookedRoomIds.add(roomIdStr);
+            console.log('[教室过滤] 发现已排课的教室:', roomIdStr, '时间段:', moment(event.start).format('HH:mm'), '-', moment(event.end).format('HH:mm'));
+          }
         }
       }
     });
 
+    console.log('[教室过滤] 已排课的教室ID:', Array.from(bookedRoomIds));
+
     // 过滤并排序教室
     const roomEntries = Object.entries(scheduleData.room_info as Record<string, string>);
     
-    return roomEntries
+    console.log('[教室过滤] room_info 中的教室总数:', roomEntries.length);
+    console.log('[教室过滤] room_info 前5个教室ID:', roomEntries.slice(0, 5).map(([id]) => ({ id, type: typeof id })));
+    
+    // 检查 room_info 中是否有教室 333
+    const room333Entry = roomEntries.find(([id]) => String(id) === '333');
+    if (room333Entry) {
+      console.log('[教室过滤] 找到教室333:', room333Entry, 'key类型:', typeof room333Entry[0], 'key值:', room333Entry[0]);
+      console.log('[教室过滤] 教室333是否在已排课列表:', bookedRoomIds.has(String(room333Entry[0])));
+    } else {
+      console.log('[教室过滤] 未找到教室333');
+    }
+    
+    console.log('[教室过滤] 当前模式:', mode, 'initialEvent:', initialEvent);
+    
+    const filtered = roomEntries
       .filter(([id, name]) => {
-        // 过滤掉已排课的教室（编辑模式下，如果是当前教室则不过滤）
-        if (mode === 'edit' && initialEvent?.room_id?.toString() === id) {
-          return true;
+        // 统一转换为字符串进行比较
+        const idStr = String(id);
+        const isBooked = bookedRoomIds.has(idStr);
+        
+        // 只有在编辑模式且是当前事件的教室时才保留（允许用户继续使用当前教室）
+        // 添加模式下，所有已排课的教室都要过滤掉
+        if (mode === 'edit' && initialEvent && initialEvent.room_id && String(initialEvent.room_id) === idStr) {
+          console.log('[教室过滤] 编辑模式，保留当前教室:', id, name, 'mode:', mode, 'initialEvent.room_id:', initialEvent?.room_id);
+          return true; // 编辑模式下保留当前教室
         }
-        return !bookedRoomIds.has(Number(id));
+        
+        // 已排课的教室都要过滤掉（添加模式，或编辑模式下非当前教室）
+        if (isBooked) {
+          console.log('[教室过滤] 过滤掉已排课的教室:', id, name, 'key类型:', typeof id, 'idStr:', idStr, 'isBooked:', isBooked, 'mode:', mode);
+          return false; // 过滤掉
+        }
+        return true; // 保留可用教室
       })
       .map(([id, name]) => ({
         id,
@@ -396,6 +440,10 @@ export default function AddEventModal({
         // 按教室名称升序排序
         return a.name.localeCompare(b.name, 'zh-CN');
       });
+    
+    console.log('[教室过滤] 可用教室数:', filtered.length);
+    
+    return filtered;
   }, [scheduleData?.room_info, selectedDate, start, end, events, mode, initialEvent?.room_id, classroomOwnerMap]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -924,25 +972,32 @@ export default function AddEventModal({
                           {scheduleData?.room_info && (
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Pick room</label>
-                              <select
-                                value={selectedRoom}
-                                onChange={(e) => setSelectedRoom(e.target.value)}
-                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                              >
-                                {availableRooms.length === 0 ? (
-                                  <option value="">暂无可用教室</option>
-                                ) : (
-                                  availableRooms.map(({ id, name, owner }) => (
-                                    <option key={id} value={id}>
-                                      {name}{owner ? ` (${owner})` : ''}
-                                    </option>
-                                  ))
-                                )}
-                              </select>
-                              {availableRooms.length === 0 && selectedDate && start && end && (
-                                <p className="mt-1 text-xs text-red-600">
-                                  该时间段内所有教室已被占用
-                                </p>
+                              {availableRooms.length === 0 ? (
+                                <>
+                                  <select
+                                    disabled
+                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-gray-50"
+                                  >
+                                    <option value="">暂无可用教室</option>
+                                  </select>
+                                  {selectedDate && start && end && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                      该时间段内所有教室已被占用
+                                    </p>
+                                  )}
+                                </>
+                              ) : (
+                                <SearchableSelect
+                                  options={availableRooms.map(({ id, name, owner }) => ({
+                                    id: id,
+                                    name: owner ? `${name} (${owner})` : name
+                                  }))}
+                                  value={selectedRoom || ''}
+                                  onValueChange={(value) => setSelectedRoom(value as string)}
+                                  placeholder="请选择教室"
+                                  searchPlaceholder="搜索教室..."
+                                  className="w-full"
+                                />
                               )}
                             </div>
                           )}

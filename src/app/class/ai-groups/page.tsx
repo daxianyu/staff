@@ -52,7 +52,6 @@ import SearchableSelect from '@/components/SearchableSelect';
 import { Calendar, momentLocalizer, Event } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import * as XLSX from 'xlsx';
 
 const localizer = momentLocalizer(moment);
 
@@ -300,17 +299,8 @@ export default function AIGroupsPage() {
     if (!file || !selectedCampusId) return;
 
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json<Partial<Group>>(worksheet);
-
-      if (jsonData.length === 0) {
-        alert('Excel文件为空');
-        return;
-      }
-
-      const response = await addBatchGroup(selectedCampusId, jsonData as Group[]);
+      // 直接上传文件，不进行前端解析
+      const response = await addBatchGroup(selectedCampusId, file);
       if (response.code === 200) {
         alert('批量上传成功');
         await loadCampusData();
@@ -318,8 +308,8 @@ export default function AIGroupsPage() {
         alert(response.message || '批量上传失败');
       }
     } catch (error) {
-      console.error('Excel解析失败:', error);
-      alert('Excel解析失败');
+      console.error('文件上传失败:', error);
+      alert('文件上传失败');
     }
 
     // 重置input

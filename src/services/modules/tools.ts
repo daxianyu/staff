@@ -600,3 +600,47 @@ export const uploadCooksbookFile = async (campusId: number, file: File): Promise
     return { code: 500, message: error instanceof Error ? error.message : '上传选课说明文件失败' };
   }
 };
+
+// ============= 网站配置 API =============
+
+export interface SiteConfig {
+  sales_simplified_mode: boolean; // sales 简化模式：发送合同时只发送服务协议、list 中只显示一个按钮、预览时只显示一个 iframe
+}
+
+// 获取网站配置
+export const getSiteConfig = async (): Promise<ApiResponse<SiteConfig>> => {
+  try {
+    const { data } = await request<ApiEnvelope<SiteConfig>>('/api/site/api-site-config', {
+      method: 'GET',
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('获取网站配置失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取网站配置失败',
+      data: {
+        sales_simplified_mode: false,
+      },
+    };
+  }
+};
+
+// 更新网站配置
+export const updateSiteConfig = async (config: SiteConfig): Promise<ApiResponse<string>> => {
+  try {
+    const { data } = await request<ApiEnvelope<string>>('/api/site/api-site-config', {
+      method: 'POST',
+      body: {
+        site_conf: config,
+      },
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('更新网站配置失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新网站配置失败',
+    };
+  }
+};

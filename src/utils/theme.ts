@@ -9,6 +9,22 @@ function darkenColor(hex: string, percent: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
+const buildCssVariablesFromColors = (colors: Theme['colors']): Record<string, string> => {
+  const buttonBg = colors.button?.primary?.background || colors.primary.background;
+  const buttonText = colors.button?.primary?.text || colors.primary.text || '#ffffff';
+  const buttonHover = buttonBg.startsWith('#') ? darkenColor(buttonBg, 10) : buttonBg;
+
+  return {
+    '--header-bg': colors.header.background,
+    '--header-text': colors.header.text,
+    '--sidebar-bg': colors.sidebar.background,
+    '--sidebar-text': colors.sidebar.text,
+    '--button-primary-bg': buttonBg,
+    '--button-primary-text': buttonText,
+    '--button-primary-hover': buttonHover,
+  };
+};
+
 export interface Theme {
   name: string;
   description: string;
@@ -158,22 +174,28 @@ export const fetchThemeFromAPI = async (): Promise<Theme | null> => {
         }
         
         if (themeData) {
-          // 如果接口返回了完整的主题对象（包含 name 和 cssVariables）
-          if (themeData.name && themeData.cssVariables && typeof themeData.cssVariables === 'object') {
-            // 验证主题对象结构
+          const rawCssVariables = (themeData.cssVariables || themeData.css_variables) as Record<string, string> | undefined;
+          const mergedColors: Theme['colors'] = themeData.colors || DEFAULT_THEME.colors;
+          const derivedCssVariables = buildCssVariablesFromColors(mergedColors);
+
+          // 如果接口返回了主题对象（优先 cssVariables，其次用 colors 推导）
+          if (themeData.name && (rawCssVariables || themeData.colors)) {
             const theme: Theme = {
               name: themeData.name,
               description: themeData.description || '',
-              colors: themeData.colors || DEFAULT_THEME.colors,
-              cssVariables: themeData.cssVariables,
+              colors: mergedColors,
+              cssVariables: {
+                ...DEFAULT_THEME.cssVariables,
+                ...derivedCssVariables,
+                ...(rawCssVariables && typeof rawCssVariables === 'object' ? rawCssVariables : {}),
+              },
             };
-            
-            // 调试信息（开发环境）
+
             if (process.env.NODE_ENV === 'development') {
               console.log('从接口获取到主题:', theme.name);
               console.log('CSS变量数量:', Object.keys(theme.cssVariables).length);
             }
-            
+
             return theme;
           }
           // 如果只返回了颜色值（向后兼容）

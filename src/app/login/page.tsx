@@ -148,7 +148,7 @@ export default function LoginPage() {
           {/* 标题区域 */}
           <div className="space-y-4">
             <h2 className="text-center text-3xl font-bold text-gray-900">
-              课程管理系统
+              个人学校系统
             </h2>
             <p className="text-center text-[15px] text-gray-600">
               请登录您的账号

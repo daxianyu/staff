@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 // 获取API基础URL（服务端使用环境变量或默认值）
 const getApiBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.huayaopudong.com';
+  return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.bhyone.com';
 };
 
 export async function middleware(request: NextRequest) {

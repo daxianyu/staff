@@ -25,6 +25,7 @@ import ReportTimeModal from './components/ReportTimeModal';
 import StartTimeModal from './components/StartTimeModal';
 import FreeSearchModal from './components/FreeSearchModal';
 import UploadCooksbookModal from './components/UploadCooksbookModal';
+import SiteConfigModal from './components/SiteConfigModal';
 
 interface Tool {
   name: string;
@@ -102,6 +103,11 @@ const tools: Tool[] = [
     name: '上传选课说明',
     description: '上传选课说明文件（cooksbook）',
     key: 'upload_cooksbook',
+  },
+  {
+    name: '网站配置',
+    description: '配置网站的自定义设置，用于不同网站部署的个性化配置',
+    key: 'site_config',
   },
 ];
 
@@ -209,6 +215,7 @@ export default function ToolsOverviewPage() {
       <StartTimeModal isOpen={openModal === 'start_time'} onClose={handleCloseModal} />
       <FreeSearchModal isOpen={openModal === 'free_search'} onClose={handleCloseModal} />
       <UploadCooksbookModal isOpen={openModal === 'upload_cooksbook'} onClose={handleCloseModal} />
+      <SiteConfigModal isOpen={openModal === 'site_config'} onClose={handleCloseModal} />
     </div>
   );
 }

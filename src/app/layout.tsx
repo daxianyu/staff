@@ -17,9 +17,9 @@ export default function RootLayout({
   return (
     <html lang="zh">
       <head>
-        <title>课程管理系统</title>
+        <title>个人学校系统</title>
         <script defer src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
-        <meta name="description" content="课程管理系统" />
+        <meta name="description" content="个人学校系统" />
       </head>
       <body>
         <AuthProvider>

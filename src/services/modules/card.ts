@@ -229,3 +229,46 @@ export const checkCardConsume = async (file: File): Promise<ApiResponse> => {
     };
   }
 };
+
+// 校园卡账户余额信息接口
+export interface BindUserAccountInfo {
+  type: string; // 类型（如"学生"）
+  record_id: number; // 记录id
+  personName: string; // 账户名
+  genAccount: number; // 普通账户金额（单位：元）
+  subAccount: number; // 补贴账户金额（单位：元）
+  totalAccount: number; // 账户总金额（单位：元）
+}
+
+// 获取所有校园卡的账户余额信息
+export interface BindUserListResponse {
+  rows: BindUserAccountInfo[];
+}
+
+export const getBindUserList = async (): Promise<ApiResponse<BindUserListResponse>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    
+    const response = await fetch('/api/user/get_bind_user_list', {
+      method: 'GET',
+      headers,
+    });
+    
+    const data = await response.json();
+    
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('获取校园卡账户余额信息失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取校园卡账户余额信息失败',
+    };
+  }
+};
