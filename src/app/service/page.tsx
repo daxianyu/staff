@@ -231,6 +231,21 @@ export default function ServicePage() {
     graduate_year: new Date().getFullYear(),
   });
 
+  const formatDateInput = (unixSeconds?: number) => {
+    if (!unixSeconds) return '';
+    const date = new Date(unixSeconds * 1000);
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().slice(0, 10);
+  };
+
+  const parseDateInput = (value: string, fallbackSeconds: number) => {
+    if (!value) return fallbackSeconds;
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return fallbackSeconds;
+    const localDate = new Date(year, month - 1, day, 0, 0, 0);
+    return Math.floor(localDate.getTime() / 1000);
+  };
+
   // 权限检查
   if (!canView) {
     return (
@@ -886,10 +901,10 @@ export default function ServicePage() {
                       <input
                         type="date"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={new Date(formData.start_time * 1000).toISOString().split('T')[0]}
+                        value={formatDateInput(formData.start_time)}
                         onChange={(e) => setFormData(prev => ({
                           ...prev,
-                          start_time: Math.floor(new Date(e.target.value).getTime() / 1000)
+                          start_time: parseDateInput(e.target.value, prev.start_time)
                         }))}
                       />
                     </div>
@@ -901,10 +916,10 @@ export default function ServicePage() {
                       <input
                         type="date"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={new Date(formData.end_time * 1000).toISOString().split('T')[0]}
+                        value={formatDateInput(formData.end_time)}
                         onChange={(e) => setFormData(prev => ({
                           ...prev,
-                          end_time: Math.floor(new Date(e.target.value).getTime() / 1000)
+                          end_time: parseDateInput(e.target.value, prev.end_time)
                         }))}
                       />
                     </div>
@@ -1174,10 +1189,10 @@ export default function ServicePage() {
                         <input
                           type="date"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={new Date(formData.start_time * 1000).toISOString().split('T')[0]}
+                        value={formatDateInput(formData.start_time)}
                           onChange={(e) => setFormData(prev => ({
                             ...prev,
-                            start_time: Math.floor(new Date(e.target.value).getTime() / 1000)
+                          start_time: parseDateInput(e.target.value, prev.start_time)
                           }))}
                         />
                       </div>
@@ -1189,10 +1204,10 @@ export default function ServicePage() {
                         <input
                           type="date"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={new Date(formData.end_time * 1000).toISOString().split('T')[0]}
+                        value={formatDateInput(formData.end_time)}
                           onChange={(e) => setFormData(prev => ({
                             ...prev,
-                            end_time: Math.floor(new Date(e.target.value).getTime() / 1000)
+                          end_time: parseDateInput(e.target.value, prev.end_time)
                           }))}
                         />
                       </div>

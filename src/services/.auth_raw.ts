@@ -1136,8 +1136,8 @@ export async function updateStaffSchedule(staffId: string, scheduleData: any) {
 export async function updateStaffUnavailable(staffId: string, unavailableData: UnavailableEventAPI) {
   const url = `/api/staff/update_staff_unavailable/${staffId}`;
   unavailableData.time_list = unavailableData.time_list.map(item => ({
-    start_time: item.start_time / 1000,
-    end_time: item.end_time / 1000
+    start_time: item.start_time,
+    end_time: item.end_time
   }));
   const headers: HeadersInit = {
     'Content-Type': 'application/json',

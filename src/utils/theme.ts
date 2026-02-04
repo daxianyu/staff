@@ -157,23 +157,31 @@ export const fetchThemeFromAPI = async (): Promise<Theme | null> => {
       ...getAuthHeader(),
     };
 
-    const response = await fetch('/api/site/api-echo-params', {
+    const response = await fetch('/api/site/api-echo-params?key=TEACHER_THEME', {
       method: 'GET',
       headers,
     });
 
     if (response.ok) {
-      const result = await response.json();
-      if (result.status === 0 && result.data) {
-        // 优先使用 staff_theme（当前项目是 staff）
-        let themeData = result.data.staff_theme;
-        
-        // 如果没有 staff_theme，尝试使用 theme（向后兼容）
-        if (!themeData) {
-          themeData = result.data.theme;
-        }
-        
-        if (themeData) {
+      // 新 API 返回的是纯文本（JSON 字符串）
+      const text = await response.text();
+      if (text) {
+        try {
+          // 先反序列化 JSON 字符串
+          const parsedData = JSON.parse(text);
+          // parsedData.data 是 JSON 字符串，需要再次反序列化
+          let dataObj = parsedData.data;
+          if (typeof dataObj === 'string') {
+            dataObj = JSON.parse(dataObj);
+          }
+          // 从解析后的数据中提取 staff_theme 字段
+          let themeData = dataObj.staff_theme || dataObj;
+          
+          // 如果 staff_theme 是字符串，需要再次解析
+          if (typeof themeData === 'string') {
+            themeData = JSON.parse(themeData);
+          }
+          
           const rawCssVariables = (themeData.cssVariables || themeData.css_variables) as Record<string, string> | undefined;
           const mergedColors: Theme['colors'] = themeData.colors || DEFAULT_THEME.colors;
           const derivedCssVariables = buildCssVariablesFromColors(mergedColors);
@@ -238,11 +246,8 @@ export const fetchThemeFromAPI = async (): Promise<Theme | null> => {
               },
             };
           }
-        } else {
-          // 调试信息：接口返回了数据但没有主题
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('接口返回的数据中没有找到主题:', result.data);
-          }
+        } catch (parseError) {
+          console.error('解析主题 JSON 失败:', parseError);
         }
       }
     } else {

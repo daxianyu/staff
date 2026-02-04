@@ -292,7 +292,7 @@ export default function SchedulePage() {
       setEvents(allEvents);
 
       if (Array.isArray(resp.data.unavailable)) {
-        // 转换时间段并合并重叠的时间段
+        // 转换时间段并合并重叠的时间段（后端返回秒级时间戳）
         const timeRanges = resp.data.unavailable.map((unavailable: any) => ({
           start: moment.unix(unavailable.start_time).toDate(),
           end: moment.unix(unavailable.end_time).toDate()
@@ -564,7 +564,7 @@ export default function SchedulePage() {
             });
           }
         } else {
-          // 不重复：只添加当前时间段（已经是秒级时间戳）
+          // 不重复：只添加当前时间段（秒级时间戳）
           newTimeList.push({
             start_time: startTime,
             end_time: endTime
@@ -674,7 +674,7 @@ export default function SchedulePage() {
             });
           }
         } else {
-          // 不重复：只更新当前时间段（转换为秒级时间戳）
+          // 不重复：只更新当前时间段（秒级时间戳）
           newTimeList.push({
             start_time: Math.floor(newStartTime.toDate().getTime() / 1000),
             end_time: Math.floor(newEndTime.toDate().getTime() / 1000)

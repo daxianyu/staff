@@ -40,6 +40,21 @@ export default function ExamSignupPage() {
   const [filterPeriod, setFilterPeriod] = useState<number | ''>('');
   const [filterType, setFilterType] = useState<number | ''>('');
 
+  const formatExamDate = (time: ExamListItem['time']) => {
+    if (!time) return '未设置';
+    if (typeof time === 'number') {
+      return new Date(time * 1000).toLocaleDateString('zh-CN');
+    }
+    if (typeof time === 'string') {
+      const parsed = new Date(time);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleDateString('zh-CN');
+      }
+      return time.split(' ')[0];
+    }
+    return '未设置';
+  };
+
   // 加载考试列表
   const loadExams = async () => {
     setLoading(true);
@@ -202,7 +217,7 @@ export default function ExamSignupPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {exam.time ? (typeof exam.time === 'number' ? new Date(exam.time * 1000).toLocaleString('zh-CN') : exam.time) : '未设置'}
+                          {formatExamDate(exam.time)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

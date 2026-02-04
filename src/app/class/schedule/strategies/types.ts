@@ -34,7 +34,7 @@ export interface StrategyCtx {
   // 当前时间选择（由外壳生成）
   start: Date;
   end: Date;
-  // 用于不可用策略做全量更新
+  // 用于不可用策略做全量更新（秒级时间戳）
   unavailableRangesSec?: Array<{ start_time: number; end_time: number }>;
 }
 

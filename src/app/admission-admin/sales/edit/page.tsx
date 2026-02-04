@@ -21,7 +21,7 @@ import {
     type RejectMailParams,
     type ContractPreviewData,
 } from '@/services/auth';
-import { getSiteConfig, type SiteConfig } from '@/services/modules/tools';
+import { getSalesSimplifiedMode, type SiteConfig } from '@/services/auth';
 import { getApiBaseUrl } from '@/config/env';
 import {
     ArrowLeftIcon,
@@ -390,10 +390,10 @@ export default function SalesEditPage() {
     useEffect(() => {
         const loadSiteConfig = async () => {
             try {
-                const result = await getSiteConfig();
-                if (result.code === 200 && result.data) {
-                    setSiteConfig(result.data);
-                }
+                const salesSimplifiedMode = await getSalesSimplifiedMode();
+                setSiteConfig({
+                    sales_simplified_mode: salesSimplifiedMode,
+                });
             } catch (error) {
                 console.error('加载网站配置失败:', error);
             }

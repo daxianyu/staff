@@ -57,8 +57,8 @@ export const UnavailableStrategy: EventTypeStrategy<Form> = {
     }
 
     // 全量：现有 - 当前
-    const origS = Number(String(ctx.initialEvent?.start?.getTime?.() ?? 0) ? Math.floor(ctx.initialEvent.start.getTime() / 1000) : 0);
-    const origE = Number(String(ctx.initialEvent?.end?.getTime?.() ?? 0) ? Math.floor(ctx.initialEvent.end.getTime() / 1000) : 0);
+    const origS = ctx.initialEvent?.start?.getTime?.() ? Math.floor(ctx.initialEvent.start.getTime() / 1000) : 0;
+    const origE = ctx.initialEvent?.end?.getTime?.() ? Math.floor(ctx.initialEvent.end.getTime() / 1000) : 0;
 
     const kept = (ctx.unavailableRangesSec || []).filter(t => !(t.start_time === origS && t.end_time === origE));
     const r = await api.updateStaffUnavailable(api.staffId, {

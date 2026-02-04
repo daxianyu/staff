@@ -98,7 +98,7 @@ interface AddEventModalProps {
   allowedTypes?: EventKind[]; // 父组件决定允许哪些类型（lesson/unavailable/invigilate）
   defaultType?: EventKind;
   api?: ApiBundle;
-  unavailableRangesSec?: Array<{ start_time: number; end_time: number }>; // 秒，用于策略内部不可用计算
+  unavailableRangesSec?: Array<{ start_time: number; end_time: number }>; // 秒级时间戳，用于策略内部不可用计算
   onSaved?: () => void; // 策略保存/删除成功后的回调（一般用于刷新）
   onError?: (errorData: { teacher_error?: string[]; student_error?: string[]; room_error?: string[] }) => void; // 错误处理回调
 }

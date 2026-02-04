@@ -1,4 +1,4 @@
-import { request, normalizeApiResponse } from '../apiClient';
+import { request, normalizeApiResponse, buildQueryString } from '../apiClient';
 import type { ApiResponse, ApiEnvelope } from '../types';
 import type { RemarkConfRecord, RemarkConfListResponse, RemarkConfAddParams } from './remark';
 export type { RemarkConfRecord, RemarkConfListResponse, RemarkConfAddParams };
@@ -607,13 +607,55 @@ export interface SiteConfig {
   sales_simplified_mode: boolean; // sales 简化模式：发送合同时只发送服务协议、list 中只显示一个按钮、预览时只显示一个 iframe
 }
 
-// 获取网站配置
+// 获取 Sales 简化模式配置（直接使用新接口）
+export const getSalesSimplifiedMode = async (): Promise<boolean> => {
+  try {
+    const url = `/api/site/api-echo-params${buildQueryString({ key: 'sales_simplified_mode' })}`;
+    const { response, data } = await request<string>(url, {
+      method: 'GET',
+      parser: 'text',
+    });
+    
+    if (response.ok && data) {
+      try {
+        // 先反序列化 JSON 字符串
+        const parsedData = JSON.parse(data);
+        // parsedData.data 是 JSON 字符串，需要再次反序列化
+        let dataObj = parsedData.data;
+        if (typeof dataObj === 'string') {
+          dataObj = JSON.parse(dataObj);
+        }
+        
+        // 解析 sales_simplified_mode（可能是字符串 "true"/"false" 或布尔值）
+        if (typeof dataObj === 'boolean') {
+          return dataObj;
+        } else if (typeof dataObj === 'string') {
+          return dataObj === 'true' || dataObj === '1';
+        } else if (typeof dataObj === 'object' && dataObj !== null) {
+          return dataObj.sales_simplified_mode === true || dataObj.sales_simplified_mode === 'true' || dataObj.sales_simplified_mode === '1';
+        }
+      } catch (parseError) {
+        console.error('解析配置 JSON 失败:', parseError);
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('获取 Sales 简化模式配置失败:', error);
+    return false;
+  }
+};
+
+// 获取网站配置（Sales 简化模式）- 保持向后兼容
 export const getSiteConfig = async (): Promise<ApiResponse<SiteConfig>> => {
   try {
-    const { data } = await request<ApiEnvelope<SiteConfig>>('/api/site/api-site-config', {
-      method: 'GET',
-    });
-    return normalizeApiResponse(data);
+    const salesSimplifiedMode = await getSalesSimplifiedMode();
+    return {
+      code: 200,
+      message: '获取成功',
+      data: {
+        sales_simplified_mode: salesSimplifiedMode,
+      },
+    };
   } catch (error) {
     console.error('获取网站配置失败:', error);
     return {
@@ -626,13 +668,13 @@ export const getSiteConfig = async (): Promise<ApiResponse<SiteConfig>> => {
   }
 };
 
-// 更新网站配置
+// 更新网站配置（Sales 简化模式）- 保持向后兼容
 export const updateSiteConfig = async (config: SiteConfig): Promise<ApiResponse<string>> => {
   try {
-    const { data } = await request<ApiEnvelope<string>>('/api/site/api-site-config', {
+    const { data } = await request<ApiEnvelope<string>>('/api/site/api-echo-params', {
       method: 'POST',
       body: {
-        site_conf: config,
+        sales_simplified_mode: String(config.sales_simplified_mode),
       },
     });
     return normalizeApiResponse(data);
@@ -641,6 +683,77 @@ export const updateSiteConfig = async (config: SiteConfig): Promise<ApiResponse<
     return {
       code: 500,
       message: error instanceof Error ? error.message : '更新网站配置失败',
+    };
+  }
+};
+
+
+// ============= JSON 存储 API =============
+
+// 保存数据（支持 JSON 和纯字符串）
+export const saveJsonData = async (key: string, value: string): Promise<ApiResponse<string>> => {
+  try {
+    const { data } = await request<ApiEnvelope<string>>('/api/site/api-echo-params', {
+      method: 'POST',
+      body: {
+        [key]: value,
+      },
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('保存数据失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '保存数据失败',
+    };
+  }
+};
+
+// 获取单个数据
+export const getJsonData = async (key: string): Promise<ApiResponse<string>> => {
+  try {
+    const url = `/api/site/api-echo-params${buildQueryString({ key })}`;
+    const { response, data } = await request<string>(url, {
+      method: 'GET',
+      parser: 'text',
+    });
+    // 由于返回的是纯文本，需要手动包装成 ApiResponse
+    if (response.ok) {
+      return {
+        code: 200,
+        message: '获取成功',
+        data: data || '',
+      };
+    } else {
+      return {
+        code: response.status,
+        message: '获取失败',
+        data: '',
+      };
+    }
+  } catch (error) {
+    console.error('获取数据失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取数据失败',
+      data: '',
+    };
+  }
+};
+
+// 获取所有数据（不传 key）
+export const getAllJsonData = async (): Promise<ApiResponse<Record<string, string>>> => {
+  try {
+    const { data } = await request<ApiEnvelope<Record<string, string>>>('/api/site/api-echo-params', {
+      method: 'GET',
+    });
+    return normalizeApiResponse(data);
+  } catch (error) {
+    console.error('获取所有数据失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取所有数据失败',
+      data: {},
     };
   }
 };

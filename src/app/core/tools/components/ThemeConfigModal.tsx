@@ -50,18 +50,48 @@ export default function ThemeConfigModal({ isOpen, onClose }: ThemeConfigModalPr
         ...getAuthHeader(),
       };
 
-      const response = await fetch('/api/site/api-echo-params', {
+      const response = await fetch('/api/site/api-echo-params?key=TEACHER_THEME', {
         method: 'GET',
         headers,
       });
 
       if (response.ok) {
-        const result = await response.json();
-        if (result.status === 0 && result.data) {
-          setConfig({
-            default_theme: result.data.default_theme || createDefaultTheme('default_theme'),
-            staff_theme: result.data.staff_theme || createDefaultTheme('staff_theme'),
-          });
+        // 新 API 返回的是纯文本（JSON 字符串）
+        const text = await response.text();
+        if (text) {
+          try {
+            // 先反序列化 JSON 字符串
+            const parsedData = JSON.parse(text);
+            // parsedData.data 是 JSON 字符串，需要再次反序列化
+            let dataObj = parsedData.data;
+            if (typeof dataObj === 'string') {
+              dataObj = JSON.parse(dataObj);
+            }
+            
+            // 提取主题配置
+            let defaultTheme = dataObj.default_theme;
+            let staffTheme = dataObj.staff_theme;
+            
+            // 如果主题配置是字符串，需要再次解析
+            if (typeof defaultTheme === 'string') {
+              defaultTheme = JSON.parse(defaultTheme);
+            }
+            if (typeof staffTheme === 'string') {
+              staffTheme = JSON.parse(staffTheme);
+            }
+            
+            setConfig({
+              default_theme: defaultTheme || createDefaultTheme('default_theme'),
+              staff_theme: staffTheme || createDefaultTheme('staff_theme'),
+            });
+          } catch (parseError) {
+            console.error('解析主题配置 JSON 失败:', parseError);
+            // 如果解析失败，创建默认配置
+            setConfig({
+              default_theme: createDefaultTheme('default_theme'),
+              staff_theme: createDefaultTheme('staff_theme'),
+            });
+          }
         } else {
           // 如果没有数据，创建默认配置
           setConfig({
@@ -143,12 +173,15 @@ export default function ThemeConfigModal({ isOpen, onClose }: ThemeConfigModalPr
         ...getAuthHeader(),
       };
 
+      // 新 API 格式：使用 key-value 格式，key 为 TEACHER_THEME
       const response = await fetch('/api/site/api-echo-params', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          default_theme: config.default_theme,
-          staff_theme: config.staff_theme,
+          TEACHER_THEME: JSON.stringify({
+            default_theme: config.default_theme,
+            staff_theme: config.staff_theme,
+          }),
         }),
       });
 
