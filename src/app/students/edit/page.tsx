@@ -239,10 +239,8 @@ export default function StudentEditPage() {
     if (field === 'phone_number' || field === 'fathers_phone_number' || field === 'mothers_phone_number') {
       const error = validatePhone(value as string);
       if (error) setValidationErrors(prev => ({ ...prev, [field]: error }));
-    } else if (field === 'email' || field === 'fathers_email' || field === 'mothers_email') {
-      const error = validateEmail(value as string);
-      if (error) setValidationErrors(prev => ({ ...prev, [field]: error }));
     }
+    // 注意：email 字段不再进行格式校验，因为有些人的登录账号不是 email
   };
 
   const loadStudentInfo = async () => {
@@ -354,13 +352,12 @@ export default function StudentEditPage() {
     // 验证所有字段
     const phoneError = formData.phone_number ? validatePhone(formData.phone_number) : null;
     const parentPhoneError = formData.mothers_phone_number ? validatePhone(formData.mothers_phone_number) : null;
-    const emailError = validateEmail(formData.email);
+    // 注意：email 字段不再进行格式校验，因为有些人的登录账号不是 email
     
     const errors: Record<string, string | undefined> = {};
     const effectiveRecordId = Number(formData.record_id || (studentId ? Number(studentId) : 0));
     if (phoneError) errors.phone_number = phoneError;
     if (parentPhoneError) errors.mothers_phone_number = parentPhoneError;
-    if (emailError) errors.email = emailError;
     if (!formData.first_name?.trim()) errors.first_name = 'First name is required';
     if (!formData.last_name?.trim()) errors.last_name = 'Last name is required';
     if (!formData.email?.trim()) errors.email = errors.email || 'Email is required';
@@ -798,11 +795,9 @@ export default function StudentEditPage() {
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     required
-                    pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                    title="Please enter a valid email address (e.g., user@example.com)"
-                    placeholder="e.g., user@example.com"
+                    placeholder="登录账号（可以是邮箱或其他格式）"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-transparent ${

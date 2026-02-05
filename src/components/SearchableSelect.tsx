@@ -4,6 +4,7 @@ import { useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Command } from 'cmdk';
 import { ChevronDownIcon, CheckIcon } from '@radix-ui/react-icons';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Option<T extends string | number> {
   id: T;
@@ -20,6 +21,7 @@ interface SearchableSelectProps<T extends string | number> {
   disabled?: boolean;
   multiple?: boolean;
   onSearch?: (value: string) => void;
+  clearable?: boolean;
 }
 
 export default function SearchableSelect<T extends string | number>({
@@ -31,7 +33,8 @@ export default function SearchableSelect<T extends string | number>({
   className = "",
   disabled = false,
   multiple = false,
-  onSearch
+  onSearch,
+  clearable = false
 }: SearchableSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -53,7 +56,15 @@ export default function SearchableSelect<T extends string | number>({
         : [...currentValues, selectedId];
       onValueChange(newValues);
     } else {
-      onValueChange(selectedId);
+      // 单选模式：如果点击已选中的项，则取消选择（设置为空值）
+      const currentValue = value as T;
+      if (isEqual(currentValue, selectedId)) {
+        // 根据类型设置空值：string 类型为空字符串，number 类型为 -1（表示未选择）
+        const emptyValue = (typeof selectedId === 'string' ? '' : -1) as T;
+        onValueChange(emptyValue);
+      } else {
+        onValueChange(selectedId);
+      }
       setIsOpen(false);
     }
   };
@@ -76,6 +87,22 @@ export default function SearchableSelect<T extends string | number>({
       return `${selected.length} 项已选择`;
     } else {
       return (selectedOptions as Option<T>)?.name || placeholder;
+    }
+  };
+
+  // 检查是否有值
+  const hasValue = multiple
+    ? (value as T[]).length > 0
+    : (typeof value === 'string' ? value !== '' : value !== -1);
+
+  // 清除选择
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (multiple) {
+      onValueChange([] as T[]);
+    } else {
+      const emptyValue = (typeof value === 'string' ? '' : -1) as T;
+      onValueChange(emptyValue);
     }
   };
 
@@ -143,7 +170,19 @@ export default function SearchableSelect<T extends string | number>({
               <span className="truncate">{getDisplayText()}</span>
             )}
           </div>
-          <ChevronDownIcon className="h-4 w-4 ml-2 flex-shrink-0" />
+          <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+            {clearable && hasValue && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="p-0.5 hover:bg-gray-200 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500"
+                aria-label="清除选择"
+              >
+                <XMarkIcon className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+              </button>
+            )}
+            <ChevronDownIcon className="h-4 w-4" />
+          </div>
         </button>
       </Popover.Trigger>
 

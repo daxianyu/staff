@@ -1351,19 +1351,21 @@ function GroupModal({
   onClose: () => void;
   onSave: (group: Group) => void;
 }) {
-  const [topicId, setTopicId] = useState(group?.topic_id ? String(group.topic_id) : '');
+  const [topicId, setTopicId] = useState<string>(group?.topic_id ? String(group.topic_id) : '');
   const [lessons, setLessons] = useState(group?.week_lessons ? String(group.week_lessons) : '');
-  const [examId, setExamId] = useState(group?.exam_id ? String(group.exam_id) : '');
-  const [fixedTimeSlots, setFixedTimeSlots] = useState(() => {
+  const [examId, setExamId] = useState<number>(group?.exam_id ? Number(group.exam_id) : -1);
+  const [fixedTimeSlots, setFixedTimeSlots] = useState<number>(() => {
     const value = group?.fix_time;
-    if (!value) return '';
-    if (Array.isArray(value)) return value.join(',');
-    return String(value);
+    if (!value) return -1;
+    if (Array.isArray(value)) return value[0] ?? -1;
+    const num = Number(value);
+    return isNaN(num) ? -1 : num;
   });
   const [isTripleLesson, setIsTripleLesson] = useState(Boolean(group?.double_lesson));
-  const [fixedRoom, setFixedRoom] = useState(() => {
-    if (!group?.fix_room || group.fix_room === -1) return '';
-    return String(group.fix_room);
+  const [fixedRoom, setFixedRoom] = useState<number>(() => {
+    if (!group?.fix_room || group.fix_room === -1) return -1;
+    const num = Number(group.fix_room);
+    return isNaN(num) ? -1 : num;
   });
   const [assigningName, setAssigningName] = useState(group?.class_type || '');
   const [maxStudents, setMaxStudents] = useState(group?.max_students ? String(group.max_students) : '');
@@ -1402,7 +1404,7 @@ function GroupModal({
       campus_id: group?.campus_id ?? campusId,
       topic_id: Number(topicId) || 0,
       week_lessons: Number(lessons) || 0,
-      exam_id: examId ? Number(examId) : undefined,
+      exam_id: examId > 0 ? examId : undefined,
       max_students: normalizedMax,
       prefer_students: group?.prefer_students ?? normalizedMax,
       double_lesson: isTripleLesson ? 1 : 0,
@@ -1410,24 +1412,14 @@ function GroupModal({
       student_ids: selectedStudents.join(','),
     };
 
-    if (fixedRoom) {
-      const parsedRoom = Number(fixedRoom);
-      if (!Number.isNaN(parsedRoom)) {
-        payload.fix_room = parsedRoom;
-      } else {
-        delete payload.fix_room;
-      }
+    if (fixedRoom >= 0) {
+      payload.fix_room = fixedRoom;
     } else {
       payload.fix_room = -1;
     }
 
-    if (fixedTimeSlots.trim()) {
-      const slots = parseIdInput(fixedTimeSlots);
-      if (slots.length === 1) {
-        payload.fix_time = slots[0];
-      } else {
-        payload.fix_time = slots;
-      }
+    if (fixedTimeSlots >= 0) {
+      payload.fix_time = fixedTimeSlots;
     } else {
       delete payload.fix_time;
     }
@@ -1478,16 +1470,16 @@ function GroupModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Topic <span className="text-red-500">*</span>
               </label>
-              <select
+              <SearchableSelect<string>
+                options={topicOptions}
                 value={topicId}
-                onChange={(e) => setTopicId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="">请选择 Topic</option>
-                {topicOptions.map(topic => (
-                  <option key={topic.id} value={topic.id}>{topic.name}</option>
-                ))}
-              </select>
+                onValueChange={(val) => setTopicId(val as string)}
+                placeholder="请选择 Topic"
+                searchPlaceholder="搜索 Topic..."
+                multiple={false}
+                clearable={true}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1505,31 +1497,40 @@ function GroupModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Exam
               </label>
-              <select
-                value={examId}
-                onChange={(e) => setExamId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="">请选择 Exam</option>
-                {examOptions.map(exam => (
-                  <option key={exam.id} value={exam.id}>{exam.name}</option>
-                ))}
-              </select>
+              <SearchableSelect<number>
+                options={examOptions}
+                value={examId > 0 ? examId : -1}
+                onValueChange={(val) => {
+                  const numVal = val as number;
+                  setExamId(numVal > 0 ? numVal : -1);
+                }}
+                placeholder="请选择 Exam"
+                searchPlaceholder="搜索 Exam..."
+                multiple={false}
+                clearable={true}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Fixed Time Slots
               </label>
-              <select
-                value={fixedTimeSlots}
-                onChange={(e) => setFixedTimeSlots(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="">请选择时间槽</option>
-                {timeslots.map((slot, idx) => (
-                  <option key={idx} value={idx}>{slot}</option>
-                ))}
-              </select>
+              <SearchableSelect<number>
+                options={timeslots.map((slot, idx) => ({
+                  id: idx,
+                  name: slot,
+                }))}
+                value={fixedTimeSlots >= 0 ? fixedTimeSlots : -1}
+                onValueChange={(val) => {
+                  const numVal = val as number;
+                  setFixedTimeSlots(numVal >= 0 ? numVal : -1);
+                }}
+                placeholder="请选择时间槽"
+                searchPlaceholder="搜索时间槽..."
+                multiple={false}
+                clearable={true}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1556,16 +1557,22 @@ function GroupModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Fix Room
               </label>
-              <select
-                value={fixedRoom}
-                onChange={(e) => setFixedRoom(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="">请选择教室</option>
-                {roomOptions.map(room => (
-                  <option key={room.id} value={room.id}>{room.name}</option>
-                ))}
-              </select>
+              <SearchableSelect<number>
+                options={roomOptions.map(room => ({
+                  id: room.id,
+                  name: room.name,
+                }))}
+                value={fixedRoom >= 0 ? fixedRoom : -1}
+                onValueChange={(val) => {
+                  const numVal = val as number;
+                  setFixedRoom(numVal >= 0 ? numVal : -1);
+                }}
+                placeholder="请选择教室"
+                searchPlaceholder="搜索教室..."
+                multiple={false}
+                clearable={true}
+                className="w-full"
+              />
             </div>
           </div>
 
