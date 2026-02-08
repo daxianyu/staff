@@ -127,29 +127,37 @@ export default function GroupAssignmentRequestsPage() {
     if (!deferredSearchTerm.trim()) return requests;
 
     const term = deferredSearchTerm.toLowerCase();
-    return requests.filter(request =>
-      // 学生姓名搜索
-      (request.first_name && request.first_name.toLowerCase().includes(term)) ||
-      (request.last_name && request.last_name.toLowerCase().includes(term)) ||
-      // 学生ID搜索
-      String(request.student_id).includes(term) ||
-      // 校区搜索
-      (request.campus_name && request.campus_name.toLowerCase().includes(term)) ||
-      (request.campus_id && String(request.campus_id).includes(term)) ||
-      // 导师搜索
-      (request.mentor_name && request.mentor_name.toLowerCase().includes(term)) ||
-      (request.mentor_id && String(request.mentor_id).includes(term)) ||
-      // 考试搜索
-      (request.exam_name && request.exam_name.toLowerCase().includes(term)) ||
-      (request.exam_id && String(request.exam_id).includes(term)) ||
-      // 班级搜索
-      (request.class_name && request.class_name.toLowerCase().includes(term)) ||
-      // 科目搜索
-      (user?.topics?.[String(request.topic_id)] && user.topics[String(request.topic_id)].toLowerCase().includes(term)) ||
-      (request.topic_id && String(request.topic_id).includes(term)) ||
-      // 备注搜索
-      (request.note && request.note.toLowerCase().includes(term))
-    );
+    return requests.filter(request => {
+      // 学生姓名搜索 - 支持分开搜索和合并搜索
+      const fullName = `${request.last_name ?? ''}${request.first_name ?? ''}`.toLowerCase();
+      const firstName = (request.first_name || '').toLowerCase();
+      const lastName = (request.last_name || '').toLowerCase();
+      
+      return (
+        // 学生姓名搜索（分开和合并）
+        firstName.includes(term) ||
+        lastName.includes(term) ||
+        fullName.includes(term) ||
+        // 学生ID搜索
+        String(request.student_id).includes(term) ||
+        // 校区搜索
+        (request.campus_name && request.campus_name.toLowerCase().includes(term)) ||
+        (request.campus_id && String(request.campus_id).includes(term)) ||
+        // 导师搜索
+        (request.mentor_name && request.mentor_name.toLowerCase().includes(term)) ||
+        (request.mentor_id && String(request.mentor_id).includes(term)) ||
+        // 考试搜索
+        (request.exam_name && request.exam_name.toLowerCase().includes(term)) ||
+        (request.exam_id && String(request.exam_id).includes(term)) ||
+        // 班级搜索
+        (request.class_name && request.class_name.toLowerCase().includes(term)) ||
+        // 科目搜索
+        (user?.topics?.[String(request.topic_id)] && user.topics[String(request.topic_id)].toLowerCase().includes(term)) ||
+        (request.topic_id && String(request.topic_id).includes(term)) ||
+        // 备注搜索
+        (request.note && request.note.toLowerCase().includes(term))
+      );
+    });
   }, [requests, deferredSearchTerm, user]);
 
   const { visibleRequests, startIndex, topPaddingHeight, bottomPaddingHeight } = useMemo(() => {

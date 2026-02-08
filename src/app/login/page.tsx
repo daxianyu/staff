@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getUserInfo, getStudentSalesInfo, handleUserRedirect } from '@/services/auth';
+import { initTheme } from '@/utils/theme';
 
 interface LoginFormData {
   username: string;
@@ -27,6 +28,11 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // 页面加载时初始化主题
+  useEffect(() => {
+    initTheme();
+  }, []);
 
   // 页面加载时，从 localStorage 恢复保存的用户名和密码
   // WebView 的 localStorage 是持久化的，小程序和浏览器都可以直接使用
@@ -142,7 +148,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 p-6">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--header-bg, #3b7bc0)' }}>
       <div className="w-[480px] bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl">
         <div className="px-14 py-12 space-y-14">
           {/* 标题区域 */}
