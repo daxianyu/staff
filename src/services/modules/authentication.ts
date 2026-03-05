@@ -181,7 +181,8 @@ export const handleUserRedirect = async (userData: BasicUser, router: RouterLike
     const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
     
     // 1. 检查是否处于错误的系统路径下
-    const isStudentPath = pathname.startsWith('/student');
+    // 学生端路径为 /student 或 /student/xxx（单数），/students/xxx 为 staff 端的学生管理页面，不在此列
+    const isStudentPath = pathname === '/student' || pathname.startsWith('/student/');
     const isStaffPath = pathname.startsWith('/staff') || pathname === '/' || pathname === '/login';
 
     // 如果是学生或预备学生类型

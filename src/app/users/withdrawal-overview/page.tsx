@@ -532,7 +532,7 @@ export default function WithdrawalOverviewPage() {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {statusForm.status === '1' ? '通过申请' : '拒绝申请'}
+                  {statusForm.status === '2' ? '通过申请' : '拒绝申请'}
                 </h3>
                 <button
                   onClick={() => setShowStatusModal(false)}
@@ -552,7 +552,7 @@ export default function WithdrawalOverviewPage() {
                       考试：<strong>{selectedRecord.exam_name}</strong>
                     </p>
                   </div>
-                  {statusForm.status === '2' && (
+                  {statusForm.status === '3' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         拒绝原因
@@ -563,7 +563,6 @@ export default function WithdrawalOverviewPage() {
                         rows={3}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="请输入拒绝原因"
-                        required
                       />
                     </div>
                   )}
@@ -580,12 +579,12 @@ export default function WithdrawalOverviewPage() {
                 <button
                   onClick={handleStatusUpdate}
                   className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md ${
-                    statusForm.status === '1' 
+                    statusForm.status === '2' 
                       ? 'bg-green-600 hover:bg-green-700' 
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
-                  {statusForm.status === '1' ? '通过' : '拒绝'}
+                  {statusForm.status === '2' ? '通过' : '拒绝'}
                 </button>
               </div>
             </div>

@@ -78,6 +78,7 @@ export interface AssignmentInfo {
   topic_name: string;
   note: string;
   signup_time: number;
+  frequency?: string; // 课频
 }
 
 export interface MenteeExamInfo {

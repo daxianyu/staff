@@ -27,6 +27,8 @@ export interface SalesRecord {
   has_right: boolean;           // 是否有权限
   service_tail: string;         // 服务文件链接
   consult_tail: string;         // 咨询文件链接
+  show_service?: boolean | number | string;  // 是否展示服务协议按钮
+  show_consult?: boolean | number | string;  // 是否展示咨询协议按钮
   [key: string]: any;
 }
 
@@ -166,6 +168,8 @@ export interface ExamConfig {
   create_time: string;          // 创建时间
   price: number;                // 价格
   exam_type: string;            // 考试类型名称
+  campus_id?: number;          // 校区ID（考试地点）
+  campus_name?: string;         // 校区名称（考试地点）
   [key: string]: any;
 }
 
@@ -744,11 +748,17 @@ export const getInterviewRoom = async (recordId: number): Promise<ApiResponse<{ 
 
 // ============= 考试配置相关API =============
 
-// 获取添加考试配置的select信息
-export const getExamConfigSelect = async (): Promise<ApiResponse<{ exam_type: Record<number, string> }>> => {
+// 获取添加考试配置的select信息（含 exam_type、campus_info 等）
+export const getExamConfigSelect = async (): Promise<ApiResponse<{
+  exam_type: Record<number, string>;
+  campus_info?: Record<number, string>;
+}>> => {
   try {
     const url = `/api/sales/exam_config_select`;
-    const { data } = await request<ApiEnvelope<{ exam_type: Record<number, string> }>>(url, {
+    const { data } = await request<ApiEnvelope<{
+      exam_type: Record<number, string>;
+      campus_info?: Record<number, string>;
+    }>>(url, {
       method: 'GET',
     });
     return normalizeApiResponse(data);
@@ -763,6 +773,7 @@ export const getExamConfigSelect = async (): Promise<ApiResponse<{ exam_type: Re
 };
 
 // 添加exam的配置信息
+// params.campus_id: 校区id用逗号隔开的字符串，如 "1,2,3"
 export const addExamConfig = async (params: Record<string, any>): Promise<ApiResponse<ExamConfig>> => {
   try {
     const url = `/api/sales/add_exam_config`;
@@ -850,6 +861,7 @@ export const getExamSessionSelect = async (): Promise<ApiResponse<{
 };
 
 // 添加考试场次的信息
+// params.campus_id、params.study_year、params.paper_type: 支持逗号隔开的字符串，如 "1,2,3"
 export const addExamSession = async (params: Record<string, any>): Promise<ApiResponse<ExamSession>> => {
   try {
     const url = `/api/sales/add_exam_session`;
@@ -1176,6 +1188,7 @@ export interface ContractPreviewData {
   link: string;      // 发送合同的链接
   iframe1: string;   // 服务协议预览URL
   iframe2: string;   // 咨询协议预览URL
+  show_two?: boolean | number | string;  // 是否展示两个 iframe（服务协议+咨询协议）
 }
 
 export const generateContractPreview = async (contractId: number): Promise<ApiResponse<ContractPreviewData>> => {

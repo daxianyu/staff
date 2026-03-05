@@ -935,6 +935,18 @@ export default function AddEventModal({
                               </p>
                             </div>
                           )}
+                          {/* 教室信息 - 只读模式下展示 */}
+                          {(initialEvent?.room_name || initialEvent?.room_id) && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">教室</label>
+                              <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
+                                {initialEvent.room_name
+                                  || scheduleData?.room_info?.[String(initialEvent.room_id)]
+                                  || classroomList.find((r) => r.id === initialEvent.room_id)?.name
+                                  || `教室 ${initialEvent.room_id}`}
+                              </p>
+                            </div>
+                          )}
                         </>
                       )}
 

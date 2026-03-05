@@ -63,6 +63,7 @@ export default function SelfSignupClassesPage() {
     class_name: '',
     disable_time: Math.floor(Date.now() / 1000) + 86400 * 30, // 默认30天后
     campus_id: 0,
+    frequency: '',
   });
 
   // 上传文件
@@ -136,6 +137,7 @@ export default function SelfSignupClassesPage() {
       class_name: '',
       disable_time: Math.floor(Date.now() / 1000) + 86400 * 30,
       campus_id: 0,
+      frequency: '',
     });
     setShowAddModal(true);
   };
@@ -159,6 +161,7 @@ export default function SelfSignupClassesPage() {
             class_name: response.data?.record.class_name || '',
             disable_time: response.data?.record.disable_time || 0,
             campus_id: response.data?.record.campus_id || 0,
+            frequency: response.data?.record.frequency || '',
           });
         }
         
@@ -506,6 +509,9 @@ export default function SelfSignupClassesPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">
                         Campus
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">
+                        课频
+                      </th>
                       {canEdit && (
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">
                           操作
@@ -530,6 +536,9 @@ export default function SelfSignupClassesPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {cls.campus_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {cls.frequency || '-'}
                         </td>
                         {canEdit && (
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -704,6 +713,17 @@ export default function SelfSignupClassesPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">课频</label>
+                  <input
+                    type="text"
+                    value={formData.frequency}
+                    onChange={(e) => setFormData(prev => ({ ...prev, frequency: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="如：2、2-3、每周3节"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">每周几节课，支持文本如 2、2-3</p>
+                </div>
               </div>
               <div className="flex items-center justify-end gap-3 p-6 border-t">
                 <button
@@ -746,7 +766,7 @@ export default function SelfSignupClassesPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    请上传Excel格式文件，支持.xlsx和.xls格式
+                    请上传Excel格式文件，支持.xlsx和.xls格式。模板需包含课频列（frequency），如 2、2-3
                   </p>
                 </div>
               </div>
@@ -877,6 +897,17 @@ export default function SelfSignupClassesPage() {
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">课频</label>
+                      <input
+                        type="text"
+                        value={formData.frequency}
+                        onChange={(e) => setFormData(prev => ({ ...prev, frequency: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="如：2、2-3、每周3节"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">每周几节课，支持文本如 2、2-3</p>
                     </div>
                   </div>
                 ) : (

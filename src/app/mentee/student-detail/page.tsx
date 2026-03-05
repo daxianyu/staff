@@ -1162,7 +1162,7 @@ export default function StudentDetailPage() {
 
           {activeTab === 'assignment' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">学生选课（暂无选课信息）</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">学生选课</h3>
               {assignments.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -1171,6 +1171,7 @@ export default function StudentDetailPage() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">班级</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">科目</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">课频</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">备注</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">报名时间</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
@@ -1182,6 +1183,7 @@ export default function StudentDetailPage() {
                           <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.exam_name}</td>
                           <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.class_name}</td>
                           <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.topic_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.frequency || '-'}</td>
                           <td className="px-6 py-4 text-sm text-gray-900 break-words">{assignment.note || '-'}</td>
                           <td className="px-6 py-4 text-sm text-gray-900 break-words">
                             {new Date(assignment.signup_time * 1000).toLocaleString()}
@@ -1205,7 +1207,7 @@ export default function StudentDetailPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-gray-500">暂无作业信息</p>
+                <p className="text-gray-500">暂无选课信息</p>
               )}
             </div>
           )}

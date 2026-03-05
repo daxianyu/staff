@@ -333,7 +333,7 @@ export default function ClassChangePage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       审批人
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10rem', minWidth: '10rem', maxWidth: '10rem' }}>
                       拒绝/撤销理由
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -343,7 +343,7 @@ export default function ClassChangePage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50">
+                    <tr key={record.id} className="group hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-900">
                           <UserIcon className="h-4 w-4 text-gray-400 mr-2" />
@@ -365,7 +365,7 @@ export default function ClassChangePage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md ${
                           record.status_num === 0 ? 'bg-yellow-100 text-yellow-800' :
                           record.status_num === 1 ? 'bg-green-100 text-green-800' :
                           record.status_num === 2 ? 'bg-red-100 text-red-800' :
@@ -377,31 +377,31 @@ export default function ClassChangePage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{record.operator_name}</div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
+                      <td className="px-6 py-4 align-top" style={{ width: '10rem', minWidth: '10rem', maxWidth: '10rem' }}>
+                        <div className="text-sm text-gray-900 break-words whitespace-normal">
                           {record.reject_reason || '-'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {record.status_num === 0 && (
                           record.apply_id === currentUserId ? (
                             <button
                               onClick={() => handleRevoke(record.id)}
-                              className="text-red-600 hover:text-red-900 text-sm font-medium"
+                              className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
                             >
                               撤销
                             </button>
                           ) : (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleComplete(record.id)}
-                                className="text-green-600 hover:text-green-900 text-sm font-medium"
+                                className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
                               >
                                 完成
                               </button>
                               <button
                                 onClick={() => handleReject(record.id)}
-                                className="text-red-600 hover:text-red-900 text-sm font-medium"
+                                className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
                               >
                                 拒绝
                               </button>

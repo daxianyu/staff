@@ -147,12 +147,12 @@ export default function DashboardLayout({
       // 延迟一下确保页面标题已经更新
       setTimeout(() => {
         (window as any).wx.setNavigationBarTitle({
-          title: document.title || '个人学校系统'
+          title: document.title || 'OASIS'
         });
       }, 100);
     }
   }, [pathname, isMP]);
-
+  
   return (
     <div className={`min-h-screen bg-gray-50 ${isMP ? 'is-miniprogram flex flex-col' : ''}`}>
       {/* 顶部状态栏 */}
@@ -176,7 +176,7 @@ export default function DashboardLayout({
             <div className={`flex-shrink-0 items-center ${isMP ? 'hidden' : 'flex'}`}>
               <img 
                 src={buildFileUrl('/static/logo.png')}
-                alt="个人学校系统" 
+                alt="OASIS" 
                 className="h-10 sm:h-12"
               />
             </div>
@@ -184,7 +184,7 @@ export default function DashboardLayout({
             {/* 小程序下的简易标题 */}
             {isMP && (
               <span className="text-white font-medium text-sm truncate max-w-[150px]">
-                个人学校系统
+                OASIS
               </span>
             )}
           </div>

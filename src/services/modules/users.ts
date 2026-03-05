@@ -177,6 +177,13 @@ export const getStaffOutTable = async (): Promise<ApiResponse<ExitPermitResponse
 export interface OpenDoorParams {
   record_id: number;
   open_door_status?: number;
+  door_id?: string;
+  indexcode?: string;
+}
+
+export interface ExitDoorOption {
+  key: string;
+  value: string;
 }
 
 export const updateDoorFlag = async (params: OpenDoorParams): Promise<ApiResponse<string>> => {
@@ -204,6 +211,35 @@ export const updateDoorFlag = async (params: OpenDoorParams): Promise<ApiRespons
     return {
       code: 500,
       message: error instanceof Error ? error.message : '开门操作失败',
+    };
+  }
+};
+
+export const getDoorList = async (): Promise<ApiResponse<ExitDoorOption[]>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+
+    const response = await fetch('/api/user/get_door_list', {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+
+    return {
+      code: data.status === 1 ? 200 : 400,
+      message: data.message || '',
+      data: Array.isArray(data.message) ? data.message : [],
+    };
+  } catch (error) {
+    console.error('获取门禁列表失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取门禁列表失败',
+      data: [],
     };
   }
 };
@@ -308,6 +344,8 @@ export const updateStudentOutInfo = async (params: UpdateStudentOutInfoParams): 
 export interface OpenDoorParams {
   record_id: number;
   open_door_status?: number;
+  door_id?: string;
+  indexcode?: string;
 }
 
 export const openDoor = async (params: OpenDoorParams): Promise<ApiResponse<string>> => {

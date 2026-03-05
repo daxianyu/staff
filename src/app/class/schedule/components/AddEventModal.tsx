@@ -853,7 +853,19 @@ export default function AddEventModal({
               ) : (
                 <>
                   {mode === 'edit' && (
-                    <Button variant="danger" size="sm" onClick={() => setShowDeleteMode(true)} disabled={isSaving}>删除</Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => {
+                        if (eventType === 'lesson' && form?.repeat_num != null) {
+                          setDeleteRepeatNum(form.repeat_num);
+                        }
+                        setShowDeleteMode(true);
+                      }}
+                      disabled={isSaving}
+                    >
+                      删除
+                    </Button>
                   )}
                   <Button variant="ghost" size="sm" onClick={onClose}>取消</Button>
                   <Button variant="primary" size="sm" onClick={handleSubmit} disabled={!selectedDate || !startTime || !endTime || isSaving || hasValidationErrors}>{isSaving ? '保存中...' : '保存'}</Button>

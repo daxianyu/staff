@@ -173,12 +173,9 @@
   border-right: none !important;
 }
 
-/* 当前时间指示线 - 与PC端一致 */
+/* 当前时间指示线 - 隐藏 */
 .rbc-current-time-indicator {
-  background-color: #ef4444 !important;
-  height: 2px !important;
-  z-index: 10 !important;
-  border-radius: 1px !important;
+  display: none !important;
 }
 
 /* 隐藏全天事件区域 */
@@ -237,11 +234,7 @@ button:active {
   overflow: hidden !important;
 }
 
-/* 时间线的脉动效果 */
-.rbc-current-time-indicator {
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5) !important;
-  animation: pulse-line 2s infinite !important;
-}
+/* 时间线的脉动效果 - 已隐藏当前时间线，此规则保留供参考 */
 
 @keyframes pulse-line {
   0%, 100% {

@@ -640,9 +640,13 @@ export async function updateStaffSchedule(staffId: string, scheduleData: any) {
 // /api/staff/update_staff_unavailable/{staff_id} 更新老师不可用时间
 export async function updateStaffUnavailable(staffId: string, unavailableData: UnavailableEventAPI) {
   const url = `/api/staff/update_staff_unavailable/${staffId}`;
+  // 接口约定使用秒级时间戳；兼容误传毫秒（13位）场景，统一下沉到这一层兜底
+  const normalizeUnixSeconds = (timestamp: number) =>
+    timestamp > 1_000_000_000_000 ? Math.floor(timestamp / 1000) : timestamp;
+
   unavailableData.time_list = unavailableData.time_list.map(item => ({
-    start_time: item.start_time,
-    end_time: item.end_time
+    start_time: normalizeUnixSeconds(item.start_time),
+    end_time: normalizeUnixSeconds(item.end_time)
   }));
   const headers: HeadersInit = {
     'Content-Type': 'application/json',

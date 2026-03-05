@@ -138,11 +138,9 @@
   overflow: visible !important;
 }
 
-/* 当前时间指示线 */
+/* 当前时间指示线 - 隐藏 */
 .rbc-current-time-indicator {
-  background-color: #ef4444 !important;
-  height: 2px !important;
-  z-index: 10 !important;
+  display: none !important;
 }
 
 /* 隐藏全天事件区域 */

@@ -105,7 +105,7 @@ export default function LoginPage() {
           console.error('Token验证失败:', response.message);
           localStorage.removeItem('token');
           tokenVerifiedRef.current = false; // 重置验证标记
-          setError('Token验证失败，请重新登录');
+          setError('Token verification failed, please sign in again');
           redirectToMiniProgramLogin();
         }
       } catch (error) {
@@ -113,7 +113,7 @@ export default function LoginPage() {
         console.error('Token验证异常:', error);
         localStorage.removeItem('token');
         tokenVerifiedRef.current = false; // 重置验证标记
-        setError('登录验证失败，请重新登录');
+        setError('Sign in verification failed, please try again');
         redirectToMiniProgramLogin();
       } finally {
         setVerifyingToken(false);
@@ -143,7 +143,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error('登录异常:', error);
-      setError(error instanceof Error ? error.message : '登录失败，请稍后重试');
+      setError(error instanceof Error ? error.message : 'Sign in failed, please try again later');
     }
   };
 
@@ -151,41 +151,41 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--header-bg, #3b7bc0)' }}>
       <div className="w-[480px] bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl">
         <div className="px-14 py-12 space-y-14">
-          {/* 标题区域 */}
+          {/* Title area */}
           <div className="space-y-4">
             <h2 className="text-center text-3xl font-bold text-gray-900">
-              个人学校系统
+              OASIS
             </h2>
             <p className="text-center text-[15px] text-gray-600">
-              请登录您的账号
+              Please sign in to your account
             </p>
           </div>
 
-          {/* 错误提示 */}
+          {/* Error message */}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-[14px]">
               {error}
             </div>
           )}
           
-          {/* Token验证中提示 */}
+          {/* Token verification */}
           {verifyingToken && (
             <div className="bg-blue-50 border border-blue-200 text-blue-600 px-4 py-3 rounded-lg text-[14px] flex items-center justify-center">
               <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              正在验证登录凭证...
+              Verifying credentials...
             </div>
           )}
 
-          {/* 表单区域 */}
+          {/* Form area */}
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
-              {/* 用户名输入框 */}
+              {/* Username input */}
               <div className="space-y-2">
                 <label htmlFor="username" className="block text-[15px] font-medium text-gray-700">
-                  用户名
+                  Username
                 </label>
                 <input
                   {...register('username')}
@@ -194,14 +194,14 @@ export default function LoginPage() {
                   type="text"
                   required
                   className="block w-full px-4 py-3 text-[15px] border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ease-in-out hover:border-blue-400"
-                  placeholder="请输入用户名"
+                  placeholder="Enter username"
                 />
               </div>
 
-              {/* 密码输入框 */}
+              {/* Password input */}
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-[15px] font-medium text-gray-700">
-                  密码
+                  Password
                 </label>
                 <input
                   {...register('password')}
@@ -210,12 +210,12 @@ export default function LoginPage() {
                   type="password"
                   required
                   className="block w-full px-4 py-3 text-[15px] border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ease-in-out hover:border-blue-400"
-                  placeholder="请输入密码"
+                  placeholder="Enter password"
                 />
               </div>
             </div>
 
-            {/* 记住我和忘记密码 */}
+            {/* Remember me and forgot password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2.5">
                 <input
@@ -227,15 +227,15 @@ export default function LoginPage() {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
                 />
                 <label htmlFor="remember-me" className="text-[15px] text-gray-700 cursor-pointer">
-                  记住我
+                  Remember me
                 </label>
               </div>
               <a href="#" className="text-[15px] font-medium text-blue-600 hover:text-blue-500 transition-colors">
-                忘记密码？
+                Forgot password?
               </a>
             </div>
 
-            {/* 登录按钮 */}
+            {/* Sign in button */}
             <button
               type="submit"
               disabled={isSubmitting || verifyingToken}
@@ -247,7 +247,7 @@ export default function LoginPage() {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               ) : null}
-              {isSubmitting ? '登录中...' : '登录'}
+              {isSubmitting ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
         </div>

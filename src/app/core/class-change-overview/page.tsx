@@ -250,17 +250,20 @@ export default function ClassChangeOverviewPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       状态
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10rem', minWidth: '10rem', maxWidth: '10rem' }}>
+                      拒绝原因
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       时间
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 shadow-[-12px_0_16px_-10px_rgba(15,23,42,0.35)] relative before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-gray-300">
                       操作
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={record.id} className="group hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{record.apply_name}</div>
@@ -279,32 +282,33 @@ export default function ClassChangeOverviewPage() {
                           {record.desc}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-normal break-words" style={{ width: '100px', minWidth: '100px', maxWidth: '100px' }}>
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(record.status)}`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md ${getStatusColor(record.status)}`}>
                           {record.status}
                         </span>
-                        {record.reject_reason && (
-                          <div className="text-xs text-red-600 mt-1">
-                            {record.reject_reason}
-                          </div>
-                        )}
+                      </td>
+                      <td className="px-6 py-4 align-top" style={{ width: '10rem', minWidth: '10rem', maxWidth: '10rem' }}>
+                        <div className="text-sm text-gray-900 break-words whitespace-normal">
+                          {record.reject_reason || '-'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div>申请: {record.apply_time}</div>
                         <div>更新: {record.update_time}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white group-hover:bg-gray-50 shadow-[-12px_0_16px_-10px_rgba(15,23,42,0.35)] relative before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-gray-300">
                         {record.status_num === 0 && (
-                          <div className="flex space-x-2">
+                          <div className="flex gap-2">
                             <button
                               onClick={() => {
                                 setSelectedRecord(record);
                                 setStatusAction('approve');
                                 setShowStatusModal(true);
                               }}
-                              className="text-green-600 hover:text-green-900 text-sm border border-gray-300 rounded-md px-2 py-1"
+                              className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
                               title="通过"
                             >
+                              <CheckIcon className="h-4 w-4 mr-1" />
                               通过
                             </button>
                             <button
@@ -313,9 +317,10 @@ export default function ClassChangeOverviewPage() {
                                 setStatusAction('reject');
                                 setShowStatusModal(true);
                               }}
-                              className="text-red-600 hover:text-red-900 text-sm border border-gray-300 rounded-md px-2 py-1"
+                              className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
                               title="拒绝"
                             >
+                              <XMarkIcon className="h-4 w-4 mr-1" />
                               拒绝
                             </button>
                           </div>
@@ -476,7 +481,7 @@ export default function ClassChangeOverviewPage() {
                     value={statusFormData.reject_reason}
                     onChange={(e) => setStatusFormData({ reject_reason: e.target.value })}
                     rows={3}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full max-w-sm px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="请输入拒绝原因..."
                   />
                 </div>

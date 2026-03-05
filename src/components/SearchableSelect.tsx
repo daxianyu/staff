@@ -22,6 +22,8 @@ interface SearchableSelectProps<T extends string | number> {
   multiple?: boolean;
   onSearch?: (value: string) => void;
   clearable?: boolean;
+  /** 多选时最多显示的已选数量，不传或 0 表示全部展示 */
+  maxDisplayCount?: number;
 }
 
 export default function SearchableSelect<T extends string | number>({
@@ -34,7 +36,8 @@ export default function SearchableSelect<T extends string | number>({
   disabled = false,
   multiple = false,
   onSearch,
-  clearable = false
+  clearable = false,
+  maxDisplayCount = 3
 }: SearchableSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -96,14 +99,17 @@ export default function SearchableSelect<T extends string | number>({
     : (typeof value === 'string' ? value !== '' : value !== -1);
 
   // 清除选择
-  const handleClear = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const doClear = () => {
     if (multiple) {
       onValueChange([] as T[]);
     } else {
       const emptyValue = (typeof value === 'string' ? '' : -1) as T;
       onValueChange(emptyValue);
     }
+  };
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    doClear();
   };
 
   return (
@@ -125,9 +131,12 @@ export default function SearchableSelect<T extends string | number>({
               <div className="flex flex-wrap gap-1">
                 {(() => {
                   const selected = selectedOptions as Option<T>[];
-                  const maxDisplay = 3;
-                  const displayOptions = selected.slice(0, maxDisplay);
-                  const remainingCount = selected.length - maxDisplay;
+                  const displayOptions = maxDisplayCount > 0
+                    ? selected.slice(0, maxDisplayCount)
+                    : selected;
+                  const remainingCount = maxDisplayCount > 0
+                    ? selected.length - maxDisplayCount
+                    : 0;
 
                   return (
                     <>
@@ -172,14 +181,22 @@ export default function SearchableSelect<T extends string | number>({
           </div>
           <div className="flex items-center gap-1 ml-2 flex-shrink-0">
             {clearable && hasValue && (
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={handleClear}
-                className="p-0.5 hover:bg-gray-200 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    doClear();
+                  }
+                }}
+                className="p-0.5 hover:bg-gray-200 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                 aria-label="清除选择"
               >
                 <XMarkIcon className="h-4 w-4 text-gray-500 hover:text-gray-700" />
-              </button>
+              </span>
             )}
             <ChevronDownIcon className="h-4 w-4" />
           </div>

@@ -167,6 +167,11 @@ a.border-blue-700,
   border-color: var(--button-primary-bg) !important;
 }
 
+/* react-big-calendar 当前时间线 - 全局隐藏 */
+.rbc-current-time-indicator {
+  display: none !important;
+}
+
 /* 注意：不覆盖 text-blue-600，因为 tab 按钮等非 primary 按钮需要使用蓝色文字 */
 /* 真正的 primary 按钮应该使用 text-white，而不是 text-blue-600 */
 

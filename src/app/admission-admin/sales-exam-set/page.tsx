@@ -9,8 +9,10 @@ import {
   TrashIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import SearchableSelect from '@/components/SearchableSelect';
 import {
   getExamConfigSelect,
+  getExamSessionSelect,
   addExamConfig,
   getExamConfigTable,
   deleteExamConfig,
@@ -25,6 +27,7 @@ export default function SalesExamSetPage() {
   // 状态管理
   const [examSessions, setExamSessions] = useState<ExamConfig[]>([]);
   const [examTypeOptions, setExamTypeOptions] = useState<SelectOption[]>([]);
+  const [campusOptions, setCampusOptions] = useState<SelectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   
@@ -33,6 +36,7 @@ export default function SalesExamSetPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<ExamConfig | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // 权限检查页面
   if (!canManage) {
@@ -51,21 +55,50 @@ export default function SalesExamSetPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [sessionResult, selectResult] = await Promise.all([
+      const [tableResult, selectResult, sessionSelectResult] = await Promise.all([
         getExamConfigTable(),
         getExamConfigSelect(),
+        getExamSessionSelect(),
       ]);
-      if (sessionResult.code === 200 && sessionResult.data) {
-        setExamSessions(sessionResult.data.rows);
+      if (tableResult.code === 200 && tableResult.data) {
+        setExamSessions(tableResult.data.rows);
       }
       if (selectResult.code === 200 && selectResult.data) {
-        // selectResult.data.exam_type 是 Record<number, string>，需要转换为 SelectOption[]
         const examTypeOptions = Object.entries(selectResult.data.exam_type || {}).map(([id, name]) => ({
           id: parseInt(id),
           name: name as string,
         }));
         setExamTypeOptions(examTypeOptions);
       }
+      // 考试地点：优先用 exam_config_select 的 campus_info，否则用 get_exam_session_select 的
+      // campus_info 可能是 Array<[campus_id, campus_name]> 或 Record<campus_id, name>，需正确解析出 campus_id
+      const parseCampusInfo = (raw: unknown): SelectOption[] => {
+        if (!raw) return [];
+        if (Array.isArray(raw)) {
+          return raw
+            .map((item): SelectOption | null => {
+              if (Array.isArray(item)) return { id: Number(item[0]), name: String(item[1] ?? '') };
+              if (item && typeof item === 'object' && 'id' in item)
+                return { id: Number((item as { id: number }).id), name: String((item as { name?: string }).name ?? '') };
+              return null;
+            })
+            .filter((o): o is SelectOption => o != null && !Number.isNaN(o.id));
+        }
+        const toStr = (v: unknown): string =>
+          typeof v === 'string' ? v : (v && typeof v === 'object' && 'name' in v ? String((v as { name: unknown }).name) : String(v ?? ''));
+        return Object.entries(raw as Record<string, unknown>).map(([k, v]) => ({
+          id: parseInt(k, 10),
+          name: toStr(v),
+        })).filter((o) => !Number.isNaN(o.id));
+      };
+      let campusOpts: SelectOption[] = [];
+      if (selectResult.code === 200 && selectResult.data?.campus_info) {
+        campusOpts = parseCampusInfo(selectResult.data.campus_info);
+      }
+      if (campusOpts.length === 0 && sessionSelectResult.code === 200 && sessionSelectResult.data?.campus_info) {
+        campusOpts = parseCampusInfo(sessionSelectResult.data.campus_info);
+      }
+      setCampusOptions(campusOpts);
     } catch (error) {
       console.error('加载数据失败:', error);
     } finally {
@@ -91,9 +124,19 @@ export default function SalesExamSetPage() {
 
   const timeOptions = generateTimeOptions();
 
+  // 安全渲染：若值为 {id, name} 对象则取 name
+  const renderCell = (val: unknown) => {
+    if (val == null || val === '') return '-';
+    if (typeof val === 'object' && 'name' in (val as object) && typeof (val as { name: unknown }).name === 'string') {
+      return (val as { name: string }).name;
+    }
+    return String(val);
+  };
+
   // 打开添加模态框
   const handleAdd = () => {
     setFormData({ price: 500 }); // 默认费用500
+    setFormErrors({});
     setShowAddModal(true);
   };
 
@@ -106,6 +149,24 @@ export default function SalesExamSetPage() {
   // 提交表单
   const handleSubmit = async () => {
     if (submitting) return; // 防止重复提交
+
+    // 校验必填项，在对应 input/select 下提示
+    const errors: Record<string, string> = {};
+    if (!formData.exam_desc?.trim()) errors.exam_desc = '请填写考试说明';
+    if (!formData.start_day) errors.start_day = '请选择缴费开始日期';
+    if (!formData.end_day) errors.end_day = '请选择缴费结束日期';
+    if (!formData.exam_date) errors.exam_date = '请选择考试日期';
+    if (!formData.exam_time) errors.exam_time = '请选择考试时间';
+    if (formData.exam_type === undefined || formData.exam_type === '') errors.exam_type = '请选择考试类型';
+    const campusIds = Array.isArray(formData.campus_id) ? formData.campus_id : (formData.campus_id != null && formData.campus_id !== '' ? [formData.campus_id] : []);
+    if (campusIds.length === 0) errors.campus_id = '请选择考试地点';
+    if (formData.price === undefined || formData.price === '' || Number(formData.price) < 0) errors.price = '请填写考试费用';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     
     try {
       setSubmitting(true);
@@ -117,6 +178,8 @@ export default function SalesExamSetPage() {
       const examTimeWithSeconds = examTime ? `${examTime}:00` : '00:00:00';
       const examDateTime = examDate && examTime ? `${examDate} ${examTimeWithSeconds}` : '';
       
+      const rawCampus = Array.isArray(formData.campus_id) ? formData.campus_id : (formData.campus_id != null && formData.campus_id !== '' ? [formData.campus_id] : []);
+      const campusIds = rawCampus.map((v) => (typeof v === 'object' && v && 'id' in v ? (v as { id: number }).id : Number(v))).filter((n) => !Number.isNaN(n));
       const submitData = {
         exam_desc: formData.exam_desc || '',
         start_day: formData.start_day || '',
@@ -124,6 +187,7 @@ export default function SalesExamSetPage() {
         exam_time: examDateTime,
         price: formData.price ? parseInt(formData.price) : 0,
         exam_type: formData.exam_type ? parseInt(formData.exam_type) : 0,
+        campus_id: campusIds.map((id) => String(id)).join(','), // 校区id用逗号隔开的字符串
       };
       
       const result = await addExamConfig(submitData);
@@ -198,6 +262,7 @@ export default function SalesExamSetPage() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Desc</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campus</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pay Start Day</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pay End Day</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam Time</th>
@@ -213,22 +278,25 @@ export default function SalesExamSetPage() {
                         {session.record_id}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {session.exam_desc || '-'}
+                        {renderCell(session.exam_desc)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {session.start_day || '-'}
+                        {renderCell(session.campus_name)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {session.end_day || '-'}
+                        {renderCell(session.start_day)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {session.exam_time || '-'}
+                        {renderCell(session.end_day)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {session.exam_type || '-'}
+                        {renderCell(session.exam_time)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {session.price !== undefined ? session.price : '-'}
+                        {renderCell(session.exam_type)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {renderCell(session.price)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
@@ -244,7 +312,7 @@ export default function SalesExamSetPage() {
                   ))}
                   {examSessions.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
                         暂无数据
                       </td>
                     </tr>
@@ -265,6 +333,7 @@ export default function SalesExamSetPage() {
                   onClick={() => {
                     setShowAddModal(false);
                     setFormData({});
+                    setFormErrors({});
                   }}
                   className="text-gray-400 hover:text-gray-500"
                 >
@@ -282,11 +351,14 @@ export default function SalesExamSetPage() {
                     <input
                       type="text"
                       value={formData.exam_desc || ''}
-                      onChange={(e) => setFormData({ ...formData, exam_desc: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => {
+                        setFormData({ ...formData, exam_desc: e.target.value });
+                        if (formErrors.exam_desc) setFormErrors((prev) => ({ ...prev, exam_desc: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${formErrors.exam_desc ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="请输入考试说明"
-                      required
                     />
+                    {formErrors.exam_desc && <p className="mt-1 text-sm text-red-500">{formErrors.exam_desc}</p>}
                   </div>
                   
                   {/* 缴费开始日期 */}
@@ -297,10 +369,13 @@ export default function SalesExamSetPage() {
                     <input
                       type="date"
                       value={formData.start_day || ''}
-                      onChange={(e) => setFormData({ ...formData, start_day: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, start_day: e.target.value });
+                        if (formErrors.start_day) setFormErrors((prev) => ({ ...prev, start_day: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${formErrors.start_day ? 'border-red-500' : 'border-gray-300'}`}
                     />
+                    {formErrors.start_day && <p className="mt-1 text-sm text-red-500">{formErrors.start_day}</p>}
                   </div>
                   
                   {/* 缴费结束日期 */}
@@ -311,10 +386,13 @@ export default function SalesExamSetPage() {
                     <input
                       type="date"
                       value={formData.end_day || ''}
-                      onChange={(e) => setFormData({ ...formData, end_day: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, end_day: e.target.value });
+                        if (formErrors.end_day) setFormErrors((prev) => ({ ...prev, end_day: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${formErrors.end_day ? 'border-red-500' : 'border-gray-300'}`}
                     />
+                    {formErrors.end_day && <p className="mt-1 text-sm text-red-500">{formErrors.end_day}</p>}
                   </div>
                   
                   {/* 考试日期 */}
@@ -325,10 +403,13 @@ export default function SalesExamSetPage() {
                     <input
                       type="date"
                       value={formData.exam_date || ''}
-                      onChange={(e) => setFormData({ ...formData, exam_date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, exam_date: e.target.value });
+                        if (formErrors.exam_date) setFormErrors((prev) => ({ ...prev, exam_date: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${formErrors.exam_date ? 'border-red-500' : 'border-gray-300'}`}
                     />
+                    {formErrors.exam_date && <p className="mt-1 text-sm text-red-500">{formErrors.exam_date}</p>}
                   </div>
                   
                   {/* 考试时分秒 - 下拉菜单 */}
@@ -338,9 +419,11 @@ export default function SalesExamSetPage() {
                     </label>
                     <select
                       value={formData.exam_time || ''}
-                      onChange={(e) => setFormData({ ...formData, exam_time: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, exam_time: e.target.value });
+                        if (formErrors.exam_time) setFormErrors((prev) => ({ ...prev, exam_time: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${formErrors.exam_time ? 'border-red-500' : 'border-gray-300'}`}
                     >
                       <option value="">请选择时间</option>
                       {timeOptions.map((time) => (
@@ -349,6 +432,7 @@ export default function SalesExamSetPage() {
                         </option>
                       ))}
                     </select>
+                    {formErrors.exam_time && <p className="mt-1 text-sm text-red-500">{formErrors.exam_time}</p>}
                   </div>
                   
                   {/* 考试类型 */}
@@ -358,17 +442,42 @@ export default function SalesExamSetPage() {
                     </label>
                     <select
                       value={formData.exam_type || ''}
-                      onChange={(e) => setFormData({ ...formData, exam_type: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, exam_type: e.target.value });
+                        if (formErrors.exam_type) setFormErrors((prev) => ({ ...prev, exam_type: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${formErrors.exam_type ? 'border-red-500' : 'border-gray-300'}`}
                     >
                       <option value="">请选择考试类型</option>
                       {examTypeOptions.map((option) => (
                         <option key={option.id} value={option.id}>
-                          {option.name}
+                          {renderCell(option.name)}
                         </option>
                       ))}
                     </select>
+                    {formErrors.exam_type && <p className="mt-1 text-sm text-red-500">{formErrors.exam_type}</p>}
+                  </div>
+                  
+                  {/* 考试地点（下拉多选，提交为逗号分隔的校区id字符串） */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      考试地点 <span className="text-red-500">*</span>
+                    </label>
+                    <SearchableSelect
+                      options={campusOptions}
+                      value={Array.isArray(formData.campus_id) ? formData.campus_id : (formData.campus_id != null && formData.campus_id !== '' ? [formData.campus_id] : [])}
+                      onValueChange={(val) => {
+                        setFormData({ ...formData, campus_id: val as number[] });
+                        if (formErrors.campus_id) setFormErrors((prev) => ({ ...prev, campus_id: '' }));
+                      }}
+                      placeholder="请选择考试地点"
+                      searchPlaceholder="搜索校区..."
+                      multiple
+                      clearable
+                      maxDisplayCount={0}
+                      className={`w-full min-w-0 ${formErrors.campus_id ? '!border-red-500' : ''}`}
+                    />
+                    {formErrors.campus_id && <p className="mt-1 text-sm text-red-500">{formErrors.campus_id}</p>}
                   </div>
                   
                   {/* 考试费用 */}
@@ -378,16 +487,17 @@ export default function SalesExamSetPage() {
                     </label>
                     <input
                       type="number"
-                      value={formData.price || 500}
+                      value={formData.price ?? 500}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? 500 : parseInt(e.target.value) || 0;
+                        const value = e.target.value === '' ? '' : parseInt(e.target.value) || 0;
                         setFormData({ ...formData, price: value });
+                        if (formErrors.price) setFormErrors((prev) => ({ ...prev, price: '' }));
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${formErrors.price ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="请输入考试费用"
                       min="0"
-                      required
                     />
+                    {formErrors.price && <p className="mt-1 text-sm text-red-500">{formErrors.price}</p>}
                   </div>
                 </div>
               </div>
@@ -397,6 +507,7 @@ export default function SalesExamSetPage() {
                   onClick={() => {
                     setShowAddModal(false);
                     setFormData({ price: 500 });
+                    setFormErrors({});
                   }}
                   disabled={submitting}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"

@@ -149,6 +149,11 @@ export interface ClassroomOverviewData {
    * 例如: { "275": 7, "276": 9 }
    */
   room_size?: Record<string, number>;
+  /**
+   * 教室 ID 到名称的映射（key 为 room_id，与 lesson.room_id 一致）
+   * 例如: { "275": "教室A", "276": "教室B" }
+   */
+  room_id_name?: Record<string, string>;
   user_info?: Record<string, ClassroomUserInfo>;
 }
 
@@ -179,6 +184,7 @@ export const getClassroomOverview = async (dayNum: number): Promise<ClassroomOve
         campus_info: {},
         room_campuses: {},
         room_size: {},
+        room_id_name: {},
         user_info: {}
       }
     };
@@ -194,6 +200,7 @@ export const getClassroomOverview = async (dayNum: number): Promise<ClassroomOve
         campus_info: {},
         room_campuses: {},
         room_size: {},
+        room_id_name: {},
         user_info: {}
       }
     };

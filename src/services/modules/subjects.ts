@@ -11,6 +11,7 @@ export interface ClassSignupItem {
   exam_name?: string;
   campus_name?: string;
   signed_up_id?: number;
+  frequency?: string; // 课频
 }
 
 export interface ClassSignupResponse {

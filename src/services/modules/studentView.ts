@@ -537,6 +537,7 @@ export interface EditClassParams {
     end_time: number;
   }>;
   subjects: Array<{
+    subject_id: number;  // 从 get_edit_info 的 id 回传，新增 subject 用 -1
     topic_id: number;
     teacher_id: number;
     description: string;

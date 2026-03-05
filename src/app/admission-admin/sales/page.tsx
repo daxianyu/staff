@@ -23,7 +23,6 @@ import {
 } from '@/services/auth';
 import { buildFileUrl } from '@/config/env';
 import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
-import { getSalesSimplifiedMode, type SiteConfig } from '@/services/auth';
 
 export default function AdmissionManagePage() {
   const { hasPermission, user } = useAuth();
@@ -50,9 +49,6 @@ export default function AdmissionManagePage() {
   
   // 合同检查状态 - 使用 Map 存储每个记录的检查状态
   const [checkingContracts, setCheckingContracts] = useState<Map<number, 'service' | 'consult' | null>>(new Map());
-  
-  // 网站配置
-  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
 
   // 权限检查页面
   if (!canView) {
@@ -88,20 +84,13 @@ export default function AdmissionManagePage() {
 
   useEffect(() => {
     loadData();
-    loadSiteConfig();
   }, []);
 
-  // 加载网站配置
-  const loadSiteConfig = async () => {
-    try {
-      const salesSimplifiedMode = await getSalesSimplifiedMode();
-      setSiteConfig({
-        sales_simplified_mode: salesSimplifiedMode,
-      });
-    } catch (error) {
-      console.error('加载网站配置失败:', error);
-    }
-  };
+  // 根据 show_service/show_consult 判断是否展示协议按钮（支持 boolean/number/string，undefined 时默认展示）
+  const shouldShowServiceBtn = (item: SalesRecord) =>
+    item.show_service !== false && item.show_service !== 0 && item.show_service !== '0';
+  const shouldShowConsultBtn = (item: SalesRecord) =>
+    item.show_consult !== false && item.show_consult !== 0 && item.show_consult !== '0';
 
   // 防抖搜索
   useEffect(() => {
@@ -473,8 +462,8 @@ export default function AdmissionManagePage() {
                               删除
                             </button>
                           )}
-                          {/* 服务协议按钮 */}
-                          {item.signing_request_state === 1 && (
+                          {/* 服务协议按钮 - 根据 show_service 决定是否展示 */}
+                          {shouldShowServiceBtn(item) && item.signing_request_state === 1 && (
                             <button
                               onClick={() => handleCheckServiceContract(item)}
                               disabled={checkingContracts.get(item.sales_id) === 'service'}
@@ -488,7 +477,7 @@ export default function AdmissionManagePage() {
                               )}
                             </button>
                           )}
-                          {item.signing_request_state === 2 && item.service_file && (
+                          {shouldShowServiceBtn(item) && item.signing_request_state === 2 && item.service_file && (
                             <button
                               onClick={() => handleDownloadServiceContract(item)}
                               className="inline-flex items-center justify-center w-8 h-8 text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
@@ -497,8 +486,8 @@ export default function AdmissionManagePage() {
                               <ArrowDownTrayIcon className="h-4 w-4" />
                             </button>
                           )}
-                          {/* 咨询协议按钮 - 根据配置决定是否显示 */}
-                          {!siteConfig?.sales_simplified_mode && (
+                          {/* 咨询协议按钮 - 根据 show_consult 决定是否展示 */}
+                          {shouldShowConsultBtn(item) && (
                             <>
                               {item.signing_request_state_2 === 1 && (
                                 <button

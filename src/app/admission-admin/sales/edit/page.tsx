@@ -21,7 +21,6 @@ import {
     type RejectMailParams,
     type ContractPreviewData,
 } from '@/services/auth';
-import { getSalesSimplifiedMode, type SiteConfig } from '@/services/auth';
 import { getApiBaseUrl } from '@/config/env';
 import {
     ArrowLeftIcon,
@@ -231,9 +230,6 @@ export default function SalesEditPage() {
     const [loadingContractPreview, setLoadingContractPreview] = useState(false);
     const [sendingContract, setSendingContract] = useState(false);
     const [contractError, setContractError] = useState<string | null>(null);
-    
-    // 网站配置
-    const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
 
     // 确认模态框状态
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
@@ -385,21 +381,6 @@ export default function SalesEditPage() {
 
         loadData();
     }, [contractId]);
-
-    // 加载网站配置
-    useEffect(() => {
-        const loadSiteConfig = async () => {
-            try {
-                const salesSimplifiedMode = await getSalesSimplifiedMode();
-                setSiteConfig({
-                    sales_simplified_mode: salesSimplifiedMode,
-                });
-            } catch (error) {
-                console.error('加载网站配置失败:', error);
-            }
-        };
-        loadSiteConfig();
-    }, []);
 
     // 处理输入变化
     const handleInputChange = (field: keyof UpdateSalesParams, value: any) => {
@@ -914,8 +895,9 @@ export default function SalesEditPage() {
         const version = parseInt(match?.[3] || '0', 10);
         const subCompany = match?.[4] || undefined;
 
-        // 如果配置了简化模式，则只取第一个 fileId（只发送服务协议）
-        if (siteConfig?.sales_simplified_mode && fileIds.includes('--')) {
+        // 如果 show_two 为 false，则只取第一个 fileId（只发送服务协议）
+        const showTwo = contractPreviewData.show_two === true || contractPreviewData.show_two === 1 || contractPreviewData.show_two === '1';
+        if (!showTwo && fileIds.includes('--')) {
             fileIds = fileIds.split('--')[0];
         }
 
@@ -1686,7 +1668,7 @@ export default function SalesEditPage() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                年费
+                                学年
                                 <RequiredMark />
                             </label>
                             <input
@@ -2423,8 +2405,8 @@ export default function SalesEditPage() {
                                         </div>
                                     </div>
 
-                                    {/* 咨询协议预览 - 根据配置决定是否显示 */}
-                                    {!siteConfig?.sales_simplified_mode && (
+                                    {/* 咨询协议预览 - 根据返回的 show_two 决定是否展示两个 iframe */}
+                                    {(contractPreviewData.show_two === true || contractPreviewData.show_two === 1 || contractPreviewData.show_two === '1') && (
                                         <div>
                                             <h4 className="text-sm font-medium text-gray-700 mb-2">咨询协议</h4>
                                             <div className="border border-gray-300 rounded-lg overflow-hidden" style={{ height: '600px' }}>

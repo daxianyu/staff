@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { EventTypeStrategy } from './types';
 import SearchableSelect from '@/components/SearchableSelect';
+import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
 
 type Form = {
   pickRoom?: string | number;
@@ -17,11 +18,15 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
   allowRepeat: true,
 
   init(ctx) {
-    // 初始化表单：从 initialEvent 带出 room_id 等
+    const subjects = ctx?.scheduleData?.class_subjects || [];
+    let subjectId = ctx.initialEvent?.subject_id;
+    if (subjectId == null && subjects.length >= 1) {
+      subjectId = subjects[0].id;
+    }
     return {
       pickRoom: ctx.initialEvent?.room_id,
       repeat_num: 1,
-      subject_id: ctx.initialEvent?.subject_id,
+      subject_id: subjectId,
     };
   },
 
@@ -113,20 +118,63 @@ export const LessonStrategy: EventTypeStrategy<Form> = {
     return (
       <>
         {/* 科目选择（班级课表中显示，只读模式下也显示） */}
+        {/* 学生列表（编辑时展示，可点击跳转学生课表） */}
+        {ctx?.mode === 'edit' && ctx?.initialEvent?.type === 'lesson' && (ctx.initialEvent.students || (ctx.initialEvent.student_ids?.length ?? 0) > 0) && (
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-gray-700 mb-1">学生</label>
+            <div className="flex flex-wrap gap-2">
+              {(() => {
+                const studentsStr = ctx.initialEvent.students || '';
+                const ids = ctx.initialEvent.student_ids || [];
+                const names = studentsStr ? studentsStr.split(/[,，、\s]+/).filter(Boolean) : [];
+                return names.length > 0 || ids.length > 0 ? (
+                  names.length >= ids.length
+                    ? names.map((name: string, i: number) => {
+                        const id = ids[i];
+                        return id ? (
+                          <button
+                            key={`${id}-${i}`}
+                            type="button"
+                            onClick={() => openUrlWithFallback(`/students/schedule?studentId=${id}`)}
+                            className="text-xs px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md transition-colors"
+                          >
+                            {name.trim()}
+                          </button>
+                        ) : (
+                          <span key={i} className="text-xs px-2 py-1 text-gray-600">{name.trim()}</span>
+                        );
+                      })
+                    : ids.map((id: number, i: number) => (
+                        <button
+                          key={`${id}-${i}`}
+                          type="button"
+                          onClick={() => openUrlWithFallback(`/students/schedule?studentId=${id}`)}
+                          className="text-xs px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md transition-colors"
+                        >
+                          {names[i]?.trim() || `学生 #${id}`}
+                        </button>
+                      ))
+                ) : (
+                  <span className="text-xs text-gray-500">暂无学生</span>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
         {(subjects.length > 0 || readOnly || form.subject_id) && (
           <div className="mb-2">
             <label className="block text-xs font-medium text-gray-700 mb-1">科目</label>
-            {readOnly ? (
+            {readOnly || subjects.length === 1 ? (
               <p className="w-full px-3 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-md border border-gray-200">
                 {subjectDisplayText}
               </p>
             ) : subjects.length > 0 ? (
               <select
                 className="w-full px-3 py-1.5 text-sm border rounded border-gray-300"
-                value={form.subject_id || ''}
+                value={form.subject_id || (subjects[0]?.id ?? '')}
                 onChange={(e) => setForm({ subject_id: Number(e.target.value) || undefined })}
               >
-                <option value="">请选择科目</option>
                 {subjects.map((subject: any) => (
                   <option key={subject.id} value={subject.id}>
                     {subject.topic_name} - {subject.teacher_name}

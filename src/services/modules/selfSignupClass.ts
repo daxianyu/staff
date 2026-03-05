@@ -11,6 +11,7 @@ export interface SelfSignupClass {
   campus_id: number;
   campus_name: string;
   is_disable: number;
+  frequency?: string; // 课频，如 "2-3" 表示每周2-3节
 }
 
 export interface SelfSignupClassStudent {
@@ -31,6 +32,7 @@ export interface SelfSignupClassEditInfo {
     class_name: string;
     disable_time: number;
     campus_id: number;
+    frequency?: string;
     class_assignment_request: SelfSignupClassStudent[];
   };
   exams: Array<{
@@ -75,6 +77,7 @@ export interface AddSelfSignupClassRequest {
   class_name: string;
   disable_time: number;
   campus_id: number;
+  frequency?: string;
 }
 
 export interface EditSelfSignupClassRequest {
@@ -84,6 +87,7 @@ export interface EditSelfSignupClassRequest {
   class_name: string;
   disable_time: number;
   campus_id: number;
+  frequency?: string;
 }
 
 export interface DeleteStudentRequest {

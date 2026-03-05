@@ -41,6 +41,7 @@ import {
   getAllExams,
   getRoomList,
   downloadSelfSignupClassTemplate,
+  getStudentList,
   type ScheduleSettings,
   type Group,
   type BusyInfo,
@@ -99,6 +100,7 @@ export default function AIGroupsPage() {
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [teacherInfoMap, setTeacherInfoMap] = useState<Record<number, string>>({});
   const [studentInfoMap, setStudentInfoMap] = useState<Record<number, string>>({});
+  const [fullStudentOptions, setFullStudentOptions] = useState<Array<{ id: number; name: string }>>([]);
   const [timeslots, setTimeslots] = useState<string[]>([]);
   
   // 选项数据
@@ -122,6 +124,17 @@ export default function AIGroupsPage() {
     });
     return map;
   }, [examOptions]);
+
+  // 合并全量学生列表与 group 中的学生（确保已分配但可能不在全量列表中的学生也可选）
+  const mergedStudentOptions = useMemo(() => {
+    const byId = new Map<number, string>();
+    fullStudentOptions.forEach((o) => byId.set(o.id, o.name));
+    Object.entries(studentInfoMap).forEach(([id, name]) => {
+      const numId = Number(id);
+      if (!byId.has(numId)) byId.set(numId, name);
+    });
+    return Array.from(byId.entries()).map(([id, name]) => ({ id, name }));
+  }, [fullStudentOptions, studentInfoMap]);
 
   const [activeTab, setActiveTab] = useState<TabKey>('group-info');
   const tabItems: Array<{ id: TabKey; label: string }> = [
@@ -222,6 +235,16 @@ export default function AIGroupsPage() {
         // 只显示当前校区的教室
         const campusRooms = roomsRes.data.room_list.filter(room => room.campus_id === selectedCampusId);
         setRoomOptions(campusRooms);
+      }
+
+      // 加载全量学生列表（用于 Group 编辑时选择学生）
+      const studentsRes = await getStudentList({ disabled: 0, limit: 10000 });
+      if (studentsRes.code === 200 && studentsRes.data) {
+        const listInfo = (studentsRes.data as { list_info?: Array<{ student_id: number; student_name: string }> })?.list_info || [];
+        const options = listInfo.map((s) => ({ id: s.student_id, name: s.student_name }));
+        setFullStudentOptions(options);
+      } else {
+        setFullStudentOptions([]);
       }
     } catch (error) {
       console.error('加载校区数据失败:', error);
@@ -643,6 +666,7 @@ export default function AIGroupsPage() {
           timeslots={timeslots}
           teacherInfoMap={teacherInfoMap}
           studentInfoMap={studentInfoMap}
+          studentOptions={mergedStudentOptions}
           topicOptions={topicOptions}
           examOptions={examOptions}
           roomOptions={roomOptions}
@@ -667,6 +691,7 @@ export default function AIGroupsPage() {
           timeslots={timeslots}
           teacherInfoMap={teacherInfoMap}
           studentInfoMap={studentInfoMap}
+          studentOptions={mergedStudentOptions}
           topicOptions={topicOptions}
           examOptions={examOptions}
           roomOptions={roomOptions}
@@ -829,7 +854,7 @@ function GroupInfoTab({
   examMap: Record<number, string>;
 }) {
   const gridTemplate =
-    'minmax(160px, 1.1fr) 110px 150px 130px 180px 200px 110px 200px 110px 160px 130px 130px 160px 140px';
+    'minmax(160px, 1.1fr) 110px 130px 180px minmax(200px, 2fr) 110px 160px 140px';
 
   const normalizeIds = (value?: number[] | number | string): number[] => {
     if (Array.isArray(value)) return value.map(Number).filter((v) => !Number.isNaN(v));
@@ -851,14 +876,6 @@ function GroupInfoTab({
       .join('、');
   };
 
-  const formatFixedTime = (value?: number[] | number | string) => {
-    const normalized = normalizeIds(value);
-    if (normalized.length === 0) return '-';
-    return normalized
-      .map((id) => timeslots[id] || ``)
-      .join('、');
-  };
-
   const formatSubmitTime = (group: Group) => {
     const primary = group.create_time;
     if (!primary) return '-';
@@ -872,12 +889,9 @@ function GroupInfoTab({
   const renderRow = (group: Group, index: number) => {
     const teacherNames = formatPeople(group.teacher, teacherInfoMap);
     const studentNames = formatPeople(group.students, studentInfoMap);
-    const teacherCount = normalizeIds(group.teacher).length;
     const studentCount = normalizeIds(group.students).length;
     
-    // 获取 Topic 和 Exam 的名称
     const topicName = group.topic_name || (group.topic_id ? topicMap[String(group.topic_id)] : null) || '-';
-    const examName = group.exam_name || (group.exam_id ? examMap[group.exam_id] : null) || '-';
     
     // 背景色类名
     const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
@@ -890,24 +904,14 @@ function GroupInfoTab({
       >
         <div className={`px-4 py-3 text-gray-900 ${bgClass}`}>{topicName}</div>
         <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{group.week_lessons || '-'}</div>
-        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{examName}</div>
         <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{group.max_students ?? '-'}</div>
-        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{group.class_type ?? '-'}</div>
         <div className={`px-4 py-3 text-gray-700 truncate ${bgClass}`} title={teacherNames}>
           {teacherNames}
         </div>
-        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{teacherCount}</div>
-        <div className={`px-4 py-3 text-gray-700 truncate ${bgClass}`} title={studentNames}>
+        <div className={`px-4 py-3 text-gray-700 break-words whitespace-normal min-w-0 ${bgClass}`} title={studentNames}>
           {studentNames}
         </div>
         <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{studentCount}</div>
-        <div className={`px-4 py-3 text-gray-700 truncate ${bgClass}`} title={formatFixedTime(group.fix_time)}>
-          {formatFixedTime(group.fix_time)}
-        </div>
-        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{group.double_lesson ? '是' : '否'}</div>
-        <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>
-          {group.fix_room && group.fix_room !== -1 ? group.fix_room : '-'}
-        </div>
         <div className={`px-4 py-3 text-gray-700 ${bgClass}`}>{formatSubmitTime(group)}</div>
         <div className={`px-4 py-3 ${bgClass}`}>
           <div className="flex gap-3">
@@ -990,7 +994,7 @@ function GroupInfoTab({
           <div className="p-8 text-center text-sm text-gray-500">暂无 Group 数据</div>
         ) : (
           <div className="overflow-x-auto">
-            <div className="max-h-[600px] overflow-y-auto">
+            <div>
               {/* 表头 */}
               <div
                 className="sticky top-0 z-10 grid text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200"
@@ -999,16 +1003,10 @@ function GroupInfoTab({
                 {[
                   'Topic Name',
                   'Week Lessons',
-                  'Exam Name',
                   'Max Students',
-                  'Assigning Name',
                   '老师',
-                  '老师人数',
                   '学生',
                   '学生人数',
-                  'Fixed Time',
-                  '三小时课程',
-                  'Fixed Room',
                   '提交时间',
                   '操作',
                 ].map((header) => (
@@ -1334,6 +1332,7 @@ function GroupModal({
   timeslots,
   teacherInfoMap,
   studentInfoMap,
+  studentOptions,
   topicOptions,
   examOptions,
   roomOptions,
@@ -1345,6 +1344,7 @@ function GroupModal({
   timeslots: string[];
   teacherInfoMap: Record<number, string>;
   studentInfoMap: Record<number, string>;
+  studentOptions: Array<{ id: number; name: string }>;
   topicOptions: Array<{ id: string; name: string }>;
   examOptions: Array<{ id: number; name: string }>;
   roomOptions: Array<{ id: number; name: string; campus_id: number }>;
@@ -1625,15 +1625,13 @@ function GroupModal({
                 Students (多选)
               </label>
               <SearchableSelect
-                options={Object.entries(studentInfoMap).map(([id, name]) => ({
-                  id: Number(id),
-                  name: name,
-                }))}
+                options={studentOptions}
                 value={selectedStudents}
                 onValueChange={(val) => setSelectedStudents(val as number[])}
                 placeholder="请选择学生"
                 searchPlaceholder="搜索学生..."
                 multiple={true}
+                maxDisplayCount={0}
                 className="w-full"
               />
             </div>

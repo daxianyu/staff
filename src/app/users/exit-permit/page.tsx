@@ -10,7 +10,9 @@ import {
   batchAddOutRecord,
   updateStudentOutInfo,
   openDoor,
+  getDoorList,
   getStaffOutSelect,
+  type ExitDoorOption,
   type ExitPermitItem,
   type ExitPermitResponse
 } from '@/services/auth';
@@ -29,7 +31,11 @@ export default function ExitPermitPage() {
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDoorModal, setShowDoorModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<ExitPermitItem | null>(null);
+  const [doorOptions, setDoorOptions] = useState<ExitDoorOption[]>([]);
+  const [selectedDoorId, setSelectedDoorId] = useState('');
+  const [openingDoor, setOpeningDoor] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [formData, setFormData] = useState({
     start_time: '',
@@ -239,19 +245,42 @@ export default function ExitPermitPage() {
     if (!canEdit) return;
 
     try {
+      const listResult = await getDoorList();
+      if (listResult.code === 200 && listResult.data && listResult.data.length > 0) {
+        setDoorOptions(listResult.data);
+        setSelectedDoorId(listResult.data[0].key);
+        setShowDoorModal(true);
+      } else {
+        alert(listResult.message || '获取门禁列表失败');
+      }
+    } catch (error) {
+      console.error('获取门禁列表失败:', error);
+      alert('获取门禁列表失败');
+    }
+  };
+
+  const handleConfirmDirectOpenDoor = async () => {
+    if (!canEdit || !selectedDoorId) return;
+    setOpeningDoor(true);
+    try {
       const result = await openDoor({
         record_id: -2, // 使用-2表示直接开门（走读生模式）
-        open_door_status: 1
+        open_door_status: 1,
+        door_id: selectedDoorId,
+        indexcode: selectedDoorId
       });
 
       if (result.code === 200) {
         alert(result.data || '门即将打开，外出注意安全!');
+        setShowDoorModal(false);
       } else {
         alert(result.message || '开门失败');
       }
     } catch (error) {
       console.error('开门失败:', error);
       alert('开门失败');
+    } finally {
+      setOpeningDoor(false);
     }
   };
 
@@ -682,6 +711,47 @@ export default function ExitPermitPage() {
                   className="w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   添加
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 右上角开门门禁选择模态框 */}
+        {showDoorModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">选择开门位置</h3>
+                <label htmlFor="door-select" className="block text-sm font-medium text-gray-700 mb-2">
+                  门禁
+                </label>
+                <select
+                  id="door-select"
+                  value={selectedDoorId}
+                  onChange={(e) => setSelectedDoorId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {doorOptions.map((door) => (
+                    <option key={door.key} value={door.key}>
+                      {door.value}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+                <button
+                  onClick={handleConfirmDirectOpenDoor}
+                  disabled={openingDoor || !selectedDoorId}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm min-h-[44px]"
+                >
+                  {openingDoor ? '开门中...' : '确认开门'}
+                </button>
+                <button
+                  onClick={() => setShowDoorModal(false)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm min-h-[44px]"
+                >
+                  取消
                 </button>
               </div>
             </div>

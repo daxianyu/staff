@@ -816,8 +816,8 @@ export default function SchedulePage() {
           return !conflicts.some(conf => isOverlap(slot, conf));
         })
         .map(slot => ({
-          start_time: slot.start.getTime(),
-          end_time: slot.end.getTime()
+          start_time: Math.floor(slot.start.getTime() / 1000),
+          end_time: Math.floor(slot.end.getTime() / 1000)
         }));
 
       const response = await updateStaffUnavailable(staffId, {
@@ -1301,10 +1301,10 @@ export default function SchedulePage() {
             selectable={!isClosingModal}
             eventPropGetter={eventStyleGetter}
             toolbar={false} // 隐藏默认工具栏
-            // 使用1970年作为基准日期，避免特定年份的时区/夏令时问题
-            // 这是一个 "Time Grid" 的配置，日期部分会被忽略，只取时间部分
-            min={new Date(1970, 0, 1, 8, 30, 0)} // 早上8:30开始
-            max={new Date(1970, 0, 1, 22, 0, 0)} // 晚上10点结束
+            // 使用 moment 创建 min/max，确保时间在 Asia/Shanghai 时区下一致
+            // 避免用户浏览器本地时区与 momentLocalizer 默认时区不一致导致跨天计算错误
+            min={moment.tz('08:30', 'HH:mm', 'Asia/Shanghai').toDate()} // 早上8:30开始
+            max={moment.tz('22:00', 'HH:mm', 'Asia/Shanghai').toDate()} // 晚上10点结束
             step={15} // 15分钟间隔
             timeslots={2} // 每小时2个时间槽
             showMultiDayTimes={false} // 不显示多日时间

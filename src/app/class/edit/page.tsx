@@ -76,6 +76,7 @@ export default function ClassEditPage() {
     isTransfer?: boolean;
   }>>([]);
   const [subjects, setSubjects] = useState<Array<{
+    subject_id: number;  // 从 get_edit_info 回传，新增用 -1
     topic_id: number;
     teacher_id: number;
     description: string;
@@ -129,12 +130,13 @@ export default function ClassEditPage() {
           double_time: response.data.class_info.double_time === 1
         } as any);
 
-        // 初始化科目列表
+        // 初始化科目列表（保留 subject_id，从 get_edit_info 的 id 回传）
         const subjectsWithNames = response.data.class_subject.map(subject => {
           const topicInfo = response.data!.topics.find(t => t.id === subject.topic_id);
           const teacherInfo = response.data!.staff_info.find(s => s.id === subject.teacher_id);
           const examInfo = response.data!.exam_info.find(e => e.id === subject.exam_id);
           return {
+            subject_id: subject.id ?? -1,
             topic_id: subject.topic_id,
             teacher_id: subject.teacher_id,
             description: subject.description,
@@ -286,6 +288,7 @@ export default function ClassEditPage() {
   // 科目管理
   const addSubject = () => {
     setSubjects([...subjects, {
+      subject_id: -1,
       topic_id: 0,
       teacher_id: 0,
       description: '',
@@ -397,6 +400,7 @@ export default function ClassEditPage() {
           end_time: s.isTransfer ? s.end_time : -1
         })),
         subjects: subjects.map(s => ({
+          subject_id: s.subject_id ?? -1,
           topic_id: s.topic_id,
           teacher_id: s.teacher_id,
           description: s.description,
@@ -405,6 +409,9 @@ export default function ClassEditPage() {
         }))
       };
 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Class Edit] 提交参数 subjects:', params.subjects);
+      }
       const response = await editClass(params);
 
       if (response.code === 200) {
@@ -416,7 +423,6 @@ export default function ClassEditPage() {
         }, 2000);
       } else {
         // 尝试解析错误详情
-        debugger
         let errorData = null;
         try {
           if (typeof response.message === 'string') {
@@ -568,6 +574,7 @@ export default function ClassEditPage() {
                 Add to Group
               </button>
               <button
+                data-testid="save-class-btn"
                 onClick={handleSave}
                 disabled={saving}
                 className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"

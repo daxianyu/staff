@@ -29,12 +29,16 @@ import {
   EllipsisVerticalIcon,
   TagIcon,
   DocumentArrowUpIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
+import { ExcelExporter } from '@/components/ExcelExporter';
+import { buildFileUrl } from '@/config/env';
 
 export default function ExamPage() {
   const router = useRouter();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const canEdit = hasPermission(PERMISSIONS.EDIT_EXAMS);
+  const isCoreUser = user && (Number((user as any).core_user) === 1 || (user as any).core_user === true);
 
   // 考试期间和类型常量 (从API获取)
   const [examPeriods, setExamPeriods] = useState<Record<string, string>>({});
@@ -250,6 +254,47 @@ export default function ExamPage() {
     }
   };
 
+  // 处理下载考试列表 CSV（Edexcel/CIE/AQA/other/all）
+  const handleDownloadExamCsv = async (fileType: string) => {
+    const key = `exam_${fileType}`;
+    setDownloadLoading(prev => ({ ...prev, [key]: true }));
+    setError('');
+    try {
+      const response = await fetch(`/api/exam/download_exam?file_type=${fileType}`, {
+        method: 'GET',
+        headers: getAuthHeader(),
+      });
+      const data = await response.json();
+      if (data.status === 0 && data.data?.file_path) {
+        const fileUrl = buildFileUrl(data.data.file_path);
+        const downloadResponse = await fetch(fileUrl, {
+          method: 'GET',
+          headers: getAuthHeader(),
+        });
+        if (downloadResponse.ok) {
+          const blob = await downloadResponse.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `exams_${fileType}_${Date.now()}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        } else {
+          setError('文件下载失败');
+        }
+      } else {
+        setError(data.message || '获取下载链接失败');
+      }
+    } catch (err) {
+      console.error('下载考试列表异常:', err);
+      setError('下载失败，请重试');
+    } finally {
+      setDownloadLoading(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
   // 处理批量上传考试
   const handleBatchUpload = async () => {
     if (!selectedFile) {
@@ -365,6 +410,62 @@ export default function ExamPage() {
       setCurrentPage(1); // 切换到首次费用tab时重置页码
       setFirstFeeSearchTerm(''); // 重置搜索
     }
+  };
+
+  // 获取首次费用全量数据（含搜索过滤，用于导出）
+  const getFullFirstFeeData = () => {
+    let allData = [
+      ...innerFirstFee.map(item => ({ ...item, type: 'inner' })),
+      ...outsideFirstFee.map(item => ({ ...item, type: 'outside' }))
+    ];
+    if (firstFeeSearchTerm.trim()) {
+      const searchTerm = firstFeeSearchTerm.toLowerCase().replace(/\s+/g, '');
+      allData = allData.filter(item => {
+        const studentId = String(item[0] || '').toLowerCase();
+        const studentName = String(item[1] || '').toLowerCase();
+        const pinyin = String(item[3] || '').toLowerCase().replace(/\s+/g, '');
+        return studentId.includes(searchTerm) || studentName.includes(searchTerm) || pinyin.includes(searchTerm);
+      });
+    }
+    return allData;
+  };
+
+  // 考试管理 tab 导出配置
+  const examsExportConfig = () => {
+    const examHeaders = ['考试名称', 'Code', '类型', '科目', '考期', '时间', '地点', '价格'];
+    const toRow = (exam: ExamListItem) => [
+      exam.name,
+      exam.code,
+      examTypes[String(exam.type)] ?? '-',
+      exam.topic ?? '-',
+      examPeriods[String(exam.period)] ?? '-',
+      exam.time ? new Date(Number(exam.time) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-',
+      exam.location,
+      exam.price
+    ];
+    const sheets: { name: string; headers: string[]; data: any[][] }[] = [
+      { name: 'Active Exams', headers: examHeaders, data: filteredExams.map(toRow) }
+    ];
+    if (showDisabled && filteredDisabledExams.length > 0) {
+      sheets.push({ name: 'Disabled Exams', headers: examHeaders, data: filteredDisabledExams.map(toRow) });
+    }
+    return { filename: 'exam_management', sheets };
+  };
+
+  // 首次费用 tab 导出配置
+  const firstFeeExportConfig = () => {
+    const headers = ['类型', '学生ID', '学生姓名', '姓名拼音', '报名时间'];
+    const data = getFullFirstFeeData().map(item => [
+      item.type === 'inner' ? '内部' : '外部',
+      item[0],
+      item[1],
+      item[3],
+      item[2] ? new Date(Number(item[2]) * 1000).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+    ]);
+    return {
+      filename: 'first_fee_registration',
+      sheets: [{ name: '首次费用报名记录', headers, data }]
+    };
   };
 
   // 过滤考试列表
@@ -518,6 +619,13 @@ export default function ExamPage() {
                 </div>
 
                 <div className="flex gap-3">
+                  <ExcelExporter
+                    config={examsExportConfig()}
+                    disabled={filteredExams.length === 0 && (!showDisabled || filteredDisabledExams.length === 0)}
+                  >
+                    <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                    下载
+                  </ExcelExporter>
                   <button
                     onClick={() => setShowAddModal(true)}
                     className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -534,6 +642,37 @@ export default function ExamPage() {
                   </button>
                 </div>
               </div>
+              {/* 考试列表 CSV 下载按钮 - 仅 core_user 可见 */}
+              {isCoreUser && (
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200 mt-4 justify-end">
+                {[
+                  { type: 'edexcel', label: 'Edexcel' },
+                  { type: 'cie', label: 'CIE' },
+                  { type: 'aqa', label: 'AQA' },
+                  { type: 'other', label: 'Other' },
+                  { type: 'all', label: 'All' },
+                ].map(({ type, label }) => (
+                  <button
+                    key={type}
+                    onClick={() => handleDownloadExamCsv(type)}
+                    disabled={downloadLoading[`exam_${type}`]}
+                    className="flex items-center px-2 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {downloadLoading[`exam_${type}`] ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
+                        下载中
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownTrayIcon className="h-3.5 w-3.5 mr-1" />
+                        Download {label}
+                      </>
+                    )}
+                  </button>
+                ))}
+              </div>
+              )}
             </div>
 
             {/* Active Exams */}
@@ -815,8 +954,17 @@ export default function ExamPage() {
                   </div>
 
                   {/* 下载按钮 */}
-                  {canDownload === 1 && (
-                    <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <ExcelExporter
+                      config={firstFeeExportConfig()}
+                      disabled={totalRecords === 0}
+                      className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                      下载当前
+                    </ExcelExporter>
+                    {canDownload === 1 && (
+                    <>
                       <button
                         onClick={() => handleDownload('0')}
                         disabled={downloadLoading['0']}
@@ -868,8 +1016,9 @@ export default function ExamPage() {
                           </>
                         )}
                       </button>
-                    </div>
-                  )}
+                    </>
+                    )}
+                  </div>
                 </div>
               </div>
 

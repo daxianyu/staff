@@ -151,6 +151,9 @@ export default function ClassSignupPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       校区
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      课频
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -173,6 +176,9 @@ export default function ClassSignupPage() {
                           <BuildingOfficeIcon className="h-4 w-4 text-gray-400 mr-2" />
                           {classItem.campus_name || `校区 ${classItem.campus_id}`}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {classItem.frequency || '-'}
                       </td>
                     </tr>
                   ))}

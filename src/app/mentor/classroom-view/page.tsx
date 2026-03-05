@@ -61,6 +61,18 @@ export default function ClassroomViewPage() {
       campusName: string;
     }>;
 
+    const { room_size = {}, room_id_name = {}, room_campuses, campus_info } = overviewData;
+
+    // room_name -> campus_id 映射（从 room_campuses 构建，pair 格式为 [room_name, room_size]）
+    const roomNameToCampusId: Record<string, string> = {};
+    Object.entries(room_campuses).forEach(([campusId, roomList]) => {
+      roomList.forEach((pair) => {
+        const roomName = String(pair[0]);
+        roomNameToCampusId[roomName] = String(campusId);
+      });
+    });
+
+    // 以 room_size 的 key 为 room_id（与 lesson.room_id 一致）
     const items: Array<{
       roomId: number;
       roomName: string;
@@ -68,14 +80,15 @@ export default function ClassroomViewPage() {
       campusName: string;
     }> = [];
 
-    Object.entries(overviewData.room_campuses).forEach(([campusId, roomList]) => {
-      roomList.forEach(([roomName, roomId]) => {
-        items.push({
-          roomId,
-          roomName,
-          campusId,
-          campusName: overviewData.campus_info[campusId] ?? '',
-        });
+    Object.entries(room_size).forEach(([rid, size]) => {
+      const roomId = Number(rid) || parseInt(rid, 10);
+      const roomName = room_id_name[rid] ?? `教室${rid}`;
+      const campusId = roomNameToCampusId[roomName] ?? '';
+      items.push({
+        roomId,
+        roomName,
+        campusId,
+        campusName: campus_info[campusId] ?? '',
       });
     });
 
@@ -616,7 +629,9 @@ export default function ClassroomViewPage() {
                     <div>
                       <div className="text-sm text-gray-500">教室</div>
                       <div className="font-medium">
-                        {rooms.find(r => r.roomId === selectedLesson.room_id)?.roomName || '未知教室'}
+                        {rooms.find(r => r.roomId === selectedLesson.room_id)?.roomName
+                        || overviewData?.room_id_name?.[String(selectedLesson.room_id)]
+                        || '未知教室'}
                       </div>
                     </div>
                   </div>

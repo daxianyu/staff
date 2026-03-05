@@ -9,6 +9,7 @@ import {
   TrashIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import SearchableSelect from '@/components/SearchableSelect';
 import {
   getExamSessionSelect,
   getExamSessionTable,
@@ -40,6 +41,7 @@ export default function ExamConfigPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
   // 二级弹出窗口状态（配置年制和试卷类型）
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -79,12 +81,27 @@ export default function ExamConfigPage() {
         }));
         setExamSettingOptions(examSettingOpts);
         
-        // 校区选项：campus_info 是 Record<number, string>
-        const campusOpts = Object.entries(selectResult.data.campus_info || {}).map(([id, name]) => ({
-          id: Number(id),
-          name: String(name),
-        }));
-        setCampusOptions(campusOpts);
+        // 校区选项：campus_info 可能是 Array<[campus_id, campus_name]> 或 Record<campus_id, name>
+        const parseCampusInfo = (raw: unknown): SelectOption[] => {
+          if (!raw) return [];
+          if (Array.isArray(raw)) {
+            return raw
+              .map((item): SelectOption | null => {
+                if (Array.isArray(item)) return { id: Number(item[0]), name: String(item[1] ?? '') };
+                if (item && typeof item === 'object' && 'id' in item)
+                  return { id: Number((item as { id: number }).id), name: String((item as { name?: string }).name ?? '') };
+                return null;
+              })
+              .filter((o): o is SelectOption => o != null && !Number.isNaN(o.id));
+          }
+          const toStr = (v: unknown): string =>
+            typeof v === 'string' ? v : (v && typeof v === 'object' && 'name' in v ? String((v as { name: unknown }).name) : String(v ?? ''));
+          return Object.entries(raw as Record<string, unknown>).map(([k, v]) => ({
+            id: parseInt(k, 10),
+            name: toStr(v),
+          })).filter((o) => !Number.isNaN(o.id));
+        };
+        setCampusOptions(parseCampusInfo(selectResult.data.campus_info));
         
         // 年制选项：study_year 是 Array<{ value: string; name: string }>
         const studyYearOpts = (selectResult.data.study_year || []).map((item: { value: string; name: string }) => ({
@@ -114,12 +131,33 @@ export default function ExamConfigPage() {
 
   // 提交场次配置
   const handleSubmit = async () => {
+    const errors: Record<string, string> = {};
+    const campusIds = Array.isArray(formData.campus_id) ? formData.campus_id : (formData.campus_id != null && formData.campus_id !== '' ? [formData.campus_id] : []);
+    const studyYears = Array.isArray(formData.study_year) ? formData.study_year : (formData.study_year != null && formData.study_year !== '' ? [formData.study_year] : []);
+    const paperTypes = Array.isArray(formData.paper_type) ? formData.paper_type : (formData.paper_type != null && formData.paper_type !== '' ? [formData.paper_type] : []);
+    if (campusIds.length === 0) errors.campus_id = '请选择校区';
+    if (studyYears.length === 0) errors.study_year = '请选择年制';
+    if (paperTypes.length === 0) errors.paper_type = '请选择试卷类型';
+    if (!formData.exam_id) errors.exam_id = '请选择考试场次';
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
+    const toIds = (arr: any[]) => arr.map((v) => (typeof v === 'object' && v && 'id' in v ? (v as { id: string | number }).id : v)).filter((v) => v != null && v !== '');
+    const submitData = {
+      ...formData,
+      campus_id: toIds(campusIds).map(String).join(','),
+      study_year: toIds(studyYears).map(String).join(','),
+      paper_type: toIds(paperTypes).map(String).join(','),
+    };
     try {
-      const result = await addExamSession(formData);
+      const result = await addExamSession(submitData);
       if (result.code === 200) {
         alert('添加成功');
         setShowAddModal(false);
         setFormData({});
+        setFormErrors({});
         loadSessions();
       } else {
         alert('添加失败: ' + result.message);
@@ -311,7 +349,7 @@ export default function ExamConfigPage() {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
                 <h3 className="text-lg font-semibold text-gray-900">新增场次配置</h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-500">
+                <button onClick={() => { setShowAddModal(false); setFormErrors({}); }} className="text-gray-400 hover:text-gray-500">
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
@@ -323,8 +361,11 @@ export default function ExamConfigPage() {
                   </label>
                   <select
                     value={formData.exam_id || ''}
-                    onChange={(e) => setFormData({ ...formData, exam_id: e.target.value ? Number(e.target.value) : '' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => {
+                      setFormData({ ...formData, exam_id: e.target.value ? Number(e.target.value) : '' });
+                      if (formErrors.exam_id) setFormErrors((prev) => ({ ...prev, exam_id: '' }));
+                    }}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${formErrors.exam_id ? 'border-red-500' : 'border-gray-300'}`}
                     required
                   >
                     <option value="">请选择考试场次</option>
@@ -334,29 +375,32 @@ export default function ExamConfigPage() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.exam_id && <p className="mt-1 text-sm text-red-500">{formErrors.exam_id}</p>}
                 </div>
                 
-                {/* 校区 */}
+                {/* 校区（多选） */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     校区 <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.campus_id || ''}
-                    onChange={(e) => setFormData({ ...formData, campus_id: e.target.value ? Number(e.target.value) : '' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">请选择校区</option>
-                    {campusOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect
+                    options={campusOptions}
+                    value={Array.isArray(formData.campus_id) ? formData.campus_id : (formData.campus_id != null && formData.campus_id !== '' ? [formData.campus_id] : [])}
+                    onValueChange={(val) => {
+                      setFormData({ ...formData, campus_id: val as number[] });
+                      if (formErrors.campus_id) setFormErrors((prev) => ({ ...prev, campus_id: '' }));
+                    }}
+                    placeholder="请选择校区"
+                    searchPlaceholder="搜索校区..."
+                    multiple
+                    clearable
+                    maxDisplayCount={0}
+                    className={`w-full min-w-0 ${formErrors.campus_id ? '!border-red-500' : ''}`}
+                  />
+                  {formErrors.campus_id && <p className="mt-1 text-sm text-red-500">{formErrors.campus_id}</p>}
                 </div>
                 
-                {/* 年制 */}
+                {/* 年制（多选） */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-gray-700">
@@ -370,22 +414,24 @@ export default function ExamConfigPage() {
                       配置
                     </button>
                   </div>
-                  <select
-                    value={formData.study_year || ''}
-                    onChange={(e) => setFormData({ ...formData, study_year: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">请选择年制</option>
-                    {studyYearOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect
+                    options={studyYearOptions}
+                    value={Array.isArray(formData.study_year) ? formData.study_year : (formData.study_year != null && formData.study_year !== '' ? [formData.study_year] : [])}
+                    onValueChange={(val) => {
+                      setFormData({ ...formData, study_year: val as (string | number)[] });
+                      if (formErrors.study_year) setFormErrors((prev) => ({ ...prev, study_year: '' }));
+                    }}
+                    placeholder="请选择年制"
+                    searchPlaceholder="搜索年制..."
+                    multiple
+                    clearable
+                    maxDisplayCount={0}
+                    className={`w-full min-w-0 ${formErrors.study_year ? '!border-red-500' : ''}`}
+                  />
+                  {formErrors.study_year && <p className="mt-1 text-sm text-red-500">{formErrors.study_year}</p>}
                 </div>
                 
-                {/* 试卷类型 */}
+                {/* 试卷类型（多选） */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-gray-700">
@@ -399,23 +445,25 @@ export default function ExamConfigPage() {
                       配置
                     </button>
                   </div>
-                  <select
-                    value={formData.paper_type || ''}
-                    onChange={(e) => setFormData({ ...formData, paper_type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">请选择试卷类型</option>
-                    {paperTypeOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect
+                    options={paperTypeOptions}
+                    value={Array.isArray(formData.paper_type) ? formData.paper_type : (formData.paper_type != null && formData.paper_type !== '' ? [formData.paper_type] : [])}
+                    onValueChange={(val) => {
+                      setFormData({ ...formData, paper_type: val as (string | number)[] });
+                      if (formErrors.paper_type) setFormErrors((prev) => ({ ...prev, paper_type: '' }));
+                    }}
+                    placeholder="请选择试卷类型"
+                    searchPlaceholder="搜索试卷类型..."
+                    multiple
+                    clearable
+                    maxDisplayCount={0}
+                    className={`w-full min-w-0 ${formErrors.paper_type ? '!border-red-500' : ''}`}
+                  />
+                  {formErrors.paper_type && <p className="mt-1 text-sm text-red-500">{formErrors.paper_type}</p>}
                 </div>
               </div>
               <div className="flex items-center justify-end gap-3 p-6 border-t sticky bottom-0 bg-white">
-                <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <button onClick={() => { setShowAddModal(false); setFormErrors({}); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   取消
                 </button>
                 <button onClick={handleSubmit} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
