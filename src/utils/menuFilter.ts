@@ -705,6 +705,13 @@ export const defaultMenuConfig: MenuItem[] = [
     requiredPermissions: ['finance', 'sales_person'],
     children: [
       {
+        key: 'repayments-list',
+        label: 'Repayment Students',
+        path: '/accounting/repayments-list',
+        icon: 'clipboard-document-list',
+        requiredPermissions: ['finance'],
+      },
+      {
         key: 'finance-students',
         label: 'Finance Students',
         path: '/accounting/finance-students',

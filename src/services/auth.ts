@@ -19,6 +19,7 @@ export * from './modules/groups';
 export { getAllExams, getRoomList } from './modules/groups';
 export * from './modules/core';
 export * from './modules/tradeInfo';
+export * from './modules/accounting';
 export * from './modules/mentee';
 export * from './modules/classroom';
 export * from './modules/subjects';
