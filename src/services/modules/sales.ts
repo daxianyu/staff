@@ -24,7 +24,7 @@ export interface SalesRecord {
   signing_request_state_2: number; // 签约请求状态2
   service_file: string;         // 服务文件
   consult_file: string;         // 咨询文件
-  has_right: boolean;           // 是否有权限
+  has_right?: boolean | number; // 是否有权限（后端可能返回 true/false 或 1/0）
   service_tail: string;         // 服务文件链接
   consult_tail: string;         // 咨询文件链接
   show_service?: boolean | number | string;  // 是否展示服务协议按钮
@@ -38,6 +38,7 @@ export interface SalesListData {
 }
 
 export interface SalesInfo {
+  has_right?: boolean;  // 是否有编辑权限（来自后端，用于区分每条记录的编辑权限）
   info: {
     added_to_lms: number;
     student_name: string;

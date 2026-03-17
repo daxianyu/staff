@@ -245,6 +245,10 @@ export const PERMISSIONS = {
   VIEW_TEXTBOOK_PURCHASE: 'view_textbook_purchase',
   EDIT_TEXTBOOK_PURCHASE: 'edit_textbook_purchase',
 
+  // Notice Board 公告板 (operation_right=26)
+  VIEW_NOTICE_BOARD: 'view_notice_board',
+  EDIT_NOTICE_BOARD: 'edit_notice_board',
+
   // 导师变更记录权限
   VIEW_MENTOR_CHANGE_RECORD: 'finance',
 
@@ -306,6 +310,9 @@ export const OPERATION_RIGHTS = {
 
   // 教材领取/回滚权限
   TEXTBOOK_OPERATION: 19,
+
+  // Notice Board 公告板（校区校长、个人学校办公室）
+  NOTICE_BOARD: 26,
 } as const;
 
 // 预定义角色常量（向后兼容）

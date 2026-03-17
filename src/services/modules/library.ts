@@ -274,6 +274,61 @@ export const addNewArticle = async (articleData: {
 };
 
 /**
+ * 上传 Knowledge Base 文章附件（支持图片、PDF、Word 等）
+ */
+export const uploadArticleFile = async (file: File): Promise<ApiResponse<{ file_path: string; url?: string }>> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await request('/api/file/upload_article_file', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const payload = (data ?? {}) as {
+      status?: number;
+      message?: string;
+      data?: {
+        file_name?: string;
+        file_path?: string;
+        path?: string;
+        url?: string;
+        link?: string;
+        file_url?: string;
+      };
+      file_path?: string;
+      url?: string;
+      link?: string;
+      file_url?: string;
+    };
+
+    const url =
+      payload.data?.url ??
+      payload.data?.link ??
+      payload.data?.file_url ??
+      payload.url ??
+      payload.link ??
+      payload.file_url ??
+      '';
+    const filePath =
+      payload.data?.file_path ??
+      payload.data?.file_name ??
+      payload.data?.path ??
+      payload.file_path ??
+      url;
+
+    return normalizeApiResponse({
+      status: payload.status ?? 0,
+      message: payload.message ?? '',
+      data: { file_path: filePath, url: url || filePath },
+    });
+  } catch (error) {
+    console.error('上传文章附件失败:', error);
+    return { code: 500, message: error instanceof Error ? error.message : '上传文章附件失败', data: { file_path: '', url: '' } };
+  }
+};
+
+/**
  * 更新文章内容（新增或编辑）
  * @param articleData 文章数据
  */

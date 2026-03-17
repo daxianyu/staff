@@ -250,6 +250,11 @@ export class MenuFilter {
       return operationRights.includes(OPERATION_RIGHTS.TEXTBOOK_OPERATION) || isCoreUser;
     }
 
+    // 需要 operation_right为26 或 core_user=1 的权限 (Notice Board 编辑)
+    if (permission === PERMISSIONS.EDIT_NOTICE_BOARD) {
+      return operationRights.includes(OPERATION_RIGHTS.NOTICE_BOARD) || isCoreUser;
+    }
+
     // 需要 edit_classes 或 sales_admin 权限
     const selfSignupPermissions = [
       PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES,
@@ -261,6 +266,7 @@ export class MenuFilter {
 
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
+      PERMISSIONS.VIEW_NOTICE_BOARD, // 所有 staff 可查看公告
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,
       PERMISSIONS.EDIT_SUBJECT_EVALUATE,
       PERMISSIONS.VIEW_EXIT_PERMIT,
@@ -747,6 +753,13 @@ export const defaultMenuConfig: MenuItem[] = [
         requiredPermissions: [PERMISSIONS.FINANCE],
       },
     ],
+  },
+  {
+    key: 'notice-board',
+    label: 'Notice Board',
+    path: '/notice-board',
+    icon: 'clipboard-document-list',
+    requiredPermissions: [PERMISSIONS.VIEW_NOTICE_BOARD],
   },
   {
     key: 'front-page-admin',

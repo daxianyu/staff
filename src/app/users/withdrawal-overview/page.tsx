@@ -21,8 +21,8 @@ import {
 const WITHDRAWAL_STATUS = {
   "-1": "已撤回",
   "1": "已提交", 
-  "2": "已完成-退考退费",
-  "4": "已完成-退考",
+  "2": "通过-退考可退费",
+  "4": "通过-退考",
   "3": "已拒绝"
 };
 
@@ -164,9 +164,11 @@ export default function WithdrawalOverviewPage() {
 
   const getStatusColor = (status: number) => {
     switch (status) {
-      case 0: return 'bg-yellow-100 text-yellow-800';
-      case 1: return 'bg-green-100 text-green-800';
-      case 2: return 'bg-red-100 text-red-800';
+      case -1: return 'bg-gray-100 text-gray-800';
+      case 1: return 'bg-yellow-100 text-yellow-800';
+      case 2:
+      case 4: return 'bg-green-100 text-green-800';
+      case 3: return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -318,7 +320,7 @@ export default function WithdrawalOverviewPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                          {item.status_name}
+                          {item.status_name || WITHDRAWAL_STATUS[String(item.status) as keyof typeof WITHDRAWAL_STATUS] || '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -344,7 +346,7 @@ export default function WithdrawalOverviewPage() {
                       {canEdit && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-2">
-                            {/* 状态为1（已提交）时显示通过和拒绝按钮 */}
+                            {/* 状态为1（已提交）时显示通过-退考可退费、通过-退考和拒绝按钮 */}
                             {item.status === 1 && (
                               <>
                                 <button
@@ -354,8 +356,20 @@ export default function WithdrawalOverviewPage() {
                                     setShowStatusModal(true);
                                   }}
                                   className="text-green-600 hover:text-green-900 flex items-center gap-1"
+                                  title="通过-退考可退费"
                                 >
-                                  通过
+                                  通过-退考可退费
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedRecord(item);
+                                    setStatusForm({ status: '4', reject_reason: '' });
+                                    setShowStatusModal(true);
+                                  }}
+                                  className="text-green-600 hover:text-green-900 flex items-center gap-1"
+                                  title="通过-退考"
+                                >
+                                  通过-退考
                                 </button>
                                 <button
                                   onClick={() => {
@@ -532,7 +546,7 @@ export default function WithdrawalOverviewPage() {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {statusForm.status === '2' ? '通过申请' : '拒绝申请'}
+                  {statusForm.status === '2' ? '通过-退考可退费' : statusForm.status === '4' ? '通过-退考' : '拒绝申请'}
                 </h3>
                 <button
                   onClick={() => setShowStatusModal(false)}
@@ -579,12 +593,12 @@ export default function WithdrawalOverviewPage() {
                 <button
                   onClick={handleStatusUpdate}
                   className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md ${
-                    statusForm.status === '2' 
+                    statusForm.status === '2' || statusForm.status === '4'
                       ? 'bg-green-600 hover:bg-green-700' 
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
-                  {statusForm.status === '2' ? '通过' : '拒绝'}
+                  {statusForm.status === '2' ? '通过-退考可退费' : statusForm.status === '4' ? '通过-退考' : '拒绝'}
                 </button>
               </div>
             </div>

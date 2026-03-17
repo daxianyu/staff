@@ -17,10 +17,9 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { useAuth } from '@/contexts/AuthContext';
 import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
+import MarkdownContent from '@/components/markdown/MarkdownContent';
 import { 
   getAllKnowledge, 
   getArticleInfo, 
@@ -45,9 +44,7 @@ interface TreeNode {
 
 export default function KnowledgeBasePage() {
   const { user } = useAuth();
-  const [knowledgeData, setKnowledgeData] = useState<KnowledgeTreeData>([]);
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
-  const [workspaceMap, setWorkspaceMap] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -62,7 +59,7 @@ export default function KnowledgeBasePage() {
   const [selectedFolderForNew, setSelectedFolderForNew] = useState<TreeNode | null>(null);
 
   // 检查 tool_user 权限
-  const toolUser = (user as any)?.tool_user;
+  const toolUser = (user as { tool_user?: unknown } | null)?.tool_user;
   const canEdit = toolUser === 1 || toolUser === true || toolUser === '1';
 
   // 计算总文章数量
@@ -121,7 +118,6 @@ export default function KnowledgeBasePage() {
         options.forEach((opt: SelectOption) => {
           map.set(opt.name, opt.id);
         });
-        setWorkspaceMap(map);
         return map;
       }
     } catch (err) {
@@ -143,7 +139,6 @@ export default function KnowledgeBasePage() {
       console.log('知识库数据响应:', response);
       
       if (response.code === 200 && response.data) {
-        setKnowledgeData(response.data);
         const tree = convertToTreeData(response.data, spaceMap);
         setTreeData(tree);
         
@@ -527,13 +522,7 @@ export default function KnowledgeBasePage() {
                 {/* 文章内容 - 使用 Markdown 渲染 */}
                 <div className="flex-1 overflow-y-auto">
                   {selectedArticle.article_info && selectedArticle.article_info.trim() ? (
-                    <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-blue-600 prose-strong:text-gray-900 prose-code:text-pink-600 prose-code:bg-gray-100 prose-pre:bg-gray-100 prose-h1:text-2xl prose-h1:font-bold prose-h1:mb-4 prose-h2:text-xl prose-h2:font-semibold prose-h2:mb-3 prose-h2:mt-6 prose-h3:text-lg prose-h3:font-medium prose-h3:mb-2 prose-h3:mt-4 prose-p:mb-4 prose-p:leading-relaxed prose-blockquote:border-l-4 prose-blockquote:border-blue-200 prose-blockquote:pl-4 prose-blockquote:py-2 prose-blockquote:text-gray-600 prose-blockquote:italic prose-ul:list-disc prose-ul:list-inside prose-ul:mb-4 prose-ol:list-decimal prose-ol:list-inside prose-ol:mb-4 prose-li:text-gray-700">
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                      >
-                        {selectedArticle.article_info}
-                      </ReactMarkdown>
-                    </div>
+                    <MarkdownContent content={selectedArticle.article_info} />
                   ) : (
                     <div className="flex items-center justify-center h-64 text-gray-500">
                       <div className="text-center">

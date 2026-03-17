@@ -442,7 +442,7 @@ export default function AdmissionManagePage() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white group-hover:bg-gray-50">
                         <div className="flex items-center gap-2 justify-end">
-                          {canEdit && (
+                          {(canEdit || !!item.has_right) && item.has_right !== false && item.has_right !== 0 && (
                             <button
                               onClick={() => handleEdit(item)}
                               className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"

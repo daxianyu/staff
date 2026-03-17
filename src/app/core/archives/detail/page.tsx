@@ -50,6 +50,23 @@ import { uploadArchivesFile } from '@/services/modules/archives';
 
 type TabType = 'base' | 'position' | 'promotion' | 'supervision' | 'interview' | 'complaint' | 'reward' | 'punishment' | 'accounting';
 
+// 岗位名称 -> 岗位级别 级联配置
+const POSITION_NAME_LEVEL_MAP: Record<string, string[]> = {
+  '手动输入': ['无'],
+  '助理教师': ['无', 'Ⅰ', 'Ⅱ', 'Ⅲ'],
+  '助理导师': ['无', 'Ⅰ', 'Ⅱ', 'Ⅲ'],
+  '导师': ['无', 'Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ'],
+  '资深导师': ['无', 'Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ'],
+};
+
+// 教师名称 -> 教师级别 级联配置
+const TEACHER_NAME_LEVEL_MAP: Record<string, string[]> = {
+  '初级': ['A', 'B'],
+  '中级': ['A', 'B', 'C'],
+  '高级': ['A', 'B'],
+  '手动输入': ['手动输入'],
+};
+
 export default function ArchivesDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -289,7 +306,7 @@ export default function ArchivesDetailPage() {
           'mentor_leader_id', 'campus_id'
         ];
       case 'position':
-        return ['position', 'position_base_hand_info', 'position_level', 'teacher_name', 'teacher_level'];
+        return ['position', 'position_base_hand_info', 'position_level', 'teacher_name', 'teacher_name_hand_info', 'teacher_level', 'teacher_level_hand_info'];
       case 'promotion':
         return ['promotion_apply_day', 'promotion_implement_day', 'promotion_mentor_level', 'promotion_teacher_level', 'promotion_post_file'];
       case 'supervision':
@@ -410,6 +427,17 @@ export default function ArchivesDetailPage() {
       // 准备提交数据，处理字段映射
       const submitData = { ...editFormData };
 
+      // 岗位信息：非手动输入时清空手动输入字段
+      if (editRecordType === 'position') {
+        if (submitData.position !== '手动输入') {
+          submitData.position_base_hand_info = '';
+        }
+        if (submitData.teacher_name !== '手动输入') {
+          submitData.teacher_name_hand_info = '';
+          submitData.teacher_level_hand_info = '';
+        }
+      }
+
       // 基础信息的字段映射：前端使用tc_status和teacher_base_position，后端需要teacher_certification_status和base_position
       if (editRecordType === 'base') {
         if (submitData.tc_status !== undefined) {
@@ -529,13 +557,15 @@ export default function ArchivesDetailPage() {
     mentor_leader_id: '导师负责人',
     campus_id: '校区',
     campus_name: '校区名称',
-    position: '岗位',
+    position: '岗位名称',
     position_base_hand_info: '手动内容',
     position_level: '岗位级别',
     position_name: '岗位名称',
     position_name_level: '岗位名称级别',
     teacher_name: '教师名称',
+    teacher_name_hand_info: '教师名称手动内容',
     teacher_level: '教师级别',
+    teacher_level_hand_info: '教师级别手动内容',
     promotion_apply_day: '申请日期',
     promotion_implement_day: '实施日期',
     promotion_mentor_level: '导师级别',
@@ -617,6 +647,104 @@ export default function ArchivesDetailPage() {
   // 渲染表单字段
   const renderFormField = (key: string, value: unknown, recordType: string) => {
     if (key === 'staff_id' || key === 'id' || key === 'record_id') return null; // 跳过ID字段
+
+    // 岗位信息：级联选择与条件显示手动输入
+    if (recordType === 'position') {
+      const posVal = String(editFormData.position ?? '');
+      const teacherVal = String(editFormData.teacher_name ?? '');
+
+      // 岗位名称选择"手动输入"时才显示手动内容
+      if (key === 'position_base_hand_info' && posVal !== '手动输入') return null;
+      // 教师名称选择"手动输入"时才显示教师手动输入字段
+      if ((key === 'teacher_name_hand_info' || key === 'teacher_level_hand_info') && teacherVal !== '手动输入') return null;
+
+      const renderPositionSelect = (field: string, options: string[], onChangeExtra?: (val: string) => Record<string, unknown>) => (
+        <select
+          value={String(value ?? '')}
+          onChange={(e) => {
+            const val = e.target.value;
+            const extra = onChangeExtra?.(val) ?? {};
+            setEditFormData({ ...editFormData, [field]: val, ...extra });
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">请选择</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      );
+
+      const renderTextInput = (field: string) => (
+        <input
+          type="text"
+          value={String(value ?? '')}
+          onChange={(e) => setEditFormData({ ...editFormData, [field]: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        />
+      );
+
+      if (key === 'position') {
+        return (
+          <div key={key} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
+            {renderPositionSelect(key, Object.keys(POSITION_NAME_LEVEL_MAP), (val) => {
+              const levels = POSITION_NAME_LEVEL_MAP[val] ?? ['无'];
+              return { position_level: levels[0] ?? '无' };
+            })}
+          </div>
+        );
+      }
+      if (key === 'position_base_hand_info') {
+        return (
+          <div key={key} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
+            {renderTextInput(key)}
+          </div>
+        );
+      }
+      if (key === 'position_level') {
+        const levels = posVal ? (POSITION_NAME_LEVEL_MAP[posVal] ?? ['无']) : [];
+        return (
+          <div key={key} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
+            {levels.length > 0 ? renderPositionSelect(key, levels) : (
+              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-md">请先选择岗位名称</div>
+            )}
+          </div>
+        );
+      }
+      if (key === 'teacher_name') {
+        return (
+          <div key={key} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
+            {renderPositionSelect(key, Object.keys(TEACHER_NAME_LEVEL_MAP), (val) => {
+              const levels = TEACHER_NAME_LEVEL_MAP[val] ?? [];
+              return { teacher_level: levels[0] ?? '' };
+            })}
+          </div>
+        );
+      }
+      if (key === 'teacher_name_hand_info' || key === 'teacher_level_hand_info') {
+        return (
+          <div key={key} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
+            {renderTextInput(key)}
+          </div>
+        );
+      }
+      if (key === 'teacher_level') {
+        const levels = teacherVal ? (TEACHER_NAME_LEVEL_MAP[teacherVal] ?? []) : [];
+        return (
+          <div key={key} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
+            {levels.length > 0 ? renderPositionSelect(key, levels) : (
+              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-md">请先选择教师名称</div>
+            )}
+          </div>
+        );
+      }
+    }
 
     const optionKey = getFieldOptionKey(key, recordType);
     const fieldOptions = optionKey ? (editSelectOptions[optionKey] || []) : [];

@@ -303,6 +303,12 @@ export default function SalesEditPage() {
             try {
                 const result = await getSalesInfo(Number(contractId));
                 if (result.code === 200 && result.data) {
+                    // 根据 has_right 字段判断是否有编辑权限
+                    if (result.data.has_right === false) {
+                        setError('您没有权限编辑此记录');
+                        setLoading(false);
+                        return;
+                    }
                     setSalesInfo(result.data);
                     const info = result.data.info;
                     // 初始化表单数据

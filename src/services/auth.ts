@@ -31,6 +31,7 @@ export { genCertificateReport, type GenCertificateReportParams } from './modules
 export * from './modules/sales';
 export * from './modules/rights';
 export * from './modules/archives';
+export * from './modules/notice';
 export * from './modules/promotion';
 export { type ApiEnvelope, type ApiResponse, type SelectOption } from './types';
 export { getAuthHeader } from './apiClient';

@@ -293,6 +293,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (textbookPermissions.includes(permission as any)) {
       return operationRights.includes(OPERATION_RIGHTS.TEXTBOOK_OPERATION) || isCoreUser;
     }
+
+    // Notice Board 查看 - 所有 staff 可访问
+    if (permission === PERMISSIONS.VIEW_NOTICE_BOARD) {
+      return true;
+    }
+    // Notice Board 编辑 - operation_right=26 或 core_user
+    if (permission === PERMISSIONS.EDIT_NOTICE_BOARD) {
+      return operationRights.includes(OPERATION_RIGHTS.NOTICE_BOARD) || isCoreUser;
+    }
     
     // 档案管理权限
     const archivesViewPermissions = [

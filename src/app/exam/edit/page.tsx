@@ -340,7 +340,7 @@ export default function EditExamPage() {
         student.student_name || student.name,
         student.campus || '-',
         new Date(student.signup_time * 1000).toLocaleDateString('zh-CN'),
-        student.price || form.base_price || 0,
+        student.signup_price ?? '-',
         student.paid ? 'Yes' : 'No'
       ].join(','))
     ].join('\n');
@@ -924,8 +924,15 @@ export default function EditExamPage() {
           <>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-5">
               <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">学生报名列表</h2>
-                <p className="text-sm text-gray-600 mt-1">已报名的学生信息管理</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">学生报名列表</h2>
+                    <p className="text-sm text-gray-600 mt-1">已报名的学生信息管理</p>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 bg-blue-50 px-3 py-1.5 rounded-lg">
+                    已报名学生总数：{studentList.length}
+                  </span>
+                </div>
               </div>
 
               <div className="p-6">
@@ -1014,7 +1021,7 @@ export default function EditExamPage() {
                               {new Date(student.signup_time * 1000).toLocaleDateString('zh-CN')}
                             </td>
                             <td className="px-4 py-4 text-sm text-gray-900">
-                              ¥{student.price || form.base_price || 0}
+                              {student.signup_price != null ? `¥${student.signup_price}` : '-'}
                             </td>
                             <td className="px-4 py-4 text-sm">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${student.paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -1091,7 +1098,7 @@ export default function EditExamPage() {
                             <td className="px-4 py-4 text-sm text-gray-900">
                               {new Date(student.signup_time * 1000).toLocaleDateString('zh-CN')}
                             </td>
-                            <td className="px-4 py-4 text-sm text-gray-900">¥{student.price || form.base_price || 0}</td>
+                            <td className="px-4 py-4 text-sm text-gray-900">{student.signup_price != null ? `¥${student.signup_price}` : '-'}</td>
                             <td className="px-4 py-4 text-sm text-gray-900">{student.current_school || '-'}</td>
                             <td className="px-4 py-4 text-right text-sm font-medium">
                               <div className="flex items-center justify-end gap-2">
