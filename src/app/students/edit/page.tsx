@@ -114,6 +114,7 @@ type StudentAllForm = {
   exam_0_number: string; // UCI number
   exam_1_number: string; // CIE Center Number
   exam_2_number: string; // CIE Candidate number
+  inner_flag: number; // 1-内部学生 2-挂靠生
   // 新增：与后端完整字段对齐
   graduation_date_for_id: number;
   stop_reason: number;
@@ -196,6 +197,7 @@ export default function StudentEditPage() {
     exam_0_number: '',
     exam_1_number: '',
     exam_2_number: '',
+    inner_flag: 1,
     graduation_date_for_id: new Date().getFullYear(),
     stop_reason: 0,
     suspend_reason: '',
@@ -309,6 +311,7 @@ export default function StudentEditPage() {
           exam_0_number: s.exam_0_number || '',
           exam_1_number: s.exam_1_number || '',
           exam_2_number: s.exam_2_number || '',
+          inner_flag: s.inner_flag ?? 1,
           graduation_date_for_id: s.graduation_date_for_id || (new Date().getFullYear()),
           stop_reason: s.stop_reason ?? 0,
           suspend_reason: s.suspend_reason ?? '',
@@ -425,6 +428,7 @@ export default function StudentEditPage() {
         year_fee_repayment_time_1: toDateSeconds(formData.year_fee_repayment_time_1) ?? 0,
         year_fee_repayment_time_2: toDateSeconds(formData.year_fee_repayment_time_2) ?? 0,
         year_fee_repayment_time_3: toDateSeconds(formData.year_fee_repayment_time_3) ?? 0,
+        inner_flag: Number(formData.inner_flag ?? 1),
       };
       
       const response = await updateStudentInfoV2(payload);
@@ -680,6 +684,17 @@ export default function StudentEditPage() {
                     disabled
                     className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">是否内部学生</label>
+                  <select
+                    value={formData.inner_flag}
+                    onChange={(e) => handleInputChange('inner_flag', Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value={1}>内部学生</option>
+                    <option value={2}>挂靠生</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

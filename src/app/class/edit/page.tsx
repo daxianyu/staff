@@ -968,19 +968,8 @@ export default function ClassEditPage() {
                     </div>
                   </div>
 
-                  {/* 描述和设置 */}
+                  {/* 设置 */}
                   <div className="flex flex-col lg:flex-row gap-4 pt-4 border-t border-gray-100">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                      <input
-                        type="text"
-                        value={subject.description}
-                        onChange={(e) => updateSubject(index, 'description', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="描述"
-                      />
-                    </div>
-
                     <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4">
                       <label className="flex items-center space-x-2">
                         <input

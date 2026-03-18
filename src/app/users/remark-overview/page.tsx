@@ -12,21 +12,23 @@ import {
 } from '@/services/auth';
 import { 
   XMarkIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 // 备注状态常量定义
-const REMARK_STATUS = {
-  "-1": "已撤回",
-  "1": "已提交-待支付",
-  "2": "已支付-待处理", 
-  "3": "已拒绝",
-  "4": "已支付-已处理",
-  "5": "已支付-但拒绝"
+const REMARK_STATUS: Record<string, string> = {
+  '-1': '已撤回',
+  '1': '已提交-待支付',
+  '2': '已支付-待处理',
+  '3': '已拒绝',
+  '4': '已支付-已处理',
+  '5': '已支付-但拒绝',
 };
 
 export default function RemarkOverviewPage() {
-  const { user, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
+  const [allData, setAllData] = useState<RemarkItem[]>([]);
   const [data, setData] = useState<RemarkItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -35,6 +37,10 @@ export default function RemarkOverviewPage() {
     status: '',
     reject_reason: ''
   });
+
+  // 筛选条件
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [examNameFilter, setExamNameFilter] = useState<string>('');
   
   // 分页相关状态
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,23 +57,15 @@ export default function RemarkOverviewPage() {
     }
   }, [canView]);
 
-  const loadData = async (page?: number, newPageSize?: number) => {
+  const loadData = async () => {
     setLoading(true);
     try {
       const result = await getStaffRemarkTable();
       if (result.code === 200) {
-        const allData = result.data?.rows || [];
-        const total = result.data?.total || 0;
-        
-        setTotalItems(total);
-        setTotalPages(Math.ceil(total / (newPageSize || pageSize)));
-        
-        // 前端分页处理
-        const startIndex = ((page || currentPage) - 1) * (newPageSize || pageSize);
-        const endIndex = startIndex + (newPageSize || pageSize);
-        const paginatedData = allData.slice(startIndex, endIndex);
-        
-        setData(paginatedData);
+        const rows = result.data?.rows || [];
+        setAllData(rows);
+        setCurrentPage(1);
+        applyFiltersAndPaginate(rows, 1, pageSize);
       }
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -75,6 +73,41 @@ export default function RemarkOverviewPage() {
       setLoading(false);
     }
   };
+
+  const applyFiltersAndPaginate = (
+    source: RemarkItem[],
+    page?: number,
+    newPageSize?: number
+  ) => {
+    const filtered = source.filter((item) => {
+      if (statusFilter !== '') {
+        const targetStatus = parseInt(statusFilter, 10);
+        if (item.status !== targetStatus) return false;
+      }
+      if (examNameFilter.trim()) {
+        const term = examNameFilter.trim().toLowerCase();
+        if (!(item.exam_name || '').toLowerCase().includes(term)) return false;
+      }
+      return true;
+    });
+
+    const total = filtered.length;
+    const size = newPageSize || pageSize;
+    const p = page ?? currentPage;
+    setTotalItems(total);
+    setTotalPages(Math.ceil(total / size) || 1);
+
+    const startIndex = (p - 1) * size;
+    const endIndex = startIndex + size;
+    setData(filtered.slice(startIndex, endIndex));
+  };
+
+  useEffect(() => {
+    if (allData.length > 0) {
+      setCurrentPage(1);
+      applyFiltersAndPaginate(allData, 1, pageSize);
+    }
+  }, [statusFilter, examNameFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStatusUpdate = async () => {
     if (!selectedRecord || !canEdit) return;
@@ -104,15 +137,15 @@ export default function RemarkOverviewPage() {
   };
 
 
-  const handlePageChange = async (page: number) => {
+  const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    await loadData(page);
+    applyFiltersAndPaginate(allData, page, pageSize);
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
-    loadData(1, newPageSize);
+    applyFiltersAndPaginate(allData, 1, newPageSize);
   };
 
   const getStatusColor = (status: number) => {
@@ -147,8 +180,31 @@ export default function RemarkOverviewPage() {
         {/* 操作栏 */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">共 {data.length} 条记录</span>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="搜索考试名称..."
+                  value={examNameFilter}
+                  onChange={(e) => setExamNameFilter(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48 sm:w-56"
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">全部状态</option>
+                {Object.entries(REMARK_STATUS).map(([val, label]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+              <span className="text-sm text-gray-600">
+                共 {totalItems} 条记录
+                {(statusFilter || examNameFilter.trim()) ? `（已筛选）` : ''}
+              </span>
             </div>
           </div>
         </div>

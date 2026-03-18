@@ -338,6 +338,7 @@ export const getClassInfo = async (classId: string): Promise<ClassInfoResponse> 
 // 学生管理相关接口定义
 export interface Student {
   student_id: number;
+  student_long_id?: string; // 学号
   name: string;
   grade: string;
   campus: string;
@@ -866,6 +867,7 @@ export interface StudentUpdatePayload {
   year_fee_repayment_time_1: number;
   year_fee_repayment_time_2: number;
   year_fee_repayment_time_3: number;
+  inner_flag?: number; // 1-内部学生 2-挂靠生
 }
 
 export const updateStudentInfoV2 = async (

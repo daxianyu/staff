@@ -173,6 +173,7 @@ export default function StudentsPage() {
         // 转换数据结构以匹配我们的接口
         const convertedData: Student[] = studentData.map((student: StudentInfo) => ({
           student_id: student.student_id,
+          student_long_id: (student as any).student_long_id ?? '',
           name: student.student_name,
           campus: student.campus_name,
           mentor_name: student.mentor_name,
@@ -518,7 +519,7 @@ export default function StudentsPage() {
                       Name
                     </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student ID
+                        学号
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Classes
@@ -543,7 +544,7 @@ export default function StudentsPage() {
                         </div>
                       </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 truncate">{student.student_id}</div>
+                          <div className="text-sm text-gray-900 truncate">{student.student_long_id || student.student_id || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
@@ -729,8 +730,8 @@ export default function StudentsPage() {
                     
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Student ID:</span>
-                        <span className="text-gray-900 font-medium">{student.student_id}</span>
+                        <span className="text-gray-500">学号:</span>
+                        <span className="text-gray-900 font-medium">{student.student_long_id || student.student_id || '-'}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-500">Classes:</span>
@@ -1183,7 +1184,7 @@ export default function StudentsPage() {
                         <h5 className="text-sm font-medium text-gray-900 mb-2">待删除学生信息：</h5>
                         <div className="text-sm text-gray-600 space-y-1">
                           <p><span className="font-medium">姓名：</span>{selectedStudent.name}</p>
-                          <p><span className="font-medium">学号：</span>{selectedStudent.student_id}</p>
+                          <p><span className="font-medium">学号：</span>{selectedStudent.student_long_id || selectedStudent.student_id || '-'}</p>
                           <p><span className="font-medium">校区：</span>{selectedStudent.campus}</p>
                           {selectedStudent.mentor_name && (
                             <p><span className="font-medium">导师：</span>{selectedStudent.mentor_name}</p>

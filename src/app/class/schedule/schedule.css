@@ -159,15 +159,15 @@
 
 /* ===== 时间段背景色样式 ===== */
 
-/* 不可用时间槽样式 - 更显眼 */
+/* 不可用时间槽样式 - 灰色 */
 .unavailable-time-slot {
-  background-color: rgba(220, 38, 38, 0.35) !important; /* 明显的红色半透明 */
-  border: 1px dashed #dc2626 !important; /* 红色虚线边框 */
+  background-color: rgba(107, 114, 128, 0.35) !important; /* 灰色半透明 */
+  border: 1px dashed #6b7280 !important; /* 灰色虚线边框 */
   position: relative;
 }
 .unavailable-time-slot::after {
   color: #fff;
-  background: #dc2626;
+  background: #6b7280;
   font-size: 12px;
   padding: 0 6px;
   border-radius: 4px;
@@ -181,7 +181,7 @@
 
 /* 不可用时间槽悬停效果 */
 .unavailable-time-slot:hover {
-  background-color: rgba(107, 114, 128, 0.25) !important;
+  background-color: rgba(107, 114, 128, 0.45) !important;
 }
 
 /* ===== 自定义事件组件样式 ===== */
@@ -233,14 +233,14 @@
   text-align: left;
 }
 
-/* 占用时间槽的背景阴影 - 针对日期列中的时间槽 */
+/* 占用时间槽的背景阴影 - 针对日期列中的时间槽（不可排课） */
 .rbc-time-content .rbc-time-slot.occupied-time {
   background: repeating-linear-gradient(
     45deg,
-    rgba(239, 68, 68, 0.15),
-    rgba(239, 68, 68, 0.15) 4px,
-    rgba(239, 68, 68, 0.25) 4px,
-    rgba(239, 68, 68, 0.25) 8px
+    rgba(107, 114, 128, 0.15),
+    rgba(107, 114, 128, 0.15) 4px,
+    rgba(107, 114, 128, 0.25) 4px,
+    rgba(107, 114, 128, 0.25) 8px
   ) !important;
   pointer-events: none !important;
   position: relative;
@@ -249,8 +249,8 @@
 
 /* 更明显的背景色用于调试 */
 .rbc-time-content .rbc-time-slot.occupied-time {
-  background-color: rgba(239, 68, 68, 0.2) !important;
-  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  background-color: rgba(107, 114, 128, 0.2) !important;
+  border: 1px solid rgba(107, 114, 128, 0.3) !important;
 }
 
 /* 确保不影响到左侧时间轴 */
