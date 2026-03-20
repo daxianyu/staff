@@ -20,6 +20,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   TrashIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import {
   getMenteeStudentInfo,
@@ -57,6 +58,7 @@ import {
   type StudentLesson,
   type StudentLeaveRecord,
 } from '@/services/auth';
+import { exportFeedbackListPdf } from '@/utils/exportPdfFromDom';
 
 // 请假模态框组件
 interface LeaveModalProps {
@@ -758,6 +760,8 @@ export default function StudentDetailPage() {
   const [showEditNoteModal, setShowEditNoteModal] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentInfo | null>(null);
   const [noteText, setNoteText] = useState('');
+  const [feedbackPdfSelected, setFeedbackPdfSelected] = useState<Set<number>>(new Set());
+  const [feedbackPdfExporting, setFeedbackPdfExporting] = useState(false);
 
   // 加载数据
   useEffect(() => {
@@ -828,6 +832,10 @@ export default function StudentDetailPage() {
     loadData();
   }, [studentId]);
 
+  useEffect(() => {
+    setFeedbackPdfSelected(new Set());
+  }, [feedback]);
+
   // 权限检查页面
   if (!canView) {
     return (
@@ -875,6 +883,36 @@ export default function StudentDetailPage() {
       </div>
     );
   }
+
+  const exportSelectedFeedbackPdf = () => {
+    if (!feedback?.rows?.length) return;
+    if (feedbackPdfSelected.size === 0) {
+      alert('请勾选需要导出（例如可发给家长）的反馈条目');
+      return;
+    }
+    try {
+      setFeedbackPdfExporting(true);
+      const slug = studentInfo.student_name.replace(/[\\/:*?"<>|\s]+/g, '_');
+      const items = feedback.rows
+        .map((item, index) => ({ item, index }))
+        .filter(({ index }) => feedbackPdfSelected.has(index))
+        .map(({ item }) => ({
+          topic_name: item.topic_name,
+          teacher_name: item.teacher_name,
+          time_format: item.time_format,
+          note: item.note,
+        }));
+      exportFeedbackListPdf(`feedback_${slug}_${studentId}.pdf`, {
+        studentName: studentInfo.student_name,
+        exportedAt: new Date().toLocaleString('zh-CN'),
+      }, items);
+    } catch (e) {
+      console.error(e);
+      alert(e instanceof Error ? e.message : '导出 PDF 失败');
+    } finally {
+      setFeedbackPdfExporting(false);
+    }
+  };
 
   // 选项卡配置
   const tabs = [
@@ -1494,23 +1532,75 @@ export default function StudentDetailPage() {
 
           {activeTab === 'feedback' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">学生反馈</h3>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">学生反馈</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    勾选需要纳入 PDF 的条目；未勾选的不会进入导出（便于区分是否给家长看）。
+                  </p>
+                </div>
+                {feedback && feedback.rows && feedback.rows.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setFeedbackPdfSelected(new Set(feedback.rows.map((_, i) => i)))}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      全选
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeedbackPdfSelected(new Set())}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      全不选
+                    </button>
+                    <button
+                      type="button"
+                      onClick={exportSelectedFeedbackPdf}
+                      disabled={feedbackPdfExporting || feedbackPdfSelected.size === 0}
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ArrowDownTrayIcon className="h-4 w-4" />
+                      {feedbackPdfExporting ? '生成 PDF…' : '导出所选 PDF'}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
               {feedback && feedback.rows && feedback.rows.length > 0 ? (
                 <div className="space-y-4">
                   {feedback.rows.map((item, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{item.topic_name}</h4>
-                        <span className="text-sm text-gray-500">{item.time_format}</span>
+                    <label
+                      key={index}
+                      className="flex gap-3 items-start border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50/80"
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={feedbackPdfSelected.has(index)}
+                        onChange={() =>
+                          setFeedbackPdfSelected((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(index)) next.delete(index);
+                            else next.add(index);
+                            return next;
+                          })
+                        }
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+                          <h4 className="font-medium text-gray-900">{item.topic_name}</h4>
+                          <span className="text-sm text-gray-500">{item.time_format}</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          <strong>教师:</strong> {item.teacher_name}
+                        </div>
+                        <div className="text-sm text-gray-700">
+                          <strong>反馈内容:</strong>
+                          <p className="mt-1 whitespace-pre-wrap">{item.note}</p>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        <strong>教师:</strong> {item.teacher_name}
-                      </div>
-                      <div className="text-sm text-gray-700">
-                        <strong>反馈内容:</strong>
-                        <p className="mt-1">{item.note}</p>
-                      </div>
-                    </div>
+                    </label>
                   ))}
                 </div>
               ) : (

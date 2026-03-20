@@ -1,6 +1,7 @@
 import type { ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 
 interface MarkdownContentProps {
   content: string;
@@ -11,7 +12,8 @@ export default function MarkdownContent({ content, className = '' }: MarkdownCon
   return (
     <article className={`max-w-none break-words text-gray-700 ${className}`.trim()}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        /** remark-breaks：单次换行即硬换行，避免「按一次回车预览仍同一行」的纯 CommonMark 体验 */
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
           h1: ({ children }) => (
             <h1 className="mt-8 text-3xl font-bold tracking-tight text-gray-900 first:mt-0">{children}</h1>
@@ -47,6 +49,7 @@ export default function MarkdownContent({ content, className = '' }: MarkdownCon
             </blockquote>
           ),
           hr: () => <hr className="my-8 border-gray-200" />,
+          br: () => <br />,
           table: ({ children }) => (
             <div className="mt-6 overflow-x-auto rounded-xl border border-gray-200">
               <table className="min-w-full border-collapse bg-white text-sm">{children}</table>

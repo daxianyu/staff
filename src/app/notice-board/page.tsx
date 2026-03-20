@@ -22,6 +22,8 @@ import {
   DocumentTextIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
+import MarkdownContent from '@/components/markdown/MarkdownContent';
+import SimpleMarkdownEditor from '@/components/markdown/SimpleMarkdownEditor';
 
 const getFileUrl = (path: string) => {
   if (!path) return '';
@@ -29,6 +31,21 @@ const getFileUrl = (path: string) => {
   const base = getApiBaseUrl().replace(/\/$/, '');
   return `${base}${path.startsWith('/') ? path : '/' + path}`;
 };
+
+/** 旧数据可能为 HTML；新公告为 Markdown */
+function NoticeContentBody({ content }: { content: string }) {
+  const trimmed = (content || '').trim();
+  const looksLikeHtml = /^<[a-z][\s\S]*>/i.test(trimmed) && /<\/[a-z][\s\S]*>/i.test(trimmed);
+  if (looksLikeHtml) {
+    return (
+      <div
+        className="prose prose-sm max-w-none text-gray-800"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+  return <MarkdownContent content={content} />;
+}
 
 // 毕业年选项（用于年级选择）
 const GRADUATION_YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i);
@@ -187,20 +204,6 @@ export default function NoticeBoardPage() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const res = await uploadNoticeFile(file);
-    if (res.code === 200 && res.data?.file_path) {
-      const url = getFileUrl(res.data.file_path);
-      const link = `[${file.name}](${url})`;
-      setFormContent((prev) => prev + (prev ? '\n\n' : '') + link);
-    } else {
-      setErrorMessage(res.message || '上传失败');
-    }
-    e.target.value = '';
-  };
-
   if (!canView) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -334,7 +337,7 @@ export default function NoticeBoardPage() {
       {/* 新增/编辑模态框 */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col">
             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
                 {editingItem ? '编辑公告' : '新增公告'}
@@ -373,27 +376,30 @@ export default function NoticeBoardPage() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">内容（支持 HTML）</label>
-                <textarea
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  正文（Markdown）
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  与知识库文章相同：工具栏插入标题/列表/链接等；支持拖拽或粘贴图片、上传附件，自动插入 Markdown。
+                </p>
+                <SimpleMarkdownEditor
                   value={formContent}
-                  onChange={(e) => setFormContent(e.target.value)}
-                  rows={10}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                  placeholder="公告内容，可包含文字、图片链接、文件链接等"
+                  onChange={setFormContent}
+                  disabled={submitting}
+                  minHeightPx={340}
+                  uploadFile={async (file) => {
+                    const res = await uploadNoticeFile(file);
+                    if (res.code === 200 && res.data?.file_path) {
+                      return {
+                        ok: true,
+                        url: getFileUrl(res.data.file_path),
+                        name: file.name,
+                      };
+                    }
+                    setErrorMessage(res.message || '上传失败');
+                    return { ok: false, url: '', name: file.name };
+                  }}
                 />
-                {canEdit && (
-                  <div className="mt-2">
-                    <label className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 text-sm">
-                      <DocumentTextIcon className="h-4 w-4" />
-                      上传附件（将插入 Markdown 链接）
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                      />
-                    </label>
-                  </div>
-                )}
               </div>
             </div>
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200">
@@ -430,10 +436,7 @@ export default function NoticeBoardPage() {
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
-              <div
-                className="prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: viewingItem.content }}
-              />
+              <NoticeContentBody content={viewingItem.content} />
               {viewingItem.update_time && (
                 <p className="mt-4 text-sm text-gray-500">更新时间：{viewingItem.update_time}</p>
               )}

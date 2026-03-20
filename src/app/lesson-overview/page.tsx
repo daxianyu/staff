@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
-import { getLessonOverview, LessonOverviewData, SubjectData, LessonData, getStaffInfo, StaffInfo } from '@/services/auth';
+import { getLessonOverview, LessonOverviewData, SubjectData, getStaffInfo, StaffInfo } from '@/services/auth';
 import { TableActionLink } from '@/components/TableActionLink';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { exportLessonDetailsPdf } from '@/utils/exportPdfFromDom';
 
 // 时间工具函数
 const formatTimestamp = (timestamp: number): { date: string; time: string } => {
@@ -69,6 +70,7 @@ export default function LessonOverviewPage() {
   const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
   const [staffLoading, setStaffLoading] = useState(true);
   const [staffError, setStaffError] = useState<string | null>(null);
+  const [lessonPdfExporting, setLessonPdfExporting] = useState(false);
 
   // 从查询参数获取 userId 和 monthId
   const userId = searchParams.get('userId') || '';
@@ -149,6 +151,19 @@ export default function LessonOverviewPage() {
     return tableData;
   };
 
+  const resolveTopicDisplayName = (subject: SubjectData): string => {
+    const tid = subject.topic_id;
+    const rawName = `${subject.topic_name ?? ''}`.trim();
+    const rawDesc = `${subject.description ?? ''}`.trim();
+    const looksLikeIdOnly = (s: string) => /^\d+$/.test(s);
+    if (rawName && !looksLikeIdOnly(rawName)) return rawName;
+    if (rawDesc && !looksLikeIdOnly(rawDesc)) return rawDesc;
+    if (rawName) return rawName;
+    const cn = `${subject.class_name ?? ''}`.trim();
+    if (cn) return cn;
+    return `Topic #${tid}`;
+  };
+
   // 生成按 topic 统计数据
   const generateSubjectStats = () => {
     if (!data) return [];
@@ -156,9 +171,9 @@ export default function LessonOverviewPage() {
     // 使用 topic_id 作为键，存储 topic_name 和总时长
     const topicStats: { [topicId: number]: { topicName: string; totalTime: number } } = {};
     
-    Object.entries(data.subjects).forEach(([subjectId, subject]) => {
+    Object.entries(data.subjects).forEach(([, subject]) => {
       const topicId = subject.topic_id;
-      const topicName = (subject as any).topic_name || subject.description || `Topic ${topicId}`;
+      const topicName = resolveTopicDisplayName(subject);
       
       if (!topicStats[topicId]) {
         topicStats[topicId] = {
@@ -226,6 +241,37 @@ export default function LessonOverviewPage() {
 
   const totalLessonDuration = calculateTotalDuration();
 
+  const handleDownloadLessonDetailsPdf = () => {
+    if (lessonTableData.length === 0) return;
+    try {
+      setLessonPdfExporting(true);
+      const staffSlug =
+        (staffInfo?.staff_name && staffInfo.staff_name.replace(/[\\/:*?"<>|\s]+/g, '_')) || `staff_${userId}`;
+      exportLessonDetailsPdf(
+        `lesson-details_${staffSlug}_${monthId}.pdf`,
+        {
+          monthLabel: getMonthDisplayName(monthId),
+          staffName: staffInfo?.staff_name || `User ${userId}`,
+        },
+        lessonTableData.map((row) => ({
+          campus: row.campus,
+          date: row.date,
+          time: row.time,
+          className: row.className,
+          lessonDetails: row.lessonDetails,
+          feedbackGiven: row.feedbackGiven,
+          classId: row.classId ?? '',
+        })),
+        formatDuration(totalLessonDuration)
+      );
+    } catch (e) {
+      console.error(e);
+      alert(e instanceof Error ? e.message : '导出 PDF 失败');
+    } finally {
+      setLessonPdfExporting(false);
+    }
+  };
+
   return (
       <div className="space-y-6">
         {/* 页面标题 */}
@@ -290,8 +336,17 @@ export default function LessonOverviewPage() {
           <>
             {/* 第一个表格：课程详情 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">Lesson Details</h2>
+                <button
+                  type="button"
+                  onClick={handleDownloadLessonDetailsPdf}
+                  disabled={lessonPdfExporting || lessonTableData.length === 0}
+                  className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4 shrink-0" />
+                  {lessonPdfExporting ? '生成 PDF…' : '下载 PDF'}
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -316,7 +371,7 @@ export default function LessonOverviewPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.lessonDetails}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            row.feedbackGiven === '已给反馈' 
+                            row.feedbackGiven === 'Yes'
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
