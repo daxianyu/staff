@@ -249,6 +249,13 @@ export const PERMISSIONS = {
   VIEW_NOTICE_BOARD: 'view_notice_board',
   EDIT_NOTICE_BOARD: 'edit_notice_board',
 
+  // Student Info 全体学生信息 (operation_right=27 或 core_user)
+  VIEW_STUDENT_INFO: 'view_student_info',
+
+  // My Feedback（全体在职教师）
+  VIEW_MY_FEEDBACK: 'view_my_feedback',
+  EDIT_MY_FEEDBACK: 'edit_my_feedback',
+
   // 导师变更记录权限
   VIEW_MENTOR_CHANGE_RECORD: 'finance',
 
@@ -313,6 +320,9 @@ export const OPERATION_RIGHTS = {
 
   // Notice Board 公告板（校区校长、个人学校办公室）
   NOTICE_BOARD: 26,
+
+  // Student Info 全体学生列表
+  STUDENT_INFO: 27,
 } as const;
 
 // 预定义角色常量（向后兼容）

@@ -294,6 +294,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return operationRights.includes(OPERATION_RIGHTS.TEXTBOOK_OPERATION) || isCoreUser;
     }
 
+    // Student Info：operation_right=27（core_user 已在上方直接放行）
+    if (permission === PERMISSIONS.VIEW_STUDENT_INFO) {
+      return operationRights.includes(OPERATION_RIGHTS.STUDENT_INFO);
+    }
+
     // Notice Board 查看 - 所有 staff 可访问
     if (permission === PERMISSIONS.VIEW_NOTICE_BOARD) {
       return true;
@@ -341,6 +346,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
+      PERMISSIONS.VIEW_MY_FEEDBACK,
+      PERMISSIONS.EDIT_MY_FEEDBACK,
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,
       PERMISSIONS.EDIT_SUBJECT_EVALUATE,
       PERMISSIONS.VIEW_EXIT_PERMIT,

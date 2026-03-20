@@ -250,6 +250,11 @@ export class MenuFilter {
       return operationRights.includes(OPERATION_RIGHTS.TEXTBOOK_OPERATION) || isCoreUser;
     }
 
+    // Student Info：operation_right=27（core_user 已在上方直接放行）
+    if (permission === PERMISSIONS.VIEW_STUDENT_INFO) {
+      return operationRights.includes(OPERATION_RIGHTS.STUDENT_INFO);
+    }
+
     // 需要 operation_right为26 或 core_user=1 的权限 (Notice Board 编辑)
     if (permission === PERMISSIONS.EDIT_NOTICE_BOARD) {
       return operationRights.includes(OPERATION_RIGHTS.NOTICE_BOARD) || isCoreUser;
@@ -267,6 +272,8 @@ export class MenuFilter {
     // 基础权限 - 所有staff用户都可以访问
     const basicPermissions = [
       PERMISSIONS.VIEW_NOTICE_BOARD, // 所有 staff 可查看公告
+      PERMISSIONS.VIEW_MY_FEEDBACK,
+      PERMISSIONS.EDIT_MY_FEEDBACK,
       PERMISSIONS.VIEW_SUBJECT_EVALUATE,
       PERMISSIONS.EDIT_SUBJECT_EVALUATE,
       PERMISSIONS.VIEW_EXIT_PERMIT,
@@ -902,6 +909,13 @@ export const defaultMenuConfig: MenuItem[] = [
         requiredPermissions: [PERMISSIONS.VIEW_STUDENT_ATTENDANCE],
       },
       {
+        key: 'student-info',
+        label: 'Student Info',
+        path: '/stas/student-info',
+        icon: 'table',
+        requiredPermissions: [PERMISSIONS.VIEW_STUDENT_INFO],
+      },
+      {
         key: 'invigilate-summary',
         label: 'Invigilate Summary',
         path: '/staff/invigilate-summary',
@@ -1072,6 +1086,13 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/users/subject-evaluate',
         icon: 'clipboard-document-list',
         requiredPermissions: [PERMISSIONS.VIEW_SUBJECT_EVALUATE],
+      },
+      {
+        key: 'my-feedback',
+        label: 'My Feedback',
+        path: '/users/my-feedback',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_MY_FEEDBACK],
       },
       {
         key: 'graduation-wishes',

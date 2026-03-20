@@ -50,6 +50,36 @@ import { uploadArchivesFile } from '@/services/modules/archives';
 
 type TabType = 'base' | 'position' | 'promotion' | 'supervision' | 'interview' | 'complaint' | 'reward' | 'punishment' | 'accounting';
 
+/** 提交档案接口时期望 YYYY-MM-DD；兼容 Unix 秒/毫秒、带时间的日期串，避免 date 控件显示有值却未写入 state */
+function normalizeArchivesDateValue(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    const ms = v > 1e12 ? v : v * 1000;
+    const d = new Date(ms);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  }
+  const s = String(v).trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const head = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (head) return head[1];
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  return s;
+}
+
+function shouldNormalizeArchivesDateKey(key: string): boolean {
+  if (!(key.includes('day') || key.includes('time'))) return false;
+  if (key === 'end_day' || key === 'probation_end_day' || key === 'leave_day') return false;
+  return true;
+}
+
+function singleStaffSelectFormValue(fieldValue: unknown): number {
+  if (fieldValue === '' || fieldValue === null || fieldValue === undefined) return -1;
+  const n = Number(fieldValue);
+  return Number.isFinite(n) ? n : -1;
+}
+
 export default function ArchivesDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -430,6 +460,11 @@ export default function ArchivesDetailPage() {
       // 准备提交数据，处理字段映射
       const submitData = { ...editFormData };
 
+      for (const key of Object.keys(submitData)) {
+        if (!shouldNormalizeArchivesDateKey(key)) continue;
+        submitData[key] = normalizeArchivesDateValue(submitData[key]);
+      }
+
       // 岗位信息：非手动输入时清空手动输入字段
       if (editRecordType === 'position') {
         if (submitData.position !== '手动输入') {
@@ -457,6 +492,15 @@ export default function ArchivesDetailPage() {
         }
         if (submitData.mentor_leader_id !== undefined && submitData.mentor_leader_id !== '') {
           submitData.mentor_leader_id = Number(submitData.mentor_leader_id);
+        }
+      }
+
+      if (editRecordType === 'accounting') {
+        const uid = submitData.accounting_user;
+        if (uid === -1 || uid === '' || uid === null || uid === undefined) {
+          submitData.accounting_user = '';
+        } else {
+          submitData.accounting_user = Number(uid);
         }
       }
 
@@ -765,7 +809,11 @@ export default function ArchivesDetailPage() {
       key !== 'probation_end_day' &&
       key !== 'leave_day';
     const isMultiSelect = key === 'interview_user'; // 多选字段
-    const isSearchable = key === 'supervision_from' || key === 'supervision_to' || key === 'interview_user'; // 可搜索字段
+    const isSearchable =
+      key === 'supervision_from' ||
+      key === 'supervision_to' ||
+      key === 'interview_user' ||
+      key === 'accounting_user';
     const isBoolean = key === 'tr_leader' || key === 'principal'; // 布尔值字段
     const isFile = key.endsWith('_file'); // 文件字段
     const fieldValue = value ?? '';
@@ -826,14 +874,15 @@ export default function ArchivesDetailPage() {
             options={fieldOptions.map(opt => ({ id: Number(opt.value), name: opt.label }))}
             value={isMultiSelect
               ? String(fieldValue).split(',').filter(v => v).map(Number)
-              : (Number(fieldValue) || 0)
+              : singleStaffSelectFormValue(fieldValue)
             }
             onValueChange={(val) => {
               if (isMultiSelect) {
                 const selected = Array.isArray(val) ? val : [val];
                 setEditFormData({ ...editFormData, [key]: selected.join(',') });
               } else {
-                setEditFormData({ ...editFormData, [key]: val });
+                const v = val as number;
+                setEditFormData({ ...editFormData, [key]: v === -1 ? '' : v });
               }
             }}
             placeholder={`请选择${fieldLabels[key] || key}`}
@@ -856,7 +905,7 @@ export default function ArchivesDetailPage() {
         ) : isDate ? (
           <input
             type="date"
-            value={String(fieldValue)}
+            value={normalizeArchivesDateValue(fieldValue)}
             onChange={(e) => setEditFormData({ ...editFormData, [key]: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
           />

@@ -1759,3 +1759,124 @@ export const getStaffOutSelect = async (): Promise<ApiResponse<StaffOutSelectRes
     };
   }
 };
+
+/** 全体学生列表（字段由后端决定） */
+export type AllStudentRow = Record<string, unknown>;
+
+export const getAllStudents = async (): Promise<ApiResponse<AllStudentRow[]>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/user/get_all_students', {
+      method: 'GET',
+      headers,
+    });
+    const data = await response.json();
+    const raw = data.data;
+    let rows: AllStudentRow[] = [];
+    if (Array.isArray(raw)) {
+      rows = raw as AllStudentRow[];
+    } else if (raw && typeof raw === 'object') {
+      const o = raw as Record<string, unknown>;
+      if (Array.isArray(o.rows)) rows = o.rows as AllStudentRow[];
+      else if (Array.isArray(o.list)) rows = o.list as AllStudentRow[];
+      else if (Array.isArray(o.students)) rows = o.students as AllStudentRow[];
+    }
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: rows,
+    };
+  } catch (error) {
+    console.error('获取全体学生列表失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取全体学生列表失败',
+    };
+  }
+};
+
+/** get_staff_feedback 单行（见 phy user.py student_feedback_form） */
+export type StaffFeedbackItem = {
+  record_id?: number;
+  student_id?: number;
+  subject_id?: number;
+  class_id?: number;
+  topic_id?: number;
+  student_name?: string;
+  class_name?: string;
+  topic_name?: string;
+  /** 后端字段名 */
+  feedback_info?: string;
+  /** 部分环境可能用 info */
+  info?: string;
+} & Record<string, unknown>;
+
+export const getStaffFeedback = async (): Promise<ApiResponse<StaffFeedbackItem[]>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/user/get_staff_feedback', {
+      method: 'GET',
+      headers,
+    });
+    const data = await response.json();
+    const raw = data.data;
+    let rows: StaffFeedbackItem[] = [];
+    if (Array.isArray(raw)) {
+      rows = raw as StaffFeedbackItem[];
+    } else if (raw && typeof raw === 'object') {
+      const o = raw as Record<string, unknown>;
+      if (Array.isArray(o.rows)) rows = o.rows as StaffFeedbackItem[];
+      else if (Array.isArray(o.list)) rows = o.list as StaffFeedbackItem[];
+    }
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: rows,
+    };
+  } catch (error) {
+    console.error('获取教师 Feedback 失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '获取教师 Feedback 失败',
+    };
+  }
+};
+
+export interface UpdateStaffFeedbackParams {
+  record_id: number;
+  info: string;
+}
+
+export const updateStaffFeedback = async (
+  params: UpdateStaffFeedbackParams
+): Promise<ApiResponse<unknown>> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    };
+    const response = await fetch('/api/user/update_staff_feedback', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('更新 Feedback 失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '更新 Feedback 失败',
+    };
+  }
+};
