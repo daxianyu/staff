@@ -1,0 +1,128 @@
+[
+  {
+    "index": 1,
+    "file": "assets/embedded-image-01.png",
+    "type": "png",
+    "bytes": 13547
+  },
+  {
+    "index": 2,
+    "file": "assets/embedded-image-02.png",
+    "type": "png",
+    "bytes": 1556
+  },
+  {
+    "index": 3,
+    "file": "assets/embedded-image-03.png",
+    "type": "png",
+    "bytes": 1556
+  },
+  {
+    "index": 4,
+    "file": "assets/embedded-image-04.png",
+    "type": "png",
+    "bytes": 10895
+  },
+  {
+    "index": 5,
+    "file": "assets/embedded-image-05.jpg",
+    "type": "jpeg",
+    "bytes": 5083286
+  },
+  {
+    "index": 6,
+    "file": "assets/embedded-image-06.png",
+    "type": "png",
+    "bytes": 6421
+  },
+  {
+    "index": 7,
+    "file": "assets/embedded-image-07.jpg",
+    "type": "jpeg",
+    "bytes": 1654724
+  },
+  {
+    "index": 8,
+    "file": "assets/embedded-image-08.jpg",
+    "type": "jpeg",
+    "bytes": 1155581
+  },
+  {
+    "index": 9,
+    "file": "assets/embedded-image-09.png",
+    "type": "png",
+    "bytes": 522
+  },
+  {
+    "index": 10,
+    "file": "assets/embedded-image-10.jpg",
+    "type": "jpeg",
+    "bytes": 755757
+  },
+  {
+    "index": 11,
+    "file": "assets/embedded-image-11.png",
+    "type": "png",
+    "bytes": 522
+  },
+  {
+    "index": 12,
+    "file": "assets/embedded-image-12.jpg",
+    "type": "jpeg",
+    "bytes": 348027
+  },
+  {
+    "index": 13,
+    "file": "assets/embedded-image-13.jpg",
+    "type": "jpeg",
+    "bytes": 161680
+  },
+  {
+    "index": 14,
+    "file": "assets/embedded-image-14.png",
+    "type": "png",
+    "bytes": 547608
+  },
+  {
+    "index": 15,
+    "file": "assets/embedded-image-15.jpg",
+    "type": "jpeg",
+    "bytes": 1178665
+  },
+  {
+    "index": 16,
+    "file": "assets/embedded-image-16.jpg",
+    "type": "jpeg",
+    "bytes": 2850898
+  },
+  {
+    "index": 17,
+    "file": "assets/embedded-image-17.jpg",
+    "type": "jpeg",
+    "bytes": 361149
+  },
+  {
+    "index": 18,
+    "file": "assets/embedded-image-18.jpg",
+    "type": "jpeg",
+    "bytes": 429496
+  },
+  {
+    "index": 19,
+    "file": "assets/embedded-image-19.jpg",
+    "type": "jpeg",
+    "bytes": 249207
+  },
+  {
+    "index": 20,
+    "file": "assets/embedded-image-20.jpg",
+    "type": "jpeg",
+    "bytes": 8411099
+  },
+  {
+    "index": 21,
+    "file": "assets/embedded-image-21.png",
+    "type": "png",
+    "bytes": 5179
+  }
+]

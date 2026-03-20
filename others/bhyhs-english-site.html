@@ -1,0 +1,1387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BHYHS English Site</title>
+  <style>
+    :root {
+      --navy: #0c2742;
+      --navy-deep: #071728;
+      --navy-soft: #163c62;
+      --paper: #f6eee4;
+      --paper-2: #fbf8f2;
+      --mist: #edf4fa;
+      --ink: #182535;
+      --muted: #647488;
+      --line: rgba(12, 39, 66, 0.12);
+      --orange: #ff8a57;
+      --orange-deep: #ff6f52;
+      --teal: #12a8a0;
+      --lime: #7db941;
+      --purple: #6d48c6;
+      --shadow-xl: 0 36px 96px rgba(10, 29, 51, 0.18);
+      --shadow-lg: 0 24px 60px rgba(10, 29, 51, 0.14);
+      --shadow-md: 0 16px 38px rgba(10, 29, 51, 0.12);
+      --wrap: min(1220px, calc(100vw - 28px));
+      --radius-xl: 36px;
+      --radius-lg: 26px;
+      --radius-md: 18px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(255,138,87,.18), transparent 18%),
+        radial-gradient(circle at top right, rgba(18,168,160,.16), transparent 16%),
+        linear-gradient(180deg, #f8fbff 0%, #f2f5f8 24%, #f6eee4 100%);
+      font-family: "Avenir Next", "Segoe UI", "PingFang SC", sans-serif;
+      overflow-x: hidden;
+    }
+    img { display:block; width:100%; height:auto; }
+    a { color: inherit; text-decoration:none; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(18px);
+      background: rgba(248, 251, 255, 0.72);
+      border-bottom: 1px solid rgba(12,39,66,.08);
+    }
+    .header-inner {
+      width: var(--wrap);
+      margin: 0 auto;
+      min-height: 78px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:14px;
+      min-width:0;
+    }
+    .brand-mark {
+      width:50px;
+      height:50px;
+      padding:8px;
+      border-radius:16px;
+      background: linear-gradient(145deg, var(--navy), #2c6594);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+    }
+    .brand-copy strong {
+      display:block;
+      font-size:14px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+    .brand-copy span {
+      display:block;
+      font-size:12px;
+      color: var(--muted);
+    }
+    .nav {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .nav a {
+      padding:10px 14px;
+      border-radius:999px;
+      font-size:13px;
+      color: var(--muted);
+      transition: .18s ease;
+    }
+    .nav a:hover {
+      background: rgba(12,39,66,.08);
+      color: var(--navy);
+      transform: translateY(-1px);
+    }
+
+    .topbar-replica {
+      background: #ffc464;
+    }
+    .topbar-replica .inner {
+      width: 100%;
+      min-height: 58px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 44px;
+      font-size: clamp(13px, 1vw, 16px);
+      letter-spacing: -0.03em;
+      color: #111;
+    }
+    .topbar-replica .divider {
+      opacity: .64;
+    }
+
+    .landing-hero {
+      position: relative;
+      min-height: 552px;
+      overflow: hidden;
+      background: #040404;
+    }
+    .landing-hero > img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 54%;
+      filter: brightness(0.58) saturate(0.92) contrast(1.02);
+    }
+    .landing-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(20, 24, 31, 0.18) 0%, rgba(20, 24, 31, 0.2) 58%, rgba(20, 24, 31, 0.3) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 24%, rgba(0, 0, 0, 0.12) 100%);
+    }
+    .landing-hero::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 2px;
+      background: rgba(92, 96, 101, 0.62);
+      z-index: 1;
+    }
+    .landing-inner {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      min-height: 552px;
+      margin: 0 auto;
+      padding: 126px 62px 0;
+    }
+    .landing-copy {
+      max-width: 690px;
+      color: #fff;
+    }
+    .landing-copy h1 {
+      margin: 0;
+      font-size: clamp(54px, 5.4vw, 80px);
+      line-height: 0.9;
+      letter-spacing: -0.06em;
+      font-weight: 700;
+      max-width: none;
+      text-shadow: none;
+    }
+    .landing-copy h1 .line-one {
+      display: block;
+      white-space: nowrap;
+    }
+    .landing-copy h1 .block {
+      display: block;
+      margin-top: 26px;
+    }
+    .landing-copy p {
+      margin: 28px 0 0;
+      font-size: clamp(16px, 1.2vw, 22px);
+      line-height: 1.18;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.84);
+      text-shadow: none;
+    }
+
+    .hero-base {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 166px;
+      z-index: 2;
+      overflow: hidden;
+    }
+    .hero-base .blue-pane {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 79%;
+      height: 166px;
+      background: rgba(28, 62, 119, 0.72);
+      clip-path: polygon(0 0, 77% 0, 68% 100%, 0 100%);
+    }
+    .hero-base .yellow-pane {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 22.5%;
+      height: 166px;
+      background: #ffc464;
+      clip-path: polygon(18% 0, 100% 0, 100% 100%, 0 100%);
+    }
+    .hero-base .address-pill {
+      position: absolute;
+      left: 62px;
+      bottom: 64px;
+      min-height: 42px;
+      width: min(640px, calc(100% - 760px));
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: none;
+      color: #232323;
+      font-size: clamp(13px, 1vw, 16px);
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hero-base .logo-badge {
+      position: absolute;
+      right: 40px;
+      bottom: 22px;
+      width: 52px;
+      display: block;
+      mix-blend-mode: screen;
+    }
+
+    .about-preview {
+      position: relative;
+      z-index: 3;
+      margin-top: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+    .about-preview .frame {
+      width: 100%;
+      margin: 0 auto;
+      min-height: 350px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.22fr) minmax(220px, 0.28fr);
+      align-items: stretch;
+    }
+    .about-preview .panel {
+      width: auto;
+      margin-top: 0;
+      background: #193d76;
+      color: #fff;
+      padding: 34px 56px 28px;
+      box-shadow: none;
+    }
+    .about-preview .panel h2 {
+      margin: 0;
+      font-size: clamp(34px, 3.2vw, 52px);
+      line-height: 1;
+      letter-spacing: -0.05em;
+      font-weight: 300;
+    }
+    .about-preview .panel h2 em {
+      font-style: italic;
+      font-weight: 600;
+    }
+    .about-preview .panel p {
+      margin: 16px 0 0;
+      max-width: 72ch;
+      font-size: clamp(13px, 0.88vw, 16px);
+      line-height: 1.52;
+      color: rgba(255,255,255,0.82);
+    }
+    .about-preview .panel p + p {
+      margin-top: 12px;
+    }
+    .about-preview .aside-image {
+      position: relative;
+      width: auto;
+      height: 100%;
+      isolation: isolate;
+      clip-path: none;
+      overflow: hidden;
+      box-shadow: none;
+      background: #dbe8ef;
+    }
+    .about-preview .aside-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      clip-path: polygon(26% 0, 100% 0, 100% 100%, 8% 100%);
+    }
+    .about-preview .aside-image::before,
+    .about-preview .aside-image::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .about-preview .aside-image::before {
+      background: linear-gradient(180deg, rgba(248, 242, 236, 0.98), rgba(255, 255, 255, 0.92));
+      clip-path: polygon(22% 0, 100% 0, 100% 22%, 52% 0);
+    }
+    .about-preview .aside-image::after {
+      background: #ddebf2;
+      clip-path: polygon(0 0, 34% 0, 18% 100%, 0 100%);
+    }
+
+    .hero {
+      width: var(--wrap);
+      margin: 26px auto 0;
+      display:grid;
+      grid-template-columns: .96fr 1.04fr;
+      gap: 26px;
+      align-items:stretch;
+    }
+    .hero-copy,
+    .hero-media {
+      position:relative;
+      overflow:hidden;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl);
+    }
+    .hero-copy {
+      min-height: 820px;
+      padding: clamp(30px, 4vw, 58px);
+      background:
+        linear-gradient(150deg, rgba(7,23,40,.98), rgba(12,39,66,.96)),
+        radial-gradient(circle at top right, rgba(255,255,255,.12), transparent 28%);
+      color:#fff;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      isolation:isolate;
+    }
+    .hero-copy::before {
+      content:"";
+      position:absolute;
+      right:-12%;
+      bottom:-10%;
+      width:72%;
+      height:38%;
+      background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+      transform: skewY(-14deg);
+      z-index:-1;
+    }
+    .eyebrow {
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:9px 15px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.07);
+      color: rgba(255,255,255,.76);
+      font-size:12px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+    .hero-copy h1 {
+      margin:24px 0 0;
+      max-width:7.8ch;
+      font-family: "Iowan Old Style", Georgia, serif;
+      font-size: clamp(58px, 8vw, 102px);
+      line-height:.88;
+      letter-spacing:-.065em;
+    }
+    .hero-copy p {
+      margin:24px 0 0;
+      max-width:54ch;
+      color: rgba(255,255,255,.74);
+      line-height:1.82;
+      font-size:16px;
+    }
+    .hero-actions {
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:30px;
+    }
+    .button {
+      min-height:52px;
+      padding: 0 20px;
+      border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:14px;
+      font-weight:700;
+      transition:.18s ease;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button.primary {
+      color:#fff;
+      background: linear-gradient(135deg, var(--orange), var(--orange-deep));
+      box-shadow: 0 16px 32px rgba(255,111,82,.28);
+    }
+    .button.secondary {
+      color:#fff;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+    }
+    .hero-stats {
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+    }
+    .stat {
+      padding:18px 16px;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.08);
+      backdrop-filter: blur(12px);
+    }
+    .stat strong {
+      display:block;
+      font-size: clamp(26px, 3vw, 40px);
+      line-height:1;
+      letter-spacing:-.05em;
+    }
+    .stat span {
+      display:block;
+      margin-top:8px;
+      color: rgba(255,255,255,.66);
+      font-size:11px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+
+    .hero-media {
+      min-height: 820px;
+      background:#dce8f2;
+      isolation:isolate;
+    }
+    .hero-media > img {
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+    .hero-media::after {
+      content:"";
+      position:absolute;
+      inset:auto 0 0 0;
+      height:34%;
+      background: linear-gradient(180deg, rgba(12,39,66,0) 0%, rgba(12,39,66,.68) 100%);
+      z-index:1;
+      pointer-events:none;
+    }
+    .floating,
+    .slash-card {
+      position:absolute;
+      z-index:2;
+      background: rgba(255,255,255,.82);
+      border:1px solid rgba(255,255,255,.66);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(14px);
+    }
+    .floating.logo {
+      left:24px;
+      top:24px;
+      display:inline-flex;
+      align-items:center;
+      gap:12px;
+      padding:14px 18px;
+      border-radius:20px;
+    }
+    .floating.logo img {
+      width:42px;
+      height:42px;
+      object-fit:contain;
+      border-radius:12px;
+      background: linear-gradient(135deg, var(--navy), #2c6594);
+      padding:6px;
+    }
+    .floating.logo small {
+      display:block;
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .floating.logo strong {
+      display:block;
+      margin-top:3px;
+      color:var(--navy);
+      font-size:16px;
+      letter-spacing:-.02em;
+    }
+    .slash-card {
+      right:26px;
+      bottom:26px;
+      width:min(380px, calc(100% - 52px));
+      padding: 24px 24px 22px;
+      border-radius: 28px;
+      clip-path: polygon(0 0, 100% 0, 100% 86%, 84% 100%, 0 100%);
+    }
+    .slash-card span {
+      display:block;
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+    .slash-card strong {
+      display:block;
+      margin-top:10px;
+      color:var(--navy);
+      font-size:32px;
+      line-height:1.02;
+      letter-spacing:-.05em;
+    }
+    .slash-card p {
+      margin:10px 0 0;
+      color:var(--ink);
+      font-size:14px;
+      line-height:1.72;
+    }
+
+    .ticker {
+      width: var(--wrap);
+      margin: 18px auto 0;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .ticker span {
+      padding:12px 16px;
+      border-radius:999px;
+      background: rgba(255,255,255,.78);
+      border:1px solid var(--line);
+      color: var(--muted);
+      font-size:13px;
+      box-shadow: 0 10px 22px rgba(10,29,51,.06);
+    }
+
+    .section {
+      width: var(--wrap);
+      margin: 94px auto 0;
+    }
+    .section-top {
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:16px;
+      align-items:end;
+      margin-bottom:24px;
+    }
+    .kicker {
+      color:#37678f;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+    .section-top h2 {
+      margin:10px 0 0;
+      max-width:10.8ch;
+      font-family: "Iowan Old Style", Georgia, serif;
+      font-size: clamp(38px, 5.6vw, 66px);
+      line-height:.93;
+      letter-spacing:-.065em;
+    }
+    .section-top p {
+      margin:0;
+      max-width:46ch;
+      color:var(--muted);
+      line-height:1.82;
+      font-size:15px;
+    }
+
+    .band {
+      position:relative;
+      overflow:hidden;
+      padding: 48px clamp(18px, 3vw, 30px);
+      border-radius: 30px;
+      box-shadow: var(--shadow-lg);
+      isolation:isolate;
+    }
+    .band::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      transform: skewY(-3deg) scale(1.08);
+      transform-origin: top left;
+      z-index:-2;
+    }
+    .band.navy { color:#fff; }
+    .band.navy::before {
+      background: linear-gradient(140deg, var(--navy), var(--navy-deep) 66%);
+    }
+    .band.paper::before {
+      background: linear-gradient(180deg, #fffdf9, #f6eee4 78%);
+    }
+    .band::after {
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0));
+      z-index:-1;
+      pointer-events:none;
+    }
+
+    .overview-grid {
+      display:grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap:22px;
+      align-items:stretch;
+    }
+    .copy-panel,
+    .image-panel,
+    .caption-card,
+    .portrait-card,
+    .photo-wide,
+    .detail-photo,
+    .footer-band {
+      border-radius: 28px;
+      overflow:hidden;
+      box-shadow: var(--shadow-md);
+    }
+    .copy-panel {
+      padding: clamp(24px, 3vw, 38px);
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(14px);
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .copy-panel h3 {
+      margin:0;
+      max-width:9.5ch;
+      font-size: clamp(36px, 4vw, 58px);
+      line-height:.95;
+      letter-spacing:-.055em;
+    }
+    .copy-panel p {
+      margin:18px 0 0;
+      color: rgba(255,255,255,.74);
+      line-height:1.82;
+    }
+    .pill-grid {
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+      margin-top:28px;
+    }
+    .pill-card {
+      padding:16px 14px;
+      border-radius:18px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.1);
+    }
+    .pill-card strong {
+      display:block;
+      font-size:22px;
+      line-height:1;
+      letter-spacing:-.04em;
+    }
+    .pill-card span {
+      display:block;
+      margin-top:7px;
+      color: rgba(255,255,255,.64);
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.13em;
+    }
+    .image-panel { position:relative; min-height: 620px; }
+    .image-panel img { width:100%; height:100%; object-fit:cover; }
+    .image-panel .tag {
+      position:absolute;
+      left:20px;
+      bottom:20px;
+      padding:14px 18px;
+      border-radius: 18px;
+      color:#fff;
+      background: rgba(12,39,66,.76);
+      backdrop-filter: blur(12px);
+      font-size:13px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+
+    .identity-grid {
+      display:grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap:24px;
+      align-items:start;
+    }
+    .mosaic {
+      display:grid;
+      grid-template-columns: .92fr 1.08fr;
+      gap:18px;
+    }
+    .column { display:grid; gap:18px; }
+    .photo-tall,
+    .photo-short {
+      overflow:hidden;
+      border-radius:26px;
+      box-shadow: var(--shadow-md);
+      background:#fff;
+    }
+    .photo-tall { min-height: 690px; }
+    .photo-short { min-height: 330px; }
+    .photo-tall img,
+    .photo-short img,
+    .photo-wide img,
+    .detail-photo img { height:100%; object-fit:cover; }
+
+    .stack { display:grid; gap:18px; }
+    .caption-card {
+      padding: 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(241,246,250,.92));
+      border:1px solid var(--line);
+    }
+    .caption-card strong {
+      display:block;
+      color:var(--navy);
+      font-size:30px;
+      line-height:1.03;
+      letter-spacing:-.05em;
+    }
+    .caption-card p {
+      margin:12px 0 0;
+      color:var(--muted);
+      line-height:1.8;
+      font-size:14px;
+    }
+    .mini-tags {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:16px;
+    }
+    .mini-tags span {
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(12,39,66,.06);
+      color: var(--navy);
+      font-size:12px;
+      font-weight:600;
+    }
+
+    .faculty-grid {
+      display:grid;
+      grid-template-columns: .88fr 1.12fr;
+      gap:24px;
+      align-items:stretch;
+    }
+    .portrait-stack {
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:18px;
+    }
+    .portrait-card {
+      background:#fff;
+      border:1px solid var(--line);
+    }
+    .portrait-card img {
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+    }
+    .portrait-card .cap {
+      padding:16px 18px 18px;
+      background: rgba(255,255,255,.96);
+    }
+    .portrait-card strong {
+      display:block;
+      color:var(--navy);
+      font-size:20px;
+      letter-spacing:-.03em;
+    }
+    .portrait-card span {
+      display:block;
+      margin-top:6px;
+      color:var(--muted);
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .faculty-feature {
+      position:relative;
+      overflow:hidden;
+      border-radius: 32px;
+      background: linear-gradient(150deg, rgba(12,39,66,.98), rgba(22,60,98,.92));
+      color:#fff;
+      box-shadow: var(--shadow-lg);
+      min-height: 720px;
+      padding: clamp(24px, 3vw, 38px);
+      display:grid;
+      grid-template-rows: auto auto 1fr;
+    }
+    .faculty-feature::before {
+      content:"";
+      position:absolute;
+      right:-12%;
+      top:-8%;
+      width:48%;
+      height:38%;
+      background: radial-gradient(circle, rgba(255,138,87,.28), transparent 70%);
+      pointer-events:none;
+    }
+    .faculty-feature h3 {
+      margin:0;
+      max-width:9.2ch;
+      font-size: clamp(40px, 4.8vw, 64px);
+      line-height:.93;
+      letter-spacing:-.06em;
+    }
+    .faculty-feature p {
+      margin:16px 0 0;
+      max-width:44ch;
+      color: rgba(255,255,255,.74);
+      line-height:1.82;
+    }
+    .faculty-aside {
+      align-self:end;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      position:relative;
+      z-index:1;
+    }
+    .faculty-box {
+      padding:16px;
+      border-radius:18px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.1);
+    }
+    .faculty-box strong {
+      display:block;
+      font-size:30px;
+      line-height:1;
+      letter-spacing:-.04em;
+    }
+    .faculty-box span {
+      display:block;
+      margin-top:8px;
+      color: rgba(255,255,255,.66);
+      font-size:11px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+
+    .life-grid {
+      display:grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap:24px;
+    }
+    .photo-wide { position:relative; min-height: 660px; background:#fff; border:1px solid var(--line); }
+    .photo-wide .overlay {
+      position:absolute;
+      left:22px;
+      bottom:22px;
+      max-width:360px;
+      padding:20px;
+      border-radius:22px;
+      background: rgba(12,39,66,.82);
+      color: rgba(255,255,255,.78);
+      backdrop-filter: blur(14px);
+    }
+    .photo-wide .overlay strong {
+      display:block;
+      color:#fff;
+      font-size:30px;
+      line-height:1.02;
+      letter-spacing:-.05em;
+    }
+    .photo-wide .overlay p {
+      margin:10px 0 0;
+      font-size:14px;
+      line-height:1.72;
+    }
+    .detail-stack { display:grid; gap:18px; }
+    .detail-row { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+    .detail-photo { min-height: 290px; background:#fff; border:1px solid var(--line); }
+
+    .footer-band {
+      position: relative;
+      margin-top: 28px;
+      padding: 30px;
+      background: linear-gradient(145deg, var(--navy), var(--navy-deep) 70%);
+      color:#fff;
+      border-radius: 32px;
+      box-shadow: var(--shadow-lg);
+      display:grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap:24px;
+      align-items:center;
+      overflow:hidden;
+    }
+    .footer-band::after {
+      content:"";
+      position:absolute;
+      right:-12%;
+      bottom:-18%;
+      width:42%;
+      height:62%;
+      background: radial-gradient(circle, rgba(255,138,87,.24), transparent 72%);
+      pointer-events:none;
+    }
+    .footer-band .logo-wall {
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      border-radius:26px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.1);
+    }
+    .footer-band .logo-wall img {
+      width:min(320px, 100%);
+      object-fit:contain;
+    }
+    .footer-band h3 {
+      position:relative;
+      z-index:1;
+      margin:0;
+      font-size: clamp(34px, 4.6vw, 60px);
+      line-height:.94;
+      letter-spacing:-.06em;
+    }
+    .footer-band p {
+      position:relative;
+      z-index:1;
+      margin:16px 0 0;
+      max-width:44ch;
+      color: rgba(255,255,255,.74);
+      line-height:1.82;
+    }
+    .footer-meta {
+      position:relative;
+      z-index:1;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:20px;
+    }
+    .footer-meta span {
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+      font-size:12px;
+      color: rgba(255,255,255,.76);
+    }
+
+    .footer {
+      width: var(--wrap);
+      margin: 74px auto 42px;
+      padding-top: 20px;
+      border-top:1px solid rgba(12,39,66,.1);
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    @media (max-width: 1100px) {
+      .topbar-replica .inner,
+      .landing-inner,
+      .about-preview .frame {
+        width: 100%;
+      }
+      .landing-hero {
+        min-height: 500px;
+      }
+      .landing-inner {
+        min-height: 500px;
+        padding: 112px 32px 0;
+      }
+      .landing-copy h1 .block {
+        margin-top: 22px;
+      }
+      .hero-base {
+        height: 150px;
+      }
+      .hero-base .blue-pane {
+        width: 81%;
+        height: 150px;
+      }
+      .hero-base .yellow-pane {
+        width: 35%;
+        height: 150px;
+      }
+      .hero-base .address-pill {
+        left: 28px;
+        width: min(580px, calc(100% - 360px));
+        bottom: 50px;
+      }
+      .hero-base .logo-badge {
+        right: 26px;
+        bottom: 18px;
+        width: 46px;
+      }
+      .about-preview .panel {
+        padding: 28px 30px 24px;
+      }
+      .about-preview .aside-image {
+        min-height: 100%;
+      }
+      .hero,
+      .overview-grid,
+      .identity-grid,
+      .faculty-grid,
+      .life-grid,
+      .footer-band,
+      .section-top {
+        grid-template-columns: 1fr;
+      }
+      .hero-copy,
+      .hero-media { min-height: auto; }
+      .hero-media { min-height: 640px; }
+      .image-panel,
+      .photo-wide,
+      .faculty-feature,
+      .photo-tall { min-height: 520px; }
+    }
+    @media (max-width: 780px) {
+      .topbar-replica .inner {
+        min-height: 50px;
+        padding: 0 18px;
+        font-size: 13px;
+        gap: 10px;
+      }
+      .landing-hero {
+        min-height: 450px;
+      }
+      .landing-inner {
+        min-height: 450px;
+        padding: 34px 18px 0;
+      }
+      .landing-copy h1 {
+        max-width: 9ch;
+        font-size: clamp(34px, 9.4vw, 54px);
+      }
+      .landing-copy h1 .line-one {
+        white-space: normal;
+      }
+      .landing-copy h1 .block {
+        margin-top: 14px;
+      }
+      .landing-copy p {
+        margin-top: 12px;
+        font-size: 14px;
+      }
+      .hero-base {
+        height: 118px;
+      }
+      .hero-base .blue-pane {
+        width: 100%;
+        height: 118px;
+        clip-path: polygon(0 0, 82% 0, 70% 100%, 0 100%);
+      }
+      .hero-base .yellow-pane {
+        width: 56%;
+        height: 58px;
+      }
+      .hero-base .address-pill {
+        left: 16px;
+        right: 16px;
+        width: auto;
+        bottom: 68px;
+        min-height: 44px;
+        padding: 8px 14px;
+        font-size: 11px;
+        line-height: 1.25;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+      .hero-base .logo-badge {
+        width: 44px;
+        right: 18px;
+        bottom: 8px;
+      }
+      .about-preview .frame {
+        min-height: 0;
+        grid-template-columns: 1fr;
+      }
+      .about-preview .panel {
+        margin-top: 0;
+        padding: 24px 18px 20px;
+      }
+      .about-preview .panel p {
+        max-width: none;
+        margin-top: 12px;
+        font-size: 14px;
+      }
+      .about-preview .aside-image {
+        position: relative;
+        width: 100%;
+        height: 208px;
+      }
+      .about-preview .aside-image img {
+        clip-path: none;
+      }
+      .about-preview .aside-image::before {
+        clip-path: polygon(38% 0, 100% 0, 100% 26%, 64% 0);
+      }
+      .about-preview .aside-image::after {
+        clip-path: polygon(0 0, 20% 0, 9% 100%, 0 100%);
+      }
+      .header-inner {
+        min-height: 68px;
+        padding: 12px 0;
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .nav {
+        overflow-x:auto;
+        flex-wrap:nowrap;
+        justify-content:flex-start;
+        padding-bottom:4px;
+      }
+      .hero {
+        gap:16px;
+        margin-top:18px;
+      }
+      .hero-copy,
+      .hero-media,
+      .copy-panel,
+      .image-panel,
+      .caption-card,
+      .portrait-card,
+      .photo-tall,
+      .photo-short,
+      .faculty-feature,
+      .photo-wide,
+      .detail-photo,
+      .footer-band,
+      .band {
+        border-radius: 22px;
+      }
+      .hero-copy h1,
+      .copy-panel h3,
+      .section-top h2,
+      .faculty-feature h3 {
+        max-width:none;
+      }
+      .hero-stats,
+      .pill-grid,
+      .mosaic,
+      .portrait-stack,
+      .detail-row,
+      .faculty-aside {
+        grid-template-columns: 1fr;
+      }
+      .hero-media { min-height: 460px; }
+      .slash-card {
+        position: static;
+        width: auto;
+        margin: 16px;
+        clip-path: none;
+        border-radius: 22px;
+      }
+      .floating.logo {
+        left:14px;
+        top:14px;
+      }
+      .image-panel,
+      .photo-wide,
+      .photo-tall { min-height: 360px; }
+      .photo-short,
+      .detail-photo { min-height: 220px; }
+      .section { margin-top: 66px; }
+      .footer { margin-top: 56px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar-replica">
+    <div class="inner">
+      <a href="#overview">About us</a>
+      <span class="divider">|</span>
+      <a href="#contact">Contact us</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="landing-hero">
+      <img src="./bhyhs-english-site/assets/embedded-image-05.jpg" alt="BHYHS campus entrance" />
+      <div class="landing-inner">
+        <div class="landing-copy">
+          <h1><span class="line-one">Shanghai Baoshan Huayao</span><span class="block">High School</span></h1>
+          <p>School Profile</p>
+        </div>
+
+        <div class="hero-base">
+          <div class="blue-pane"></div>
+          <div class="yellow-pane"></div>
+          <div class="address-pill">Add - 635 Poyanghu Rd., Baoshan District, Shanghai, China 201906</div>
+          <img class="logo-badge" src="./bhyhs-english-site/assets/embedded-image-21.png" alt="BHYHS ONE logo" />
+        </div>
+      </div>
+    </section>
+
+    <section class="about-preview" id="overview">
+      <div class="frame">
+        <article class="panel">
+          <h2><em>About</em> BHYHS</h2>
+          <p>
+            As a core member of the East China Normal University (ECNU) Basic Education Group and the ECNU Affiliated High School (No. 2 High School of ECNU) Baoshan Basic Education System, Shanghai Baoshan Huayao High School International Division offers A-Level programmes.
+          </p>
+          <p>
+            Upholding and advancing the educational philosophy of No.2 High School of ECNU, the school is dedicated to cultivating global-minded talents through premium curricula, meticulous services, and an elite cultivation approach.
+          </p>
+          <p>
+            The International Division holds authorizations and accreditations from several prestigious international education bodies. These include official recognition from Cambridge International Education, Oxford AQA, and Pearson Edexcel, supporting overseas university applications and high-quality programme delivery.
+          </p>
+        </article>
+        <aside class="aside-image" aria-hidden="true">
+          <img src="./bhyhs-english-site/assets/embedded-image-07.jpg" alt="BHYHS interior world map wall" />
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="identity">
+      <div class="section-top">
+        <div>
+          <div class="kicker">Identity & Interiors</div>
+          <h2>Once the campus is established, the page narrows into graphic moments.</h2>
+        </div>
+        <p>
+          The original board tightened from broad views into banners, world maps, and corridors. This section follows that same zoom-in: one tall hero image, smaller supporting frames, and side notes that read like exhibition labels.
+        </p>
+      </div>
+
+      <div class="identity-grid">
+        <div class="mosaic">
+          <article class="photo-tall"><img src="./bhyhs-english-site/assets/embedded-image-15.jpg" alt="Atrium banners" /></article>
+          <div class="column">
+            <article class="photo-short"><img src="./bhyhs-english-site/assets/embedded-image-07.jpg" alt="World map wall" /></article>
+            <article class="photo-short"><img src="./bhyhs-english-site/assets/embedded-image-10.jpg" alt="Classroom corridor" /></article>
+          </div>
+        </div>
+
+        <div class="stack">
+          <article class="caption-card">
+            <strong>The original board’s distinctive move was contrast: wide campus views, then crisp interior identity.</strong>
+            <p>This page now carries that same shift more explicitly. The composition is intentionally uneven so the eye lands where the board wanted it to land.</p>
+            <div class="mini-tags">
+              <span>Atrium banners</span>
+              <span>World wall</span>
+              <span>Classroom corridor</span>
+              <span>Wayfinding</span>
+            </div>
+          </article>
+          <article class="caption-card">
+            <strong>Less “content grid”, more “visual sequence”.</strong>
+            <p>Supporting text behaves as annotation, not as the main attraction. That keeps the photographic hierarchy intact and feels much closer to the presentation draft.</p>
+          </article>
+          <article class="caption-card">
+            <strong>Responsive, but not flattened.</strong>
+            <p>On smaller screens these tiles stack, but the order still preserves the editorial reveal: tall first, supporting second, explanation third.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faculty">
+      <div class="section-top">
+        <div>
+          <div class="kicker">Faculty Presence</div>
+          <h2>Portraits should interrupt the architecture just enough.</h2>
+        </div>
+        <p>
+          In the draft, portraits are not an afterthought. They rebalance the page after the building and identity shots. This section leans into that by giving faculty imagery its own large, dark-backed chapter.
+        </p>
+      </div>
+
+      <div class="faculty-grid">
+        <div class="portrait-stack">
+          <article class="portrait-card">
+            <img src="./bhyhs-english-site/assets/embedded-image-12.jpg" alt="Faculty portrait one" />
+            <div class="cap"><strong>Advisory Presence</strong><span>Warm and direct</span></div>
+          </article>
+          <article class="portrait-card">
+            <img src="./bhyhs-english-site/assets/embedded-image-14.png" alt="Faculty portrait two" />
+            <div class="cap"><strong>Academic Guidance</strong><span>Professional and calm</span></div>
+          </article>
+        </div>
+
+        <article class="faculty-feature">
+          <div>
+            <div class="kicker" style="color: rgba(255,255,255,.62);">Human Layer</div>
+            <h3>Without faces, the page becomes only a facilities brochure.</h3>
+            <p>
+              The portrait chapter restores the human counterweight built into the original board. It also gives the overall scroll a change of temperature: less architectural, more relational, still clean and controlled.
+            </p>
+          </div>
+          <div></div>
+          <div class="faculty-aside">
+            <div class="faculty-box"><strong>Human</strong><span>Institution with faces</span></div>
+            <div class="faculty-box"><strong>Warm</strong><span>Soft visual treatment</span></div>
+            <div class="faculty-box"><strong>Clear</strong><span>Strong chapter break</span></div>
+            <div class="faculty-box"><strong>Balanced</strong><span>Buildings vs people</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="life">
+      <div class="section-top">
+        <div>
+          <div class="kicker">Student Life</div>
+          <h2>The final chapter should feel active, graphic, and inhabited.</h2>
+        </div>
+        <p>
+          The source board kept moving after portraits into sports, banners, and tight brand details. This closing section follows that rhythm so the page finishes with motion rather than with a flat footer.
+        </p>
+      </div>
+
+      <div class="band paper">
+        <div class="life-grid">
+          <article class="photo-wide">
+            <img src="./bhyhs-english-site/assets/embedded-image-16.jpg" alt="Students playing badminton" />
+            <div class="overlay">
+              <strong>Activity needs a full spread.</strong>
+              <p>The sports hall is treated as a large concluding plate, just as the original board reserved generous space for high-energy imagery.</p>
+            </div>
+          </article>
+
+          <div class="detail-stack">
+            <div class="detail-row">
+              <article class="detail-photo"><img src="./bhyhs-english-site/assets/embedded-image-18.jpg" alt="Atrium banners second view" /></article>
+              <article class="detail-photo"><img src="./bhyhs-english-site/assets/embedded-image-08.jpg" alt="BHYONE signage" /></article>
+            </div>
+            <article class="caption-card">
+              <strong>The ending returns to close-up graphic identity.</strong>
+              <p>This mirrors the draft’s logic: broad shot, then detail. It gives the page a more deliberate close and prevents the bottom of the site from feeling generic.</p>
+            </article>
+            <article class="detail-photo"><img src="./bhyhs-english-site/assets/embedded-image-17.jpg" alt="ONE banner detail" /></article>
+          </div>
+        </div>
+
+        <div class="footer-band">
+          <div class="logo-wall">
+            <img src="./bhyhs-english-site/assets/embedded-image-01.png" alt="Baohshan Huayao High School ONE logo" />
+          </div>
+          <div>
+            <h3>A responsive site that still feels like a board, not a template.</h3>
+            <p>
+              This version preserves the extracted assets, but the layout now aims much more directly at the original SVG’s sequencing and weight distribution. The next layer of refinement would be micro-adjusting spacing and visual density section by section.
+            </p>
+            <div class="footer-meta">
+              <span>Closer to source composition</span>
+              <span>Diagonal section logic retained</span>
+              <span>Responsive across desktop and mobile</span>
+              <span>Assets remain reusable</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>Responsive reconstruction tuned section-by-section toward the original SVG board</div>
+    <div>Assets preserved in <code>others/bhyhs-english-site/assets</code></div>
+  </footer>
+</body>
+</html>

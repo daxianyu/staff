@@ -50,23 +50,6 @@ import { uploadArchivesFile } from '@/services/modules/archives';
 
 type TabType = 'base' | 'position' | 'promotion' | 'supervision' | 'interview' | 'complaint' | 'reward' | 'punishment' | 'accounting';
 
-// 岗位名称 -> 岗位级别 级联配置
-const POSITION_NAME_LEVEL_MAP: Record<string, string[]> = {
-  '手动输入': ['无'],
-  '助理教师': ['无', 'Ⅰ', 'Ⅱ', 'Ⅲ'],
-  '助理导师': ['无', 'Ⅰ', 'Ⅱ', 'Ⅲ'],
-  '导师': ['无', 'Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ'],
-  '资深导师': ['无', 'Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ'],
-};
-
-// 教师名称 -> 教师级别 级联配置
-const TEACHER_NAME_LEVEL_MAP: Record<string, string[]> = {
-  '初级': ['A', 'B'],
-  '中级': ['A', 'B', 'C'],
-  '高级': ['A', 'B'],
-  '手动输入': ['手动输入'],
-};
-
 export default function ArchivesDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -79,6 +62,9 @@ export default function ArchivesDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editSelectOptions, setEditSelectOptions] = useState<Record<string, Array<{ value: string | number; label: string }>>>({});
   const [campusOptions, setCampusOptions] = useState<Array<{ value: number; label: string }>>([]);
+  // 岗位信息级联：从接口 teacher_position_dict / teacher_level_dict 获取
+  const [teacherPositionDict, setTeacherPositionDict] = useState<Record<string, string[]>>({});
+  const [teacherLevelDict, setTeacherLevelDict] = useState<Record<string, string[]>>({});
 
   // 各标签页的数据
   const [baseInfo, setBaseInfo] = useState<ArchivesBaseInfo | null>(null);
@@ -203,6 +189,23 @@ export default function ArchivesDetailPage() {
               label: String(v),
             }));
           }
+        }
+
+        // teacher_position_dict: 岗位名称 -> 岗位级别级联（导师等级）
+        if (data.teacher_position_dict && typeof data.teacher_position_dict === 'object') {
+          const dict: Record<string, string[]> = {};
+          for (const [k, v] of Object.entries(data.teacher_position_dict)) {
+            dict[k] = Array.isArray(v) ? v.map(String) : [String(v)];
+          }
+          setTeacherPositionDict(dict);
+        }
+        // teacher_level_dict: 教师名称 -> 教师级别级联（教师等级）
+        if (data.teacher_level_dict && typeof data.teacher_level_dict === 'object') {
+          const dict: Record<string, string[]> = {};
+          for (const [k, v] of Object.entries(data.teacher_level_dict)) {
+            dict[k] = Array.isArray(v) ? v.map(String) : [String(v)];
+          }
+          setTeacherLevelDict(dict);
         }
 
         // 使用函数式更新，保留已有的选项（如 campus_id）
@@ -685,13 +688,16 @@ export default function ArchivesDetailPage() {
       );
 
       if (key === 'position') {
+        const positionKeys = Object.keys(teacherPositionDict);
         return (
           <div key={key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
-            {renderPositionSelect(key, Object.keys(POSITION_NAME_LEVEL_MAP), (val) => {
-              const levels = POSITION_NAME_LEVEL_MAP[val] ?? ['无'];
+            {positionKeys.length > 0 ? renderPositionSelect(key, positionKeys, (val) => {
+              const levels = teacherPositionDict[val] ?? ['无'];
               return { position_level: levels[0] ?? '无' };
-            })}
+            }) : (
+              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-md">加载中...</div>
+            )}
           </div>
         );
       }
@@ -704,7 +710,7 @@ export default function ArchivesDetailPage() {
         );
       }
       if (key === 'position_level') {
-        const levels = posVal ? (POSITION_NAME_LEVEL_MAP[posVal] ?? ['无']) : [];
+        const levels = posVal ? (teacherPositionDict[posVal] ?? ['无']) : [];
         return (
           <div key={key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
@@ -715,13 +721,16 @@ export default function ArchivesDetailPage() {
         );
       }
       if (key === 'teacher_name') {
+        const teacherKeys = Object.keys(teacherLevelDict);
         return (
           <div key={key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
-            {renderPositionSelect(key, Object.keys(TEACHER_NAME_LEVEL_MAP), (val) => {
-              const levels = TEACHER_NAME_LEVEL_MAP[val] ?? [];
+            {teacherKeys.length > 0 ? renderPositionSelect(key, teacherKeys, (val) => {
+              const levels = teacherLevelDict[val] ?? [];
               return { teacher_level: levels[0] ?? '' };
-            })}
+            }) : (
+              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-md">加载中...</div>
+            )}
           </div>
         );
       }
@@ -734,7 +743,7 @@ export default function ArchivesDetailPage() {
         );
       }
       if (key === 'teacher_level') {
-        const levels = teacherVal ? (TEACHER_NAME_LEVEL_MAP[teacherVal] ?? []) : [];
+        const levels = teacherVal ? (teacherLevelDict[teacherVal] ?? []) : [];
         return (
           <div key={key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">{fieldLabels[key]}</label>
