@@ -335,6 +335,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return operationRights.includes(OPERATION_RIGHTS.CERTIFICATE_MANAGEMENT);
     }
 
+    // 退柜管理：tool_user 或 operation_right=15
+    const returnLockerPermissions = [
+      PERMISSIONS.VIEW_RETURN_LOCKER,
+      PERMISSIONS.APPROVE_RETURN_LOCKER,
+    ];
+    if (returnLockerPermissions.includes(permission as any)) {
+      const isToolUser = (user as any).tool_user === true || (user as any).tool_user === 1;
+      return isToolUser || operationRights.includes(OPERATION_RIGHTS.RETURN_LOCKER_MANAGEMENT);
+    }
+
     // 需要 edit_classes 或 sales_admin 权限
     const selfSignupPermissions = [
       PERMISSIONS.VIEW_SELF_SIGNUP_CLASSES,

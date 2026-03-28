@@ -101,8 +101,9 @@ export const PERMISSIONS = {
   SMS: 'sms',
   VIEW_LOCKER: 'view_locker',
   EDIT_LOCKER: 'edit_locker',
-  VIEW_RETURN_LOCKER: 'view_locker',
-  APPROVE_RETURN_LOCKER: 'edit_locker',
+  /** 退柜：tool_user 或 operation_right=15（勿与 view_locker 混用） */
+  VIEW_RETURN_LOCKER: 'view_return_locker',
+  APPROVE_RETURN_LOCKER: 'approve_return_locker',
 
   // 承诺书管理
   VIEW_COMMITMENT: 'view_commitment',
@@ -311,6 +312,9 @@ export const OPERATION_RIGHTS = {
 
   // 证书管理权限
   CERTIFICATE_MANAGEMENT: 14,
+
+  // 退柜管理（Locker Return）
+  RETURN_LOCKER_MANAGEMENT: 15,
 
   // Knowledge - Workspace 管理权限
   WORKSPACE_MANAGEMENT: 25,

@@ -26,10 +26,12 @@ import {
   XMarkIcon,
   ChatBubbleLeftEllipsisIcon,
   ClipboardDocumentListIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { withStaffBasePath } from '@/utils/withStaffBasePath';
+import { PERMISSIONS } from '@/types/auth';
 
 type TabType = 'attendance' | 'feedback' | 'todo';
 
@@ -49,7 +51,7 @@ const ATTENDANCE_STATUS_LABELS = {
 };
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('attendance');
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -121,88 +123,90 @@ export default function DashboardPage() {
     return `${start} - ${end}`;
   };
 
-  // 计算待办事项总数
-  const getTotalTodoCount = () => {
-    if (!todoData) return 0;
-    return (
-      (Number(todoData.class_change) || 0) +
-      (Number(todoData.out_count) || 0) +
-      (Number(todoData.evaluate_count) || 0) +
-      (Number(todoData.wishes_count) || 0) +
-      (Number(todoData.ps_count) || 0) +
-      (Number(todoData.withdrawal_count) || 0) +
-      (Number(todoData.late_cashin_count) || 0) +
-      (Number(todoData.remarking_count) || 0) +
-      (Number(todoData.locker_return_count) || 0)
-    );
-  };
-
-  // 待办事项配置
-  const todoItems = [
+  // 待办事项配置（部分项需与菜单/页面权限一致）
+  const todoItemDefs: Array<{
+    key: keyof DashboardTodoData;
+    label: string;
+    path: string;
+    icon: typeof ClockIcon;
+    permission?: string;
+  }> = [
     {
       key: 'class_change',
       label: 'Class Change',
-      count: Number(todoData?.class_change) || 0,
       path: '/mentor/class-change',
       icon: ClockIcon,
     },
     {
       key: 'out_count',
       label: '外出单审批',
-      count: Number(todoData?.out_count) || 0,
       path: '/users/exit-permit',
       icon: DocumentTextIcon,
     },
     {
       key: 'evaluate_count',
       label: '考试评语',
-      count: Number(todoData?.evaluate_count) || 0,
       path: '/users/subject-evaluate',
       icon: DocumentTextIcon,
     },
     {
       key: 'wishes_count',
       label: '毕业寄语',
-      count: Number(todoData?.wishes_count) || 0,
       path: '/users/graduation-wishes',
       icon: ChatBubbleLeftEllipsisIcon,
     },
     {
       key: 'ps_count',
       label: 'PS Polish',
-      count: Number(todoData?.ps_count) || 0,
       path: '/users/ps-polish',
       icon: DocumentTextIcon,
     },
     {
       key: 'withdrawal_count',
       label: '退考',
-      count: Number(todoData?.withdrawal_count) || 0,
       path: '/users/withdrawal-overview',
       icon: ExclamationTriangleIcon,
     },
     {
       key: 'late_cashin_count',
       label: 'Late Cashin',
-      count: Number(todoData?.late_cashin_count) || 0,
       path: '/users/late-cashin-overview',
       icon: ClockIcon,
     },
     {
       key: 'remarking_count',
       label: 'Remarking',
-      count: Number(todoData?.remarking_count) || 0,
       path: '/users/remark-overview',
       icon: DocumentTextIcon,
     },
     {
+      key: 'certificate_apply_count',
+      label: '证书申请',
+      path: '/students/certificate-overview',
+      icon: AcademicCapIcon,
+      permission: PERMISSIONS.VIEW_CERTIFICATE_OVERVIEW,
+    },
+    {
       key: 'locker_return_count',
       label: 'Locker return',
-      count: Number(todoData?.locker_return_count) || 0,
       path: '/locker-return',
       icon: ClipboardDocumentListIcon,
+      permission: PERMISSIONS.VIEW_RETURN_LOCKER,
     },
   ];
+
+  const todoItems = todoItemDefs.map((def) => ({
+    ...def,
+    count: Number(todoData?.[def.key]) || 0,
+  }));
+
+  // 计算待办事项总数（仅统计当前用户有权看到的类型）
+  const getTotalTodoCount = () => {
+    if (!todoData) return 0;
+    return todoItemDefs
+      .filter((def) => !def.permission || hasPermission(def.permission))
+      .reduce((sum, def) => sum + (Number(todoData[def.key]) || 0), 0);
+  };
 
   const handleTodoClick = (path: string) => {
     if (!path) return;
@@ -749,7 +753,11 @@ export default function DashboardPage() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                   {todoItems
-                    .filter(item => item.count > 0)
+                    .filter(
+                      (item) =>
+                        item.count > 0 &&
+                        (!item.permission || hasPermission(item.permission))
+                    )
                     .map((item) => {
                       const IconComponent = item.icon;
                       return (

@@ -4,13 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shanghai Baoshan Huayao High School — About Us</title>
+    <style>
+        @font-face {
+            font-family: "Montserrat";
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url("./assets/fonts/montserrat-latin-400-normal.woff2") format("woff2");
+        }
+        @font-face {
+            font-family: "Montserrat";
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url("./assets/fonts/montserrat-latin-500-normal.woff2") format("woff2");
+        }
+        @font-face {
+            font-family: "Montserrat";
+            font-style: normal;
+            font-weight: 600;
+            font-display: swap;
+            src: url("./assets/fonts/montserrat-latin-600-normal.woff2") format("woff2");
+        }
+    </style>
     <script src="./tailwindcss-3.4.17.js"></script>
 </head>
 <body class="bg-white overflow-x-hidden text-[1.0625rem] md:text-[1.08rem] leading-[1.6]">
     <!-- Header Section -->
     <header style="background-color: #ffbd59">
         <nav class="p-4 pl-8" style="background-color: #ffbd59">
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center" style="font-family: 'Montserrat', sans-serif;">
                 <div class="text-black text-xl md:text-2xl">
                     <a href="#about" class="mr-4 hover:underline">About us</a>
                     <span class="border-l border-black/30 pl-4"><a href="#contact" class="hover:underline">Contact us</a></span>
@@ -212,23 +235,24 @@
         </div>
     </section>
 
-    <!-- Achievements -->
-	<section class="py-16 px-8 md:px-16 text-white" style="background: linear-gradient(to bottom, #ffbd59 90%, white 90%);">
-		<div class="max-w-7xl mx-auto">
+    <!-- Achievements：黄色为顶部固定高度色带，图片区域高于色带，脚部落在白底上 -->
+	<section class="relative overflow-visible bg-white pt-16 px-8 md:px-16 text-white">
+		<div class="pointer-events-none absolute inset-x-0 top-0 z-0 h-[19rem] sm:h-[21rem] md:h-[23rem] lg:h-[40rem] xl:h-[40rem] bg-[#ffbd59]" aria-hidden="true"></div>
+		<div class="relative z-10 max-w-7xl mx-auto">
 			<div class="flex items-center mb-4 mx-4 md:mx-20">
 				<h2 class="text-3xl md:text-5xl italic mr-4 md:mr-8 text-black">Achievements</h2>
-				<div class="flex-1 h-px bg-white"></div>
+				<div class="flex-1 h-px bg-black"></div>
 			</div>
-			<h3 class="text-2xl md:text-3xl italic mb-8 text-black mx-4 md:mx-20">Offers - 2026</h3>
+			<h3 class="text-2xl md:text-3xl italic mb-5 md:mb-6 text-black mx-4 md:mx-20">Offers - 2026</h3>
 	
-			<div class="grid lg:grid-cols-[1fr_2fr] xl:grid-cols-2 items-center mb-16">
-				<div class="w-full h-64 lg:h-[400px] xl:h-96 flex items-center justify-center mt-6 lg:mt-0">
+			<div class="grid lg:grid-cols-2 items-start lg:items-center mb-12 md:mb-16 gap-y-6 lg:gap-x-0 lg:pb-4">
+				<div class="w-full h-80 lg:h-[620px] xl:h-[30rem] flex items-center justify-center min-w-0 lg:relative lg:z-10">
 					<div class="w-full h-full bg-center bg-no-repeat shadow-lg bg-cover"
 						style="background-image: url('./assets/embedded-image-15.jpg');">
 					</div>
 				</div>
-				<div class="mt-6 border border-black p-4 md:p-6 text-black">
-					<ul class="list-disc list-inside space-y-2 text-base md:text-lg leading-relaxed">
+				<div class="mt-0 border border-black lg:border-l-0 px-3 py-2.5 md:px-4 md:py-3 text-black min-w-0 w-full" style='font-family: "Montserrat", "Avenir Next", "Century Gothic", sans-serif;'>
+					<ul class="list-disc list-inside space-y-0 text-sm md:text-base leading-snug">
 						<li>UCL (University College London)</li>
 						<li>King's College London, University of London</li>
 						<li>University of Manchester</li>
@@ -250,15 +274,14 @@
 	</section>
 
     <!-- Academics -->
-    <section class="py-16 px-8 md:px-16 text-white" style="background-color: rgb(19,52,103);">
+    <section class="py-16 px-8 md:px-16 text-white" style="background-color: #737373">
         <div class="max-w-7xl mx-auto">
             <div class="flex items-center mb-4">
                 <div class="flex-1 h-px bg-white"></div>
                 <h2 class="text-3xl md:text-5xl mx-4 md:mx-16 text-center italic">Academics</h2>
                 <div class="flex-1 h-px bg-white"></div>
             </div>
-            <h3 class="text-2xl md:text-3xl italic mb-8 text-center text-white">Courses</h3>
-
+            <h3 class="text-2xl md:text-3xl lg:text-[2.125rem] italic mb-8 text-center text-white tracking-wide md:tracking-wider max-w-6xl mx-auto px-2 w-full">Courses</h3>
             <div class="flex flex-col md:flex-row gap-6">
                 <div class="w-full md:w-[70%]">
                     <div class="mb-8">
@@ -375,66 +398,147 @@
         </div>
     </section>
 
-    <!-- Activities -->
-    <section class="py-20 md:px-6 bg-white">
-        <div class="py-10 px-4 md:px-16 max-w-8xl mx-auto">
-            <div class="flex flex-col lg:flex-row justify-around">
-                <div class="w-full lg:w-[60%] border border-black flex items-center justify-center order-1 lg:order-1">
-                    <div class="w-full max-w-3xl mx-auto px-4 my-4">
-                        <h2 class="text-3xl md:text-5xl font-bold mb-3 italic" style="color: rgb(19,52,103);">Activities</h2>
-                        <p class="text-gray-700 mb-4 leading-relaxed text-lg md:text-xl">
-                            Students with collective interests are encouraged to participate in and organize school-sponsored extracurricular activities in areas such as sports, arts, academics, and professional interests.
-                        </p>
+    <!-- Academic Extension Courses -->
+    <section id="academic-extension" class="py-16 px-8 md:px-16 text-white antialiased" style="background-color: #16305e;">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center mb-4">
+                <div class="flex-1 h-px bg-white"></div>
+                <h2 class="text-3xl md:text-5xl mx-4 md:mx-16 text-center italic">Academic</h2>
+                <div class="flex-1 h-px bg-white"></div>
+            </div>
+            <h3 class="text-2xl md:text-3xl lg:text-[2.125rem] italic mb-8 text-center text-white tracking-wide md:tracking-wider max-w-6xl mx-auto px-2 w-full">Extension Courses</h3>
 
-                        <div class="flex justify-between items-center h-32 md:h-[200px] gap-2 md:gap-4">
-                            <img src="./assets/embedded-image-18.jpg"
-                                 alt="Campus activity"
-                                 class="h-full object-cover flex-1">
-                            <img src="./assets/embedded-image-17.jpg"
-                                 alt="Student life"
-                                 class="h-full object-cover flex-1">
-                            <img src="./assets/embedded-image-08.jpg"
-                                 alt="School identity"
-                                 class="h-full object-cover flex-1">
+            <p class="text-base md:text-xl text-white leading-relaxed text-left w-full mb-4">
+                To further support academic exploration and interdisciplinary learning, the school offers a range of academic extension courses, designed to broaden students&apos; perspectives and strengthen university-level readiness.
+            </p>
+            <p class="text-base md:text-lg text-white text-left w-full mb-4 pt-8">These courses may include:</p>
+
+            <div class="overflow-x-auto w-full">
+                <table class="border-collapse border border-white w-full mb-10 table-fixed">
+                    <colgroup>
+                        <col style="width: 40%;" />
+                        <col style="width: 60%;" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th class="border border-white p-3 md:p-4 text-center text-white font-bold text-base md:text-lg" scope="col">Category</th>
+                            <th class="border border-white p-3 md:p-4 text-center text-white font-bold text-base md:text-lg" scope="col">Subjects</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-white p-4 md:p-6 text-center text-white text-base md:text-lg align-middle">
+                                Academic Extension Courses
+                            </td>
+                            <td class="border border-white p-4 md:p-6 text-white align-top text-center">
+                                <ul class="list-none space-y-0 text-base md:text-lg leading-snug w-full text-center">
+                                    <li>Fundamentals of Biochemical and Biological </li>
+                                    <li>Experiments, Business Case Analysis,</li>
+                                    <li>Psychology in Film and Media,</li>
+                                    <li>Microhistory and Historical Research Methods</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="text-base md:text-xl text-white leading-relaxed text-left w-full">
+                These courses encourage inquiry-based learning, real-world application, and cross-disciplinary thinking beyond the core curriculum.
+            </p>
+        </div>
+    </section>
+
+    <!-- Co-curricular and Activities：与上方区块同为 px-8 md:px-16 + max-w-7xl -->
+    <section class="py-16 md:py-20 bg-white px-8 md:px-16">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col lg:flex-row lg:items-stretch lg:justify-between gap-10 lg:gap-10 xl:gap-14">
+                <!-- 左：约 50%，标题 + 文 + 三图 + 文（字体同页面已引入的 Montserrat） -->
+                <div class="w-full lg:w-[55%] order-1 shrink-0" style='font-family: "Montserrat", "Avenir Next", "Century Gothic", sans-serif;'>
+                    <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-5 md:mb-6 italic text-left" style="color: rgb(19,52,103);">
+                        Co-curricular and Activities
+                    </h2>
+                    <p class="text-gray-800 mb-6 md:mb-8 leading-relaxed text-lg md:text-xl text-left">
+                        In addition to academic study, our school offers a variety of interest-based activities and clubs. These activities promote teamwork, leadership, resilience, and a balanced school experience, enabling students to demonstrate attributes, grow as unique individuals, and recognize their role in relation to others in and outside the school community.
+                    </p>
+
+                    <!-- 顺序与稿一致：中庭 → 红橙横幅 → BHYONE；外层管高度，内层 flex + 图间 padding -->
+                    <div class="w-full h-36 sm:h-40 md:h-[200px] mb-6 md:mb-8">
+                        <div class="flex h-full w-full items-stretch gap-2 md:gap-4">
+                            <div class="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden px-1.5 md:px-2.5">
+                                <img src="./assets/embedded-image-17.jpg"
+                                     alt="Indoor atrium with hanging banners"
+                                     class="max-h-full max-w-full h-auto w-auto object-contain object-center">
+                            </div>
+                            <div class="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden px-1.5 md:px-2.5">
+                                <img src="./assets/embedded-image-18.jpg"
+                                     alt="Red and orange school banners with logo"
+                                     class="max-h-full max-w-full h-auto w-auto object-contain object-center">
+                            </div>
+                            <div class="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden px-1.5 md:px-2.5">
+                                <img src="./assets/embedded-image-08.jpg"
+                                     alt="BHYONE pillar"
+                                     class="max-h-full max-w-full h-auto w-auto object-contain object-center">
+                            </div>
                         </div>
                     </div>
+
+                    <p class="text-gray-800 leading-relaxed text-lg md:text-xl text-left">
+                        Through its integrated academic, extension, and co-curricular activities, Shanghai Baoshan Huayao High School aims to provide students with a well-rounded, personalized, and academically rigorous education, equipping them with a global perspective and preparing them for future international university study.
+                    </p>
                 </div>
 
-                <div class="w-full lg:w-80 h-64 lg:h-[500px] bg-cover bg-center relative order-2 lg:order-2 mt-8 lg:mt-0">
-                    <div class="w-full h-full absolute top-[-20px] lg:top-[-40px] right-[-20px] lg:right-[-40px] hidden lg:block" style="background-color: rgb(19,52,103);"></div>
-                    <div style="background-image: url('./assets/embedded-image-16.jpg');" class="w-full h-full bg-cover bg-center absolute"></div>
+                <!-- 右：约 45%，大图垂直居中，深蓝色装饰块偏移右上 -->
+                <div class="w-full lg:w-[45%] order-2 mt-2 lg:mt-0 flex items-center justify-center pt-8 px-8 lg:pt-12 lg:px-12">
+                    <div class="relative mx-auto w-full max-w-md lg:max-w-none lg:w-[85%]">
+                        <div class="absolute inset-0 translate-x-[32px] translate-y-[-32px] lg:translate-x-[48px] lg:translate-y-[-48px] z-0 hidden lg:block" style="background-color: rgb(19,52,103);" aria-hidden="true"></div>
+                        <div class="relative z-10 w-full aspect-[2/3] overflow-hidden shadow-md">
+                            <img
+                                src="./assets/embedded-image-16.jpg"
+                                alt="Students playing badminton in the gymnasium"
+                                class="w-full h-full object-cover object-center"
+                                loading="lazy"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <div class="w-full h-[80px]" style="background-color: rgb(19,52,103);"></div>
+    <div class="w-full h-[60px] md:h-[80px]" style="background-color: #E8A83C;"></div>
 
-    <!-- Contact Us -->
-    <section id="contact" class="w-full min-h-[500px] md:h-[700px] text-white relative flex items-center justify-center bg-cover bg-center py-16" style="background-image: url('./assets/embedded-image-05.jpg');">
+    <!-- School Calendar + Contact Us -->
+    <section id="contact" class="w-full text-white relative flex items-center justify-center bg-cover bg-center py-12 md:py-16" style="background-image: url('./assets/embedded-image-05.jpg');">
         <div class="absolute inset-0 bg-[rgb(19,52,103)] opacity-60"></div>
-        <div class="max-w-4xl mx-auto relative z-10 px-4">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl md:text-5xl font-bold mb-8 md:mb-12 italic">Contact Us</h2>
+        <div class="max-w-[1400px] mx-auto relative z-10 px-4">
+            <!-- School Calendar -->
+            <div class="text-center mb-12 md:mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-5 md:mb-6 italic">School Calendar</h2>
+                <p class="text-base md:text-lg leading-relaxed max-w-4xl mx-auto tracking-wide" style="font-family: 'Montserrat', sans-serif;">
+                    Our academic year begins in Middle August and ends in June. It is divided into two semesters, with a winter break in January or February in between.
+                </p>
             </div>
 
-            <div class="border border-white p-6 md:p-12 flex items-center justify-center w-full max-w-4xl mx-auto">
-                <div class="text-center text-white w-full max-w-2xl py-15 px-4">
-                    <div class="grid gap-4 md:gap-6 text-lg md:text-xl lg:text-2xl">
-                        <div class="flex items-center justify-center gap-2 italic text-center">
+            <!-- Contact Us -->
+            <div class="text-center mb-6 md:mb-8 mt-30">
+                <h2 class="text-4xl md:text-5xl font-bold mb-8 md:mb-10 italic">Contact Us</h2>
+            </div>
+
+            <div class="border border-white p-6 md:p-10 flex items-center justify-center w-full max-w-4xl mx-auto">
+                <div class="text-center text-white w-full py-4 md:py-6 px-4">
+                    <div class="grid gap-2 md:gap-4 text-xl md:text-2xl lg:text-[1.7rem] font-bold italic" style="font-family: 'Montserrat', sans-serif;">
+                        <div class="flex items-center justify-center text-center">
                             <span>Address: 635 Poyanghu Rd., Baoshan District,</span>
                         </div>
-                        <div class="flex items-center justify-center gap-2 italic text-center">
+                        <div class="flex items-center justify-center text-center">
                             <span>Shanghai, China 201906</span>
                         </div>
-                        <div class="flex items-center justify-center gap-2 italic text-center">
+                        <div class="flex items-center justify-center text-center">
                             <span>Phone: +86 (021) 36586916</span>
                         </div>
-                        <div class="flex items-center justify-center gap-2 italic text-center">
-                            <span>Email: <a href="mailto:system@bhyone.com" class="no-underline">system@bhyone.com</a></span>
-                        </div>
-                        <div class="flex items-center justify-center gap-2 italic text-center">
-                            <span>Website: <a href="https://www.bhyone.com" class="underline" target="_blank" rel="noopener noreferrer">bhyone.com</a></span>
+                        <div class="flex items-center justify-center text-center">
+                            <span>Website:<a href="https://www.bhyone.com" class="no-underline" target="_blank" rel="noopener noreferrer">www.bhyone.com</a></span>
                         </div>
                     </div>
                 </div>
@@ -442,6 +546,9 @@
         </div>
     </section>
 
-    <div class="w-full h-[60px]" style="background-color: rgb(19,52,103);"></div>
+    <!-- Footer with logo -->
+    <div class="w-full py-4 md:py-5 flex items-center justify-center" style="background-color: rgb(19,52,103);">
+        <img src="./assets/embedded-image-01.png" alt="School logo" class="h-10 md:h-12 w-auto mix-blend-screen" />
+    </div>
 </body>
 </html>

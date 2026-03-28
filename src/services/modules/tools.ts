@@ -709,10 +709,13 @@ export const saveJsonData = async (key: string, value: string): Promise<ApiRespo
   }
 };
 
-// 获取单个数据
-export const getJsonData = async (key: string): Promise<ApiResponse<string>> => {
+// 获取单个数据（可附加 query，便于 api-echo-params 扩展参数）
+export const getJsonData = async (
+  key: string,
+  extraQuery?: Record<string, string>
+): Promise<ApiResponse<string>> => {
   try {
-    const url = `/api/site/api-echo-params${buildQueryString({ key })}`;
+    const url = `/api/site/api-echo-params${buildQueryString({ key, ...extraQuery })}`;
     const { response, data } = await request<string>(url, {
       method: 'GET',
       parser: 'text',

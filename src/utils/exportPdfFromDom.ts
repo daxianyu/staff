@@ -5,6 +5,11 @@
 
 import { jsPDF } from 'jspdf';
 
+import {
+  isFeedbackPdfDebugEnabled,
+  resolveFeedbackPdfBackgroundImageSrc,
+} from '@/config/feedbackPdfFooter';
+
 const FONT = '12px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", sans-serif';
 const FONT_BOLD = 'bold 12px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", sans-serif';
 const LINE = 18;
@@ -31,6 +36,19 @@ function scratchCtx(): CanvasRenderingContext2D {
   const c = document.createElement('canvas').getContext('2d')!;
   c.font = FONT;
   return c;
+}
+
+function loadImageForCanvas(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      console.warn('[FeedbackPDF] 背景图加载失败:', src);
+      resolve(null);
+    };
+    img.src = src;
+  });
 }
 
 function makeCanvas(cssW: number, cssH: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
@@ -225,11 +243,42 @@ export type FeedbackPdfItem = {
   note: string;
 };
 
-export function exportFeedbackListPdf(
+export type ExportFeedbackListPdfOptions = {
+  /** 传给 `api-echo-params?key=FEEDBACK_BG_FILENAME` 的额外 query（后端支持后使用） */
+  feedbackBgEchoExtra?: Record<string, string>;
+};
+
+/**
+ * 背景图在画布内水平垂直居中（contain：完整显示、不裁切，留白边由白底体现）。
+ * 文字仍叠在上方，布局不变。
+ */
+function drawFeedbackPdfBackgroundWatermark(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  cw: number,
+  ch: number
+): void {
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  if (iw <= 0 || ih <= 0) return;
+  const scale = Math.min(cw / iw, ch / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  const dx = (cw - dw) / 2;
+  const dy = (ch - dh) / 2;
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+export async function exportFeedbackListPdf(
   filename: string,
   meta: { studentName: string; exportedAt: string },
-  items: FeedbackPdfItem[]
-): void {
+  items: FeedbackPdfItem[],
+  options?: ExportFeedbackListPdfOptions
+): Promise<void> {
   const cssW = 800;
   const m = scratchCtx();
 
@@ -238,9 +287,40 @@ export function exportFeedbackListPdf(
     const noteLines = wrap(m, it.note || '—', cssW - 2 * PAD - 16);
     simY += 10 + 24 + 22 + 20 + noteLines.length * LINE + 12;
   }
+
   const cssH = simY + PAD;
 
-  const { canvas, ctx } = makeCanvas(cssW, Math.max(360, cssH));
+  const resolved = await resolveFeedbackPdfBackgroundImageSrc(options?.feedbackBgEchoExtra);
+  let bgImg: HTMLImageElement | null = null;
+  if (resolved.src) {
+    bgImg = await loadImageForCanvas(resolved.src);
+  }
+
+  const pageH = Math.max(360, cssH);
+
+  if (isFeedbackPdfDebugEnabled()) {
+    console.log('[FeedbackPDF] 导出', {
+      filename,
+      canvasCss: { w: cssW, h: pageH },
+      background: {
+        source: resolved.source,
+        src: resolved.src,
+        echoCode: resolved.echoCode,
+        echoRaw: resolved.echoRaw,
+        loaded: !!(bgImg && bgImg.naturalWidth > 0),
+        natural: bgImg ? { w: bgImg.naturalWidth, h: bgImg.naturalHeight } : null,
+      },
+    });
+  }
+
+  const { canvas, ctx } = makeCanvas(cssW, pageH);
+
+  if (bgImg && bgImg.naturalWidth > 0) {
+    drawFeedbackPdfBackgroundWatermark(ctx, bgImg, cssW, pageH);
+  } else if (resolved.src) {
+    console.warn('[FeedbackPDF] 背景图未绘制（加载失败或尺寸为 0）', { src: resolved.src });
+  }
+
   let y = PAD;
 
   ctx.fillStyle = '#111827';

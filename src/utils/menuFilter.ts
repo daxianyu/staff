@@ -157,6 +157,16 @@ export class MenuFilter {
       return operationRights.includes(OPERATION_RIGHTS.CERTIFICATE_MANAGEMENT);
     }
 
+    // 退柜管理：tool_user 或 operation_right=15
+    const returnLockerPermissions = [
+      PERMISSIONS.VIEW_RETURN_LOCKER,
+      PERMISSIONS.APPROVE_RETURN_LOCKER,
+    ];
+    if (returnLockerPermissions.includes(permission as any)) {
+      const isToolUser = (this.user as any).tool_user === true || (this.user as any).tool_user === 1;
+      return isToolUser || operationRights.includes(OPERATION_RIGHTS.RETURN_LOCKER_MANAGEMENT);
+    }
+
     // 需要 operation_right为5/6 或 core_user=1 的权限 (档案管理)
     const archivesPermissions = [
       PERMISSIONS.VIEW_ARCHIVES,

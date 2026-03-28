@@ -884,7 +884,7 @@ export default function StudentDetailPage() {
     );
   }
 
-  const exportSelectedFeedbackPdf = () => {
+  const exportSelectedFeedbackPdf = async () => {
     if (!feedback?.rows?.length) return;
     if (feedbackPdfSelected.size === 0) {
       alert('请勾选需要导出（例如可发给家长）的反馈条目');
@@ -902,7 +902,7 @@ export default function StudentDetailPage() {
           time_format: item.time_format,
           note: item.note,
         }));
-      exportFeedbackListPdf(`feedback_${slug}_${studentId}.pdf`, {
+      await exportFeedbackListPdf(`feedback_${slug}_${studentId}.pdf`, {
         studentName: studentInfo.student_name,
         exportedAt: new Date().toLocaleString('zh-CN'),
       }, items);

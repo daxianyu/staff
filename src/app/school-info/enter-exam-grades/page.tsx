@@ -27,6 +27,7 @@ import {
   updateStudentExamGrade,
   addExamTeacherEvaluate,
   deleteSubjectEvaluate,
+  getExamSelectInfo,
   type ExamGradeItem,
   type EnterGradesData,
   type ExamStudent,
@@ -46,6 +47,10 @@ export default function EnterExamGradesPage() {
   const [examList, setExamList] = useState<ExamGradeItem[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<number | ''>('');
+  const [filterPeriod, setFilterPeriod] = useState<number | ''>('');
+  const [examTypes, setExamTypes] = useState<Record<string, string>>({});
+  const [examPeriods, setExamPeriods] = useState<Record<string, string>>({});
 
   // 详情状态
   const [detailLoading, setDetailLoading] = useState(true);
@@ -82,33 +87,32 @@ export default function EnterExamGradesPage() {
 
   const filteredExamList = examList.filter((exam) => {
     const keyword = searchTerm.trim().toLowerCase();
-    if (!keyword) return true;
-    return (exam.name || '').toLowerCase().includes(keyword);
+    const matchesName = !keyword || (exam.name || '').toLowerCase().includes(keyword);
+    const matchesType = filterType === '' || exam.type === filterType;
+    const matchesPeriod = filterPeriod === '' || exam.period === filterPeriod;
+    return matchesName && matchesType && matchesPeriod;
   });
 
-  // 权限检查页面
-  if (!canView) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-500" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">权限不足</h3>
-          <p className="mt-1 text-sm text-gray-500">您没有权限查看Enter Exam Grades</p>
-        </div>
-      </div>
-    );
-  }
+  const hasListFilters =
+    !!searchTerm.trim() || filterType !== '' || filterPeriod !== '';
 
   // 加载列表数据
   const loadListData = async () => {
     setListLoading(true);
     try {
-      const result = await getEnterExamGrades();
-      if (result.code === 200 && result.data) {
-        setExamList(result.data.rows || []);
+      const [gradesResult, selectResult] = await Promise.all([
+        getEnterExamGrades(),
+        getExamSelectInfo(),
+      ]);
+      if (gradesResult.code === 200 && gradesResult.data) {
+        setExamList(gradesResult.data.rows || []);
       } else {
-        console.error('获取Enter Exam Grades失败:', result.message);
+        console.error('获取Enter Exam Grades失败:', gradesResult.message);
         setExamList([]);
+      }
+      if (selectResult.code === 200 && selectResult.data) {
+        setExamTypes(selectResult.data.exam_types || {});
+        setExamPeriods(selectResult.data.exam_periods || {});
       }
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -161,6 +165,7 @@ export default function EnterExamGradesPage() {
   };
 
   useEffect(() => {
+    if (!canView) return;
     const examIdParam = searchParams.get('examId') ? Number(searchParams.get('examId')) : null;
     if (examIdParam) {
       // 加载详情数据
@@ -206,7 +211,19 @@ export default function EnterExamGradesPage() {
     } else {
       loadListData();
     }
-  }, [searchParams]);
+  }, [searchParams, canView]);
+
+  if (!canView) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-500" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">权限不足</h3>
+          <p className="mt-1 text-sm text-gray-500">您没有权限查看Enter Exam Grades</p>
+        </div>
+      </div>
+    );
+  }
 
   // 查看详情（跳转到详情页）
   const handleViewDetails = (examId: number) => {
@@ -854,17 +871,18 @@ export default function EnterExamGradesPage() {
           <p className="mt-2 text-sm text-gray-600">查看和管理考试成绩</p>
         </div>
 
-        {/* 操作栏 */}
+        {/* 操作栏：Name 模糊 + Type / Period 下拉（选项来自 get_exam_select_info，与 exam.type / exam.period 数值对齐） */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full sm:w-auto">
-              <div className="relative w-full sm:w-80">
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center w-full flex-1">
+              <div className="relative w-full sm:min-w-[200px] sm:max-w-md sm:flex-1">
+                <label className="sr-only">Name</label>
                 <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="搜索考试名称..."
+                  placeholder="Name（模糊匹配）"
                   className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 {searchTerm.trim() && (
@@ -879,9 +897,43 @@ export default function EnterExamGradesPage() {
                 )}
               </div>
 
-              <div className="text-sm text-gray-600 flex items-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <label className="sr-only">Type</label>
+                <select
+                  value={filterType === '' ? '' : String(filterType)}
+                  onChange={(e) =>
+                    setFilterType(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  className="w-full sm:w-auto min-w-[140px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                >
+                  <option value="">全部 Type</option>
+                  {Object.entries(examTypes).map(([id, name]) => (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="sr-only">Period</label>
+                <select
+                  value={filterPeriod === '' ? '' : String(filterPeriod)}
+                  onChange={(e) =>
+                    setFilterPeriod(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  className="w-full sm:w-auto min-w-[140px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                >
+                  <option value="">全部 Period</option>
+                  {Object.entries(examPeriods).map(([id, name]) => (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="text-sm text-gray-600 flex items-center whitespace-nowrap">
                 显示 {filteredExamList.length} 条
-                {searchTerm.trim() ? `（共 ${examList.length} 条）` : ''}
+                {hasListFilters ? `（共 ${examList.length} 条）` : ''}
               </div>
             </div>
             
@@ -950,7 +1002,7 @@ export default function EnterExamGradesPage() {
                   {filteredExamList.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
-                        {searchTerm.trim() ? '未找到匹配的考试' : '暂无数据'}
+                        {hasListFilters ? '未找到匹配的考试' : '暂无数据'}
                       </td>
                     </tr>
                   )}
