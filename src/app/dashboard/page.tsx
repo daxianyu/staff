@@ -79,12 +79,13 @@ export default function DashboardPage() {
         if (dashboardResponse.code === 200 && dashboardResponse.data) {
           setDashboardData(dashboardResponse.data);
           
-          // 初始化考勤状态为默认出席
+          // 与下方 key 一致：lesson_id + student_id；有请假备注默认请假，否则默认出席
           const initialStates: Record<string, number> = {};
           dashboardResponse.data.attendance_list.forEach(item => {
             item.students.forEach(student => {
-              const key = `${item.start_time}_${student.student_id}`;
-              initialStates[key] = ATTENDANCE_STATUS.PRESENT; // 默认出席
+              const key = `${student.lesson_id}_${student.student_id}`;
+              const hasLeaveNote = Boolean(student.comment && student.comment.trim() !== '');
+              initialStates[key] = hasLeaveNote ? ATTENDANCE_STATUS.LEAVE : ATTENDANCE_STATUS.PRESENT;
             });
           });
           setAttendanceStates(initialStates);
@@ -236,9 +237,10 @@ export default function DashboardPage() {
       const attendanceInfo = item.students.map(student => {
         const attendanceKey = `${student.lesson_id}_${student.student_id}`;
         const hasComment = student.comment && student.comment.trim() !== '';
-        
-        // 如果学生已请假，状态设为请假(0)，否则使用界面选择的状态
-        const status = hasComment ? ATTENDANCE_STATUS.LEAVE : (attendanceStates[attendanceKey] ?? ATTENDANCE_STATUS.PRESENT);
+        // 界面选择优先；未选时：有请假备注默认请假，否则出席（学生可能后来又来上课）
+        const status =
+          attendanceStates[attendanceKey] ??
+          (hasComment ? ATTENDANCE_STATUS.LEAVE : ATTENDANCE_STATUS.PRESENT);
         
         return {
           student_id: student.student_id,
@@ -575,9 +577,11 @@ export default function DashboardPage() {
                     <div className="grid gap-3">
                       {item.students.map((student) => {
                         const key = `${student.lesson_id}_${student.student_id}`;
-                        const currentStatus = attendanceStates[key] ?? ATTENDANCE_STATUS.PRESENT;
                         const hasComment = student.comment && student.comment.trim() !== '';
-                        
+                        const currentStatus =
+                          attendanceStates[key] ??
+                          (hasComment ? ATTENDANCE_STATUS.LEAVE : ATTENDANCE_STATUS.PRESENT);
+
                         return (
                           <div key={key} className={`bg-white border rounded-lg p-3 sm:p-4 transition-all duration-200 ${
                             hasComment 
@@ -601,52 +605,39 @@ export default function DashboardPage() {
                                   {hasComment && (
                                     <div className="mt-2 p-2 bg-yellow-100 rounded-lg border border-yellow-200">
                                       <p className="text-xs text-yellow-600 font-medium mb-1">Leave Note: {student.comment}</p>
+                                      <p className="text-xs text-yellow-700/90">默认请假，若学生仍来上课可改为出席</p>
                                     </div>
                                   )}
                                 </div>
                               </div>
                               
                               <div className="flex flex-col items-start sm:items-center w-full sm:w-auto">
-                                {hasComment ? (
-                                  /* 已请假状态 - 只显示，不可修改 */
-                                  <>
-                                    <span className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">Status</span>
-                                    <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                      On Leave
-                                    </span>
-                                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Cannot modify</p>
-                                  </>
-                                ) : (
-                                  /* 正常状态 - 按钮组选择 */
-                                  <>
-                                    <span className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">Attendance Status</span>
-                                    <div className="flex border border-gray-300 rounded-lg overflow-hidden w-full sm:w-auto">
-                                      {Object.entries(ATTENDANCE_STATUS_LABELS).map(([value, label], index) => {
-                                        const isSelected = currentStatus === parseInt(value);
-                                        return (
-                                          <button
-                                            key={value}
-                                            type="button"
-                                            onClick={() => handleAttendanceChange(
-                                              student.lesson_id, 
-                                              student.student_id, 
-                                              parseInt(value)
-                                            )}
-                                            className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
-                                              isSelected 
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-white text-gray-700 hover:bg-gray-50'
-                                            } ${
-                                              index === 0 ? '' : 'border-l border-gray-300'
-                                            }`}
-                                          >
-                                            {label}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </>
-                                )}
+                                <span className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">Attendance Status</span>
+                                <div className="flex border border-gray-300 rounded-lg overflow-hidden w-full sm:w-auto">
+                                  {Object.entries(ATTENDANCE_STATUS_LABELS).map(([value, label], index) => {
+                                    const isSelected = currentStatus === parseInt(value);
+                                    return (
+                                      <button
+                                        key={value}
+                                        type="button"
+                                        onClick={() => handleAttendanceChange(
+                                          student.lesson_id, 
+                                          student.student_id, 
+                                          parseInt(value)
+                                        )}
+                                        className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
+                                          isSelected 
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                                        } ${
+                                          index === 0 ? '' : 'border-l border-gray-300'
+                                        }`}
+                                      >
+                                        {label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             </div>
                           </div>

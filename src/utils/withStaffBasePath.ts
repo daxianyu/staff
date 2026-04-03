@@ -1,6 +1,9 @@
 /**
- * 生产环境静态导出时配置了 basePath=/staff；
- * 开发环境：若当前页面在 /staff 下（如通过父应用挂载），也需加前缀。
+ * 生产环境静态导出时配置了 basePath=/staff，链接需带 /staff 前缀。
+ * 开发环境 next.config 未设 basePath，路由应使用根路径（如 /schedule）。
+ *
+ * 注意：不能根据 pathname.startsWith('/staff') 判断——员工列表页本身就是 /staff，
+ * 会误判并生成 /staff/schedule，与 dev 实际路由不一致。
  *
  * - 仅对站内路径（以 "/" 或相对路径）生效
  * - 对外链（http/https 等）原样返回
@@ -16,11 +19,6 @@ export function withStaffBasePath(input: string): string {
 
   // 生产环境（静态导出）需要 basePath=/staff
   if (process.env.NODE_ENV === 'production') {
-    return `/staff${normalized}`;
-  }
-
-  // 开发环境：若当前路径以 /staff 开头，说明 staff 挂载在 /staff 下，链接也需加前缀
-  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/staff')) {
     return `/staff${normalized}`;
   }
 

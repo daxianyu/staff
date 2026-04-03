@@ -1131,3 +1131,18 @@ export const addExamStudentBatch = async (examId: number, file: File): Promise<A
     };
   }
 };
+
+/** GET /api/exam/download_exam_students/<comma-separated ids> — tool_user；返回 JSON，data 为路径字符串或含 file_path 的对象 */
+export const requestDownloadExamStudents = async (
+  examIds: number[]
+): Promise<{ status: number; message?: string; data?: string | { file_path?: string } }> => {
+  const ids = examIds.filter((id) => Number.isFinite(id) && id > 0);
+  if (ids.length === 0) {
+    return { status: 1, message: '请选择考试' };
+  }
+  const response = await fetch(`/api/exam/download_exam_students/${ids.join(',')}`, {
+    method: 'GET',
+    headers: getAuthHeader(),
+  });
+  return response.json();
+};

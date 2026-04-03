@@ -11,6 +11,7 @@ import {
   updateExamStatus,
   deleteExam,
   getExamSelectInfo,
+  requestDownloadExamStudents,
   type ExamListItem,
   type AddExamParams,
   getAuthHeader,
@@ -39,6 +40,9 @@ export default function ExamPage() {
   const { hasPermission, user } = useAuth();
   const canEdit = hasPermission(PERMISSIONS.EDIT_EXAMS);
   const isCoreUser = user && (Number((user as any).core_user) === 1 || (user as any).core_user === true);
+  const isToolUser =
+    (user as { tool_user?: boolean | number } | null)?.tool_user === true ||
+    (user as { tool_user?: boolean | number } | null)?.tool_user === 1;
 
   // 考试期间和类型常量 (从API获取)
   const [examPeriods, setExamPeriods] = useState<Record<string, string>>({});
@@ -97,6 +101,9 @@ export default function ExamPage() {
   const [showBatchUploadModal, setShowBatchUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [batchUploadLoading, setBatchUploadLoading] = useState(false);
+
+  // tool_user：多选考试下载报考学生 xlsx
+  const [selectedExamIds, setSelectedExamIds] = useState<number[]>([]);
 
   const loadData = async () => {
     try {
@@ -292,6 +299,54 @@ export default function ExamPage() {
       setError('下载失败，请重试');
     } finally {
       setDownloadLoading(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const DOWNLOAD_EXAM_STUDENTS_KEY = 'exam_students_download';
+
+  // tool_user：多选考试下载报考学生 xlsx（phy: download_exam_students）
+  const handleDownloadExamStudentsAttachments = async () => {
+    if (selectedExamIds.length === 0) {
+      setError('请至少选择一场考试');
+      return;
+    }
+    setDownloadLoading((prev) => ({ ...prev, [DOWNLOAD_EXAM_STUDENTS_KEY]: true }));
+    setError('');
+    try {
+      const data = await requestDownloadExamStudents(selectedExamIds);
+      const rawPath =
+        typeof data.data === 'string'
+          ? data.data
+          : data.data && typeof data.data === 'object' && 'file_path' in data.data
+            ? (data.data as { file_path?: string }).file_path
+            : undefined;
+      if (data.status === 0 && rawPath) {
+        const fileUrl = buildFileUrl(rawPath);
+        const downloadResponse = await fetch(fileUrl, {
+          method: 'GET',
+          headers: getAuthHeader(),
+        });
+        if (downloadResponse.ok) {
+          const blob = await downloadResponse.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `exam_students_${Date.now()}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        } else {
+          setError('文件下载失败');
+        }
+      } else {
+        setError(data.message || '获取下载链接失败');
+      }
+    } catch (err) {
+      console.error('下载报考学生异常:', err);
+      setError('下载失败，请重试');
+    } finally {
+      setDownloadLoading((prev) => ({ ...prev, [DOWNLOAD_EXAM_STUDENTS_KEY]: false }));
     }
   };
 
@@ -493,6 +548,47 @@ export default function ExamPage() {
     return matchesSearch && matchesPeriod && matchesType;
   });
 
+  const activeFilteredIds = filteredExams.map((e) => e.id);
+  const disabledFilteredIds = filteredDisabledExams.map((e) => e.id);
+  const allActiveSelected =
+    activeFilteredIds.length > 0 && activeFilteredIds.every((id) => selectedExamIds.includes(id));
+  const someActiveSelected =
+    activeFilteredIds.some((id) => selectedExamIds.includes(id)) && !allActiveSelected;
+  const allDisabledSelected =
+    showDisabled &&
+    disabledFilteredIds.length > 0 &&
+    disabledFilteredIds.every((id) => selectedExamIds.includes(id));
+  const someDisabledSelected =
+    showDisabled &&
+    disabledFilteredIds.some((id) => selectedExamIds.includes(id)) &&
+    !allDisabledSelected;
+
+  const toggleExamId = (id: number) => {
+    setSelectedExamIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllActive = () => {
+    const ids = filteredExams.map((e) => e.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selectedExamIds.includes(id));
+    if (allSelected) {
+      setSelectedExamIds((prev) => prev.filter((id) => !ids.includes(id)));
+    } else {
+      setSelectedExamIds((prev) => Array.from(new Set([...prev, ...ids])));
+    }
+  };
+
+  const toggleSelectAllDisabled = () => {
+    const ids = filteredDisabledExams.map((e) => e.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selectedExamIds.includes(id));
+    if (allSelected) {
+      setSelectedExamIds((prev) => prev.filter((id) => !ids.includes(id)));
+    } else {
+      setSelectedExamIds((prev) => Array.from(new Set([...prev, ...ids])));
+    }
+  };
+
   if (!canEdit) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -626,6 +722,28 @@ export default function ExamPage() {
                     <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                     下载
                   </ExcelExporter>
+                  {isToolUser && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadExamStudentsAttachments}
+                      disabled={
+                        selectedExamIds.length === 0 || !!downloadLoading[DOWNLOAD_EXAM_STUDENTS_KEY]
+                      }
+                      className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {downloadLoading[DOWNLOAD_EXAM_STUDENTS_KEY] ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                          下载中...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                          下载报考学生
+                        </>
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowAddModal(true)}
                     className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -698,10 +816,25 @@ export default function ExamPage() {
                   </p>
                 </div>
               ) : (
-                <div className="w-full rounded-lg overflow-hidden">
-                  <table className="w-full divide-y divide-gray-200 table-fixed">
+                <div className="w-full rounded-lg overflow-x-auto overflow-hidden">
+                  <table className="w-full min-w-[960px] divide-y divide-gray-200 table-fixed">
                     <thead className="bg-gray-50">
                       <tr>
+                        {isToolUser && (
+                          <th className="w-10 px-2 py-3 text-left align-middle">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                              checked={allActiveSelected}
+                              ref={(el) => {
+                                if (el) el.indeterminate = someActiveSelected;
+                              }}
+                              onChange={toggleSelectAllActive}
+                              disabled={activeFilteredIds.length === 0}
+                              aria-label="全选当前 Active 列表"
+                            />
+                          </th>
+                        )}
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Exam</th>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Code</th>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Type</th>
@@ -720,6 +853,17 @@ export default function ExamPage() {
                           className={`transition-colors ${openDropdown === exam.id ? 'bg-gray-50' : 'hover:bg-gray-50'
                             }`}
                         >
+                          {isToolUser && (
+                            <td className="px-2 py-4 align-middle">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                checked={selectedExamIds.includes(exam.id)}
+                                onChange={() => toggleExamId(exam.id)}
+                                aria-label={`选择 ${exam.name}`}
+                              />
+                            </td>
+                          )}
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
                           <td className="px-3 py-4 text-sm text-gray-900 break-words">{examTypes[String(exam.type)] ?? '-'}</td>
@@ -829,9 +973,24 @@ export default function ExamPage() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto rounded-lg overflow-hidden">
-                    <table className="w-full divide-y divide-gray-200 table-fixed">
+                    <table className="w-full min-w-[960px] divide-y divide-gray-200 table-fixed">
                       <thead className="bg-gray-50">
                         <tr>
+                          {isToolUser && (
+                            <th className="w-10 px-2 py-3 text-left align-middle">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                checked={allDisabledSelected}
+                                ref={(el) => {
+                                  if (el) el.indeterminate = someDisabledSelected;
+                                }}
+                                onChange={toggleSelectAllDisabled}
+                                disabled={disabledFilteredIds.length === 0}
+                                aria-label="全选当前 Disabled 列表"
+                              />
+                            </th>
+                          )}
                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Exam</th>
                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Code</th>
                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">Type</th>
@@ -851,6 +1010,17 @@ export default function ExamPage() {
                             className={`transition-colors opacity-75 ${openDropdown === exam.id ? 'bg-gray-50' : 'hover:bg-gray-50'
                               }`}
                           >
+                            {isToolUser && (
+                              <td className="px-2 py-4 align-middle">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                  checked={selectedExamIds.includes(exam.id)}
+                                  onChange={() => toggleExamId(exam.id)}
+                                  aria-label={`选择 ${exam.name}`}
+                                />
+                              </td>
+                            )}
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.name}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{exam.code}</td>
                             <td className="px-3 py-4 text-sm text-gray-900 break-words">{examTypes[String(exam.type)] ?? '-'}</td>

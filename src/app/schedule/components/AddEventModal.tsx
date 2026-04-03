@@ -446,6 +446,14 @@ export default function AddEventModal({
     return filtered;
   }, [scheduleData?.room_info, selectedDate, start, end, events, mode, initialEvent?.room_id, classroomOwnerMap]);
 
+  const topicSelectOptions = useMemo(() => {
+    if (!scheduleData?.class_topics) return [];
+    return Object.entries(scheduleData.class_topics as Record<string, string>).map(([id, name]) => ({
+      id,
+      name,
+    }));
+  }, [scheduleData?.class_topics]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDate) return;
@@ -1043,15 +1051,14 @@ export default function AddEventModal({
                               {scheduleData.class_topics[selectedTopic] || selectedTopic}
                             </p>
                           ) : (
-                            <select
+                            <SearchableSelect
+                              options={topicSelectOptions}
                               value={selectedTopic}
-                              onChange={(e) => setSelectedTopic(e.target.value)}
-                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-                            >
-                              {Object.entries(scheduleData.class_topics as Record<string, string>).map(([id, name]) => (
-                                <option key={id} value={id}>{name}</option>
-                              ))}
-                            </select>
+                              onValueChange={(v) => setSelectedTopic(v as string)}
+                              placeholder="请选择监考科目"
+                              searchPlaceholder="搜索科目..."
+                              className="w-full"
+                            />
                           )}
                         </div>
                       )}

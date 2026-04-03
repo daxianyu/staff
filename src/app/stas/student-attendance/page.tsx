@@ -93,14 +93,18 @@ export default function StudentAttendancePage() {
     }
   };
 
-  // 加载学生详细考勤信息
+  // 加载学生详细考勤信息（queryData 必须与上方「查询月份」一致，不能固定用当月）
   const loadStudentDetails = async (student: StudentAttendanceData) => {
     try {
       setDetailsLoading(true);
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-      const queryData = `${year}_${month}`;
+      const options = generateMonthOptions();
+      const opt = options.find((o) => o.value === selectedMonth);
+      const queryData = opt
+        ? `${opt.year}_${opt.month}`
+        : (() => {
+            const n = new Date();
+            return `${n.getFullYear()}_${n.getMonth() + 1}`;
+          })();
 
       const response = await getStudentAttendanceDetail(student.student_id, queryData) as ApiResponse<{ rows: AttendanceDetail[]; total: number }>;
       if (response.code === 200) {
@@ -133,7 +137,9 @@ export default function StudentAttendancePage() {
 
       options.push({
         value: monthValue,
-        label: `${year}年${month}月`
+        label: `${year}年${month}月`,
+        year,
+        month,
       });
     }
     return options;
