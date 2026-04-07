@@ -134,6 +134,12 @@ export interface SalesInfo {
   }>;
 }
 
+/** get_interview_config_table 行内已选房间 */
+export interface InterviewRoomListItem {
+  room_id: number;
+  room_info: string;
+}
+
 export interface InterviewConfig {
   record_id: number;           // 记录ID
   ref_day: string;             // 参考日期
@@ -141,7 +147,19 @@ export interface InterviewConfig {
   interview_desc: string;       // 面试描述
   create_time: string;          // 创建时间
   interview_day: string;        // 面试日期
+  /** 已选中的面试时间段（与 get_interview_time_select 的 interview_time 同体系） */
+  interviewer_time_list?: number[];
+  /** 已选中的会议室 */
+  interview_room_list?: InterviewRoomListItem[];
   [key: string]: any;
+}
+
+/** POST /api/sales/add_interview_config */
+export interface AddInterviewConfigParams {
+  interviewer_num: number;
+  exam_day: string; // yyyy-mm-dd
+  interview_desc: string;
+  interview_day: string; // yyyy-mm-dd
 }
 
 export interface InterviewTimeConfig {
@@ -152,8 +170,12 @@ export interface InterviewTimeConfig {
 }
 
 export interface InterviewRoomConfig {
-  record_id: number;             // 记录ID
-  room_id: number;               // 房间ID
+  /**
+   * get_interview_room 接口字段名为 record_id，实为 interview_room 表主键 id（非面试配置 record_id）。
+   * 从主表推算的列表无此主键时为 0，不可调删除接口。
+   */
+  record_id: number;
+  room_id: number;               // 房间槽位号 interview_room.room_id
   room_info: string;             // 房间信息
   create_time: string;            // 创建时间
   update_time: string;            // 更新时间
@@ -568,7 +590,7 @@ export const getInterviewConfigTable = async (): Promise<ApiResponse<{ rows: Int
 };
 
 // 添加面试的配置信息
-export const addInterviewConfig = async (params: Record<string, any>): Promise<ApiResponse<InterviewConfig>> => {
+export const addInterviewConfig = async (params: AddInterviewConfigParams): Promise<ApiResponse<InterviewConfig>> => {
   try {
     const url = `/api/sales/add_interview_config`;
     const { data } = await request<ApiEnvelope<InterviewConfig>>(url, {
@@ -604,12 +626,13 @@ export const deleteInterviewConfig = async (recordId: number): Promise<ApiRespon
 };
 
 // 获取面试的时间配置的select信息
+/** `interview_time` 为字符串数组：下标为时间段 key，元素为「HH:MM-HH:MM」展示文案 */
 export const getInterviewTimeSelect = async (recordId: number): Promise<ApiResponse<{
   ref_day: string;
   interview_desc: string;
   interviewer_num: number;
   interview_day: string;
-  interview_time: number[];
+  interview_time: string[];
 }>> => {
   try {
     const url = `/api/sales/get_interview_time_select/${recordId}`;
@@ -618,7 +641,7 @@ export const getInterviewTimeSelect = async (recordId: number): Promise<ApiRespo
       interview_desc: string;
       interviewer_num: number;
       interview_day: string;
-      interview_time: number[];
+      interview_time: string[];
     }>>(url, {
       method: 'GET',
     });
@@ -657,13 +680,16 @@ export const addInterviewTime = async (params: Record<string, any>): Promise<Api
   }
 };
 
-// 删除面试时间的配置
-export const deleteInterviewTime = async (recordId: number): Promise<ApiResponse<string>> => {
+// 删除面试时间的配置（与 add_interview_time 一致：面试配置 record_id + 时间段）
+export const deleteInterviewTime = async (
+  interviewConfigRecordId: number,
+  timeSlot: number,
+): Promise<ApiResponse<string>> => {
   try {
     const url = `/api/sales/del_interview_time`;
     const { data } = await request<ApiEnvelope<string>>(url, {
       method: 'POST',
-      body: { record_id: recordId },
+      body: { record_id: interviewConfigRecordId, time_slot: timeSlot },
     });
     return normalizeApiResponse(data);
   } catch (error) {

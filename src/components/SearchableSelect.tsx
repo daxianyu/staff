@@ -11,6 +11,25 @@ interface Option<T extends string | number> {
   name: string;
 }
 
+/** 面试时间段「HH:MM-HH:MM」：按左右段词头匹配，避免模糊分尾部杂项；整段再按边界包含（如搜 :20） */
+function matchesTimeSlotStyleLabel(label: string, searchRaw: string): boolean {
+  const q = searchRaw.trim().toLowerCase();
+  if (!q) return true;
+  const l = label.trim().toLowerCase();
+  if (!l) return false;
+
+  const parts = l.split('-').map((p) => p.trim());
+  if (parts.some((p) => p.startsWith(q))) return true;
+
+  if (!l.includes(q)) return false;
+  let i = 0;
+  while ((i = l.indexOf(q, i)) !== -1) {
+    if (i === 0 || l[i - 1] === '-' || l[i - 1] === ':') return true;
+    i += 1;
+  }
+  return false;
+}
+
 interface SearchableSelectProps<T extends string | number> {
   options: Option<T>[];
   value: T | T[];
@@ -24,6 +43,11 @@ interface SearchableSelectProps<T extends string | number> {
   clearable?: boolean;
   /** 多选时最多显示的已选数量，不传或 0 表示全部展示 */
   maxDisplayCount?: number;
+  /**
+   * 面试时间段等场景：按时段词头/边界匹配，搜 11、12 时减少无关项。
+   * 默认 false：整段文案 includes（仍为非模糊二值，去掉 cmdk 弱相关尾部）
+   */
+  strictTimeLabelSearch?: boolean;
 }
 
 export default function SearchableSelect<T extends string | number>({
@@ -37,22 +61,27 @@ export default function SearchableSelect<T extends string | number>({
   multiple = false,
   onSearch,
   clearable = false,
-  maxDisplayCount = 3
+  maxDisplayCount = 3,
+  strictTimeLabelSearch = false,
 }: SearchableSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Helper to compare values
   const isEqual = (a: T, b: T) => a === b;
 
+  const multiValues = multiple
+    ? ((Array.isArray(value) ? value : []) as T[])
+    : ([] as T[]);
+
   // 当前选中项
   const selectedOptions = multiple
-    ? options.filter(option => (value as T[]).includes(option.id))
+    ? options.filter((option) => multiValues.includes(option.id))
     : options.find(option => isEqual(option.id, value as T));
 
   // 处理选择
   const handleSelect = (selectedId: T) => {
     if (multiple) {
-      const currentValues = (value as T[]) || [];
+      const currentValues = multiValues;
       const exists = currentValues.includes(selectedId);
       const newValues = exists
         ? currentValues.filter(id => !isEqual(id, selectedId))
@@ -75,7 +104,7 @@ export default function SearchableSelect<T extends string | number>({
   // 移除多选中的项目
   const removeSelected = (idToRemove: T) => {
     if (multiple) {
-      const currentValues = value as T[];
+      const currentValues = multiValues;
       const newValues = currentValues.filter(id => !isEqual(id, idToRemove));
       onValueChange(newValues);
     }
@@ -95,7 +124,7 @@ export default function SearchableSelect<T extends string | number>({
 
   // 检查是否有值
   const hasValue = multiple
-    ? (value as T[]).length > 0
+    ? multiValues.length > 0
     : (typeof value === 'string' ? value !== '' : value !== -1);
 
   // 清除选择
@@ -217,7 +246,23 @@ export default function SearchableSelect<T extends string | number>({
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <Command className="w-full" shouldFilter={!onSearch}>
+          <Command
+            className="w-full"
+            shouldFilter={!onSearch}
+            filter={
+              onSearch
+                ? undefined
+                : (_itemValue, search, keywords) => {
+                    if (!search.trim()) return 1;
+                    const label = keywords?.[0] ?? '';
+                    const q = search.trim().toLowerCase();
+                    const ok = strictTimeLabelSearch
+                      ? matchesTimeSlotStyleLabel(label, search)
+                      : label.trim().toLowerCase().includes(q);
+                    return ok ? 1 : 0;
+                  }
+            }
+          >
             <Command.Input
               placeholder={searchPlaceholder}
               className="w-full px-3 py-2 text-sm border-b border-gray-200 focus:outline-none bg-transparent"
@@ -230,14 +275,22 @@ export default function SearchableSelect<T extends string | number>({
               </Command.Empty>
               {options.map((option) => {
                 const isSelected = multiple
-                  ? (value as T[]).includes(option.id)
+                  ? multiValues.includes(option.id)
                   : isEqual(option.id, value as T);
+                /** cmdk 用 value 做 data-value 与 onSelect 入参；用稳定 id，展示与搜索走 keywords（见 cmdk 文档） */
+                const itemValue = String(option.id);
+                /** 只传完整展示文案；过滤在 filter 内二值处理，不用 cmdk 模糊分 */
+                const itemKeywords = [option.name];
 
                 return (
                   <Command.Item
                     key={String(option.id)}
-                    value={`${option.id} ${option.name}`}
-                    onSelect={() => handleSelect(option.id)}
+                    value={itemValue}
+                    keywords={itemKeywords}
+                    onSelect={(selectedValue) => {
+                      const hit = options.find((o) => String(o.id) === selectedValue);
+                      if (hit) handleSelect(hit.id);
+                    }}
                     className="
                       relative flex items-center px-3 py-2 text-sm select-none cursor-pointer rounded
                       data-[selected]:bg-blue-50 data-[selected]:text-blue-900

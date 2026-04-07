@@ -99,6 +99,8 @@ export default function EditExamPage() {
   // 科目选择相关状态
   const [showTopicDropdown, setShowTopicDropdown] = useState(false);
 
+  const [examTypes, setExamTypes] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!canEdit || !examId) return;
     const fetchData = async () => {
@@ -120,6 +122,8 @@ export default function EditExamPage() {
           exam_time_2: ed.time_2 || 0,
           exam_time_3: ed.time_3 || 0,
         });
+
+        setExamTypes(resp.data.exam_types ?? {});
 
         // 处理价格变动数据
         if (resp.data.price_data) {
@@ -211,14 +215,17 @@ export default function EditExamPage() {
         if (resp.code === 200) {
           // 重新获取数据以获取新的ID
           const dataResp = await getExamEditInfo(examId);
-          if (dataResp.code === 200 && dataResp.data?.price_data) {
-            const formattedPriceChanges = dataResp.data.price_data.map((item: any) => ({
-              id: item.id,
-              date: item.time ? timestampToDateString(item.time) : '',
-              price: item.price !== undefined ? String(item.price) : '',
-              time: item.time || 0
-            }));
-            setPriceChanges(formattedPriceChanges);
+          if (dataResp.code === 200 && dataResp.data) {
+            setExamTypes(dataResp.data.exam_types ?? {});
+            if (dataResp.data.price_data) {
+              const formattedPriceChanges = dataResp.data.price_data.map((item: any) => ({
+                id: item.id,
+                date: item.time ? timestampToDateString(item.time) : '',
+                price: item.price !== undefined ? String(item.price) : '',
+                time: item.time || 0
+              }));
+              setPriceChanges(formattedPriceChanges);
+            }
           }
         } else {
           setError(resp.message || '添加价格变动失败');
@@ -722,14 +729,17 @@ export default function EditExamPage() {
                     <label className="block text-sm font-semibold text-gray-900 mb-2">考试类型</label>
                     <select
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
-                      value={form.exam_type}
+                      value={String(form.exam_type)}
                       onChange={(e) => setForm({ ...form, exam_type: Number(e.target.value) })}
                     >
-                      <option value={0}>Edexcel</option>
-                      <option value={1}>CIE</option>
-                      <option value={2}>AQA</option>
-                      <option value={4}>PHY</option>
-                      <option value={3}>其他</option>
+                      {Object.entries(examTypes).map(([id, name]) => (
+                        <option key={id} value={id}>{name}</option>
+                      ))}
+                      {!(String(form.exam_type) in examTypes) && (
+                        <option value={String(form.exam_type)}>
+                          未知类型 ({form.exam_type})
+                        </option>
+                      )}
                     </select>
                   </div>
 
