@@ -8,7 +8,9 @@ import {
   confirmStudentPay,
   type RepaymentRow,
 } from '@/services/auth';
+import { ExcelExporter } from '@/components/ExcelExporter';
 import {
+  ArrowDownTrayIcon,
   ArrowPathIcon,
   BanknotesIcon,
   ExclamationTriangleIcon,
@@ -89,6 +91,34 @@ export default function RepaymentsListPage() {
     );
   });
 
+  const repaymentsExportHeaders = [
+    'Student',
+    'Campus',
+    'Sales',
+    'Mentor',
+    'Mentor Leader',
+    'Year Fee',
+    'Start Time',
+    'Graduate Time',
+    'Paid',
+    'Unpaid',
+  ];
+  const repaymentsExportRows = filteredItems.map((row) => {
+    const unpaidYears = parseUnpaidYears(row.unpaid);
+    return [
+      row.student_name || '',
+      row.campus_name || '',
+      row.sales_person || '',
+      row.mentor || '',
+      row.mentor_leader || '',
+      row.year_fee || '',
+      row.start_time || '',
+      row.graduate_time || '',
+      formatPaid(row.paid),
+      unpaidYears.length > 0 ? unpaidYears.join(', ') : '-',
+    ];
+  });
+
   const openConfirm = (row: RepaymentRow, year: number) => {
     setConfirmRow(row);
     setConfirmYear(year);
@@ -166,14 +196,32 @@ export default function RepaymentsListPage() {
                 </button>
               )}
             </div>
-            <button
-              onClick={loadData}
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+              <ExcelExporter
+                config={{
+                  filename: '续费学生清单',
+                  sheets: [
+                    {
+                      name: '续费学生',
+                      headers: repaymentsExportHeaders,
+                      data: repaymentsExportRows,
+                    },
+                  ],
+                }}
+                disabled={loading || filteredItems.length === 0}
+              >
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                导出 Excel
+              </ExcelExporter>
+              <button
+                onClick={loadData}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
 

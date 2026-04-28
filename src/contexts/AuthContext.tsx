@@ -41,43 +41,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [baseRights, permissionOverrides]);
 
   useEffect(() => {
-    // 检查用户登录状态
     async function checkUserAuth() {
+      // 先从缓存快速恢复，避免 HMR 重挂载时短暂白屏
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+
+      if (!storedToken) {
+        // 本地没有 token，直接跳登录
+        setUser(null);
+        setLoading(false);
+        router.push('/login');
+        return;
+      }
+
+      // 有 token：先用缓存 user 快速填充，让页面立即可用
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser) as UserInfo);
+        } catch {
+          // 缓存损坏，忽略
+        }
+      }
+      setLoading(false);
+
+      // 后台异步校验 token 是否仍然有效
       try {
-        setLoading(true);
-        
-        // 尝试从API获取用户信息
         const response = await authService.getUserInfo();
-        
         if (response.code === 200 && response.data) {
-          // API返回了用户信息，用户已登录
           const userData = response.data as UserInfo;
           setUser(userData);
           localStorage.setItem('user', JSON.stringify(userData));
-          
-          // 根据用户类型进行重定向检查
           await handleUserRedirect(userData, router);
         } else {
-          // API返回失败，用户未登录，清除本地信息并跳转到登录页
+          // 后端明确告知未授权（非网络错误）——清除并跳登录
           setUser(null);
           localStorage.removeItem('user');
           localStorage.removeItem('token');
           router.push('/login');
         }
       } catch (error) {
-        console.error('检查登录状态失败:', error);
-        // 出错时也认为用户未登录
-        setUser(null);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        router.push('/login');
-      } finally {
-        setLoading(false);
+        // 网络抖动 / 请求失败：保留本地 token，不强制登出
+        // 用户下次操作时如果 token 真的过期，后端会返回 401，届时再清除
+        console.warn('校验登录状态时网络异常，保留本地会话:', error);
       }
     }
-    
+
     checkUserAuth();
-  }, [router]);
+    // 只在首次挂载时检查，移除 router 依赖避免导航时重复触发
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = useCallback(async (username: string, password: string) => {
     try {
@@ -297,6 +309,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Student Info：operation_right=27（core_user 已在上方直接放行）
     if (permission === PERMISSIONS.VIEW_STUDENT_INFO) {
       return operationRights.includes(OPERATION_RIGHTS.STUDENT_INFO);
+    }
+
+    // 考试标签生成：operation_right=29（core_user 已在上方直接放行）
+    if (permission === PERMISSIONS.GEN_EXAM_LABEL) {
+      return operationRights.some((r) => Number(r) === OPERATION_RIGHTS.EXAM_LABEL_GEN);
     }
 
     // Notice Board 查看 - 所有 staff 可访问

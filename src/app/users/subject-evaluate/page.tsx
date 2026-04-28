@@ -8,7 +8,6 @@ import {
   getOtherEvaluate, 
   changeEvaluate,
   type SubjectEvaluateItem,
-  type SubjectEvaluateResponse 
 } from '@/services/auth';
 import { 
   PencilIcon, 
@@ -20,6 +19,8 @@ import {
 export default function SubjectEvaluatePage() {
   const { user, hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState<'owner' | 'other'>('owner');
+  /** 我填写/他人评价列表内按是否导师角色细分 */
+  const [mentorTab, setMentorTab] = useState<'all' | 'mentor' | 'subject'>('all');
   const [ownerData, setOwnerData] = useState<SubjectEvaluateItem[]>([]);
   const [otherData, setOtherData] = useState<SubjectEvaluateItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -121,6 +122,16 @@ export default function SubjectEvaluatePage() {
 
   const currentData = activeTab === 'owner' ? ownerData : otherData;
 
+  const filteredData = currentData.filter((item) => {
+    if (activeTab !== 'owner') return true;
+    if (mentorTab === 'mentor') return item.is_mentor === 1;
+    if (mentorTab === 'subject') return item.is_mentor === 0;
+    return true;
+  });
+
+  const mentorCount = ownerData.filter((item) => item.is_mentor === 1).length;
+  const subjectCount = ownerData.filter((item) => item.is_mentor === 0).length;
+
   if (!canView) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -146,7 +157,10 @@ export default function SubjectEvaluatePage() {
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex">
               <button
-                onClick={() => setActiveTab('owner')}
+                onClick={() => {
+                  setActiveTab('owner');
+                  setMentorTab('all');
+                }}
                 className={`py-4 px-6 text-sm font-medium border-b-2 ${
                   activeTab === 'owner'
                     ? 'border-blue-500 text-blue-600'
@@ -156,7 +170,10 @@ export default function SubjectEvaluatePage() {
                 需要我填写的 ({ownerData.length})
               </button>
               <button
-                onClick={() => setActiveTab('other')}
+                onClick={() => {
+                  setActiveTab('other');
+                  setMentorTab('all');
+                }}
                 className={`py-4 px-6 text-sm font-medium border-b-2 ${
                   activeTab === 'other'
                     ? 'border-blue-500 text-blue-600'
@@ -167,6 +184,48 @@ export default function SubjectEvaluatePage() {
               </button>
             </nav>
           </div>
+
+          {/* 仅「需要我填写的」：按导师 / 学科老师角色筛选 */}
+          {activeTab === 'owner' && (
+            <div className="px-4 pt-3 pb-2 border-b border-gray-100">
+              <p className="text-xs text-gray-500 mb-2">按填写角色</p>
+              <div className="flex flex-wrap gap-1 border-b border-gray-200 -mb-px">
+                <button
+                  type="button"
+                  onClick={() => setMentorTab('all')}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+                    mentorTab === 'all'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  全部 ({ownerData.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMentorTab('mentor')}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+                    mentorTab === 'mentor'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  作为导师 ({mentorCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMentorTab('subject')}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+                    mentorTab === 'subject'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  作为学科老师 ({subjectCount})
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 数据表格 */}
@@ -217,7 +276,7 @@ export default function SubjectEvaluatePage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {currentData.map((item) => (
+                  {filteredData.map((item) => (
                     <tr key={item.evaluate_id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-2 py-4 text-sm text-gray-900 max-w-[180px] break-words">
                         {item.evaluate_title || '-'}
@@ -264,7 +323,7 @@ export default function SubjectEvaluatePage() {
                 </tbody>
               </table>
               
-              {currentData.length === 0 && (
+              {filteredData.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-gray-500">暂无数据</p>
                 </div>

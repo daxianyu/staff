@@ -33,5 +33,6 @@ export * from './modules/rights';
 export * from './modules/archives';
 export * from './modules/notice';
 export * from './modules/promotion';
+export * from './modules/phyFrontPage';
 export { type ApiEnvelope, type ApiResponse, type SelectOption } from './types';
 export { getAuthHeader } from './apiClient';

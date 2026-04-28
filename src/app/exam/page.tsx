@@ -12,6 +12,7 @@ import {
   deleteExam,
   getExamSelectInfo,
   requestDownloadExamStudents,
+  genExamLabelFile,
   type ExamListItem,
   type AddExamParams,
   getAuthHeader,
@@ -35,10 +36,40 @@ import {
 import { ExcelExporter } from '@/components/ExcelExporter';
 import { buildFileUrl } from '@/config/env';
 
+/** 从接口返回的 file_path 取文件名（支持 / 与 \\，去掉 query/hash） */
+function basenameFromFilePath(path: string): string {
+  if (!path) return '';
+  const normalized = path.trim().replace(/\\/g, '/');
+  const noQuery = (normalized.split(/[?#]/)[0] ?? '').split('/').filter(Boolean).pop() || '';
+  try {
+    return decodeURIComponent(noQuery);
+  } catch {
+    return noQuery;
+  }
+}
+
+function parseContentDispositionFilename(header: string | null): string | null {
+  if (!header) return null;
+  const utf = /filename\*=(?:UTF-8''|)([^;\n]+)/i.exec(header);
+  if (utf?.[1]) {
+    try {
+      return decodeURIComponent(utf[1].trim().replace(/^["']|["']$/g, ''));
+    } catch {
+      return utf[1];
+    }
+  }
+  const ascii = /filename=(?:"([^"]+)"|([^;\s]+))/i.exec(header);
+  if (ascii?.[1] || ascii?.[2]) return (ascii[1] || ascii[2]).trim();
+  return null;
+}
+
 export default function ExamPage() {
   const router = useRouter();
   const { hasPermission, user } = useAuth();
+  const canAccessPage =
+    hasPermission(PERMISSIONS.EDIT_EXAMS) || hasPermission(PERMISSIONS.GEN_EXAM_LABEL);
   const canEdit = hasPermission(PERMISSIONS.EDIT_EXAMS);
+  const canGenLabel = hasPermission(PERMISSIONS.GEN_EXAM_LABEL);
   const isCoreUser = user && (Number((user as any).core_user) === 1 || (user as any).core_user === true);
   const isToolUser =
     (user as { tool_user?: boolean | number } | null)?.tool_user === true ||
@@ -105,6 +136,12 @@ export default function ExamPage() {
   // tool_user：多选考试下载报考学生 xlsx
   const [selectedExamIds, setSelectedExamIds] = useState<number[]>([]);
 
+  // 生成考试标签（operation_right=29 / core）
+  const [showLabelModal, setShowLabelModal] = useState(false);
+  const [labelFile, setLabelFile] = useState<File | null>(null);
+  const [labelSubmitting, setLabelSubmitting] = useState(false);
+  const [labelError, setLabelError] = useState('');
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -139,10 +176,13 @@ export default function ExamPage() {
 
 
   useEffect(() => {
+    if (!canAccessPage) return;
     if (canEdit) {
       loadData();
+    } else {
+      setLoading(false);
     }
-  }, [canEdit]);
+  }, [canAccessPage, canEdit]);
 
 
   const handleAddExam = async () => {
@@ -422,6 +462,91 @@ export default function ExamPage() {
     }
   };
 
+  const handleLabelFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const allowedTypes = [
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/csv',
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        setLabelError('请选择有效的Excel文件 (.xls, .xlsx) 或CSV文件');
+        setLabelFile(null);
+        event.target.value = '';
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setLabelError('文件大小不能超过10MB');
+        setLabelFile(null);
+        event.target.value = '';
+        return;
+      }
+      setLabelFile(file);
+      setLabelError('');
+    }
+  };
+
+  const handleGenLabelSubmit = async () => {
+    if (!labelFile) {
+      setLabelError('请选择要上传的Excel文件');
+      return;
+    }
+    setLabelSubmitting(true);
+    setLabelError('');
+    try {
+      const res = await genExamLabelFile(labelFile);
+      if (res.code !== 200 || res.data === undefined || res.data === null) {
+        setLabelError(res.message || '生成失败');
+        return;
+      }
+      // API: { data: { file_path: "/static/gen_path/labels_xxx.pdf" } }
+      const payload = res.data as string | { file_path?: string; url?: string };
+      const rawPath =
+        typeof payload === 'string'
+          ? payload
+          : payload.file_path ?? payload.url;
+      if (!rawPath) {
+        setLabelError('未返回文件地址');
+        return;
+      }
+      const fileUrl = buildFileUrl(rawPath);
+      const downloadResponse = await fetch(fileUrl, {
+        method: 'GET',
+        headers: getAuthHeader(),
+      });
+      if (!downloadResponse.ok) {
+        setLabelError('文件下载失败');
+        return;
+      }
+      const cdName = parseContentDispositionFilename(
+        downloadResponse.headers.get('Content-Disposition')
+      );
+      const pathBasename = basenameFromFilePath(rawPath);
+      let downloadName =
+        pathBasename || cdName || `exam_labels_${Date.now()}.pdf`;
+      if (pathBasename && /\.pdf$/i.test(pathBasename) && cdName && !/\.pdf$/i.test(cdName)) {
+        downloadName = pathBasename;
+      }
+      const blob = await downloadResponse.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setShowLabelModal(false);
+      setLabelFile(null);
+    } catch (e) {
+      console.error(e);
+      setLabelError('生成或下载失败，请重试');
+    } finally {
+      setLabelSubmitting(false);
+    }
+  };
+
   // 分页相关计算函数
   const getPaginatedData = () => {
     let allData = [
@@ -589,7 +714,121 @@ export default function ExamPage() {
     }
   };
 
-  if (!canEdit) {
+  const labelModalEl =
+    showLabelModal ? (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex items-center justify-center min-h-screen px-4">
+          <div
+            className="fixed inset-0 bg-black/50 transition-opacity"
+            onClick={() => {
+              if (!labelSubmitting) {
+                setShowLabelModal(false);
+                setLabelFile(null);
+                setLabelError('');
+              }
+            }}
+          />
+          <div className="relative bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg">
+            <div className="absolute top-0 right-0 pt-4 pr-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!labelSubmitting) {
+                    setShowLabelModal(false);
+                    setLabelFile(null);
+                    setLabelError('');
+                  }
+                }}
+                className="bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-violet-100 rounded-lg">
+                  <TagIcon className="h-5 w-5 text-violet-700" />
+                </div>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">生成考试标签</h3>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    选择Excel文件 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <div className="space-y-1 text-center">
+                      <DocumentArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="label-file-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                        >
+                          <span>点击选择文件</span>
+                          <input
+                            id="label-file-upload"
+                            name="label-file-upload"
+                            type="file"
+                            className="sr-only"
+                            accept=".xls,.xlsx,.csv"
+                            onChange={handleLabelFileSelect}
+                          />
+                        </label>
+                        <p className="pl-1">或拖拽文件到此处</p>
+                      </div>
+                      <p className="text-xs text-gray-500">支持 .xls, .xlsx, .csv，最大 10MB</p>
+                      {labelFile && (
+                        <p className="text-sm text-violet-800 font-medium">已选择: {labelFile.name}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {labelError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-center">
+                      <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-2" />
+                      <p className="text-red-700 text-sm">{labelError}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 pt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!labelSubmitting) {
+                      setShowLabelModal(false);
+                      setLabelFile(null);
+                      setLabelError('');
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenLabelSubmit}
+                  disabled={!labelFile || labelSubmitting}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-violet-600 border border-transparent rounded-md hover:bg-violet-700 disabled:bg-violet-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {labelSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      生成中...
+                    </div>
+                  ) : (
+                    '生成并下载'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  if (!canAccessPage) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -612,9 +851,49 @@ export default function ExamPage() {
     );
   }
 
+  if (!canEdit && canGenLabel) {
+    return (
+      <>
+        <div className="min-h-screen bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <ClipboardDocumentListIcon className="h-8 w-8 text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Exam Management</h1>
+                  <p className="text-gray-600 mt-1">上传考试信息 Excel，生成考试标签文件</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-8 max-w-xl">
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
+                根据上传表格中的考试信息生成标签文件，生成完成后将自动下载。
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLabelModal(true);
+                  setLabelError('');
+                }}
+                className="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+              >
+                <TagIcon className="h-5 w-5 mr-2" />
+                生成考试标签
+              </button>
+            </div>
+          </div>
+        </div>
+        {labelModalEl}
+      </>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 页面标题 */}
         <div className="mb-8">
           <div className="flex items-center gap-3">
@@ -668,128 +947,144 @@ export default function ExamPage() {
           <>
             {/* 搜索和操作栏 */}
             <div className="bg-white rounded-lg shadow mb-6 p-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                  <div className="relative flex-1 max-w-md">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search by name, code, location, or topic..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <select
-                    value={filterPeriod}
-                    onChange={(e) => setFilterPeriod(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">All Periods</option>
-                    {Object.entries(examPeriods).map(([id, name]) => (
-                      <option key={id} value={id}>{name}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">All Types</option>
-                    {Object.entries(examTypes).map(([id, name]) => (
-                      <option key={id} value={id}>{name}</option>
-                    ))}
-                  </select>
-
-                  <label className="inline-flex items-center text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                      checked={showDisabled}
-                      onChange={(e) => setShowDisabled(e.target.checked)}
-                    />
-                    <span className="ml-2">Show disabled</span>
-                  </label>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <div className="relative w-full max-w-md flex-1">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, code, location, or topic..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
 
-                <div className="flex gap-3">
-                  <ExcelExporter
-                    config={examsExportConfig()}
-                    disabled={filteredExams.length === 0 && (!showDisabled || filteredDisabledExams.length === 0)}
-                  >
-                    <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-                    下载
-                  </ExcelExporter>
-                  {isToolUser && (
-                    <button
-                      type="button"
-                      onClick={handleDownloadExamStudentsAttachments}
-                      disabled={
-                        selectedExamIds.length === 0 || !!downloadLoading[DOWNLOAD_EXAM_STUDENTS_KEY]
-                      }
-                      className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {downloadLoading[DOWNLOAD_EXAM_STUDENTS_KEY] ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                          下载中...
-                        </>
-                      ) : (
-                        <>
-                          <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-                          下载报考学生
-                        </>
-                      )}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <PlusIcon className="h-5 w-5 mr-2" />
-                    Add Exam
-                  </button>
-                  <button
-                    onClick={() => setShowBatchUploadModal(true)}
-                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <DocumentArrowUpIcon className="h-5 w-5 mr-2" />
-                    批量导入
-                  </button>
-                </div>
+                <select
+                  value={filterPeriod}
+                  onChange={(e) => setFilterPeriod(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full min-w-[8rem] rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 sm:w-auto"
+                >
+                  <option value="">All Periods</option>
+                  {Object.entries(examPeriods).map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full min-w-[8rem] rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 sm:w-auto"
+                >
+                  <option value="">All Types</option>
+                  {Object.entries(examTypes).map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+
+                <label className="inline-flex shrink-0 items-center text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                    checked={showDisabled}
+                    onChange={(e) => setShowDisabled(e.target.checked)}
+                  />
+                  <span className="ml-2">Show disabled</span>
+                </label>
               </div>
-              {/* 考试列表 CSV 下载按钮 - 仅 core_user 可见 */}
-              {isCoreUser && (
-              <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200 mt-4 justify-end">
-                {[
-                  { type: 'edexcel', label: 'Edexcel' },
-                  { type: 'cie', label: 'CIE' },
-                  { type: 'aqa', label: 'AQA' },
-                  { type: 'other', label: 'Other' },
-                  { type: 'all', label: 'All' },
-                ].map(({ type, label }) => (
+
+              <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <ExcelExporter
+                  config={examsExportConfig()}
+                  disabled={filteredExams.length === 0 && (!showDisabled || filteredDisabledExams.length === 0)}
+                  className="!w-44 !justify-center !bg-indigo-600 !px-3 hover:!bg-indigo-700 disabled:!bg-indigo-400"
+                >
+                  <ArrowDownTrayIcon className="mr-2 h-5 w-5 shrink-0" />
+                  下载
+                </ExcelExporter>
+                {isToolUser && (
                   <button
-                    key={type}
-                    onClick={() => handleDownloadExamCsv(type)}
-                    disabled={downloadLoading[`exam_${type}`]}
-                    className="flex items-center px-2 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    type="button"
+                    title={selectedExamIds.length === 0 ? '请先在列表中勾选考试' : undefined}
+                    onClick={handleDownloadExamStudentsAttachments}
+                    disabled={
+                      selectedExamIds.length === 0 || !!downloadLoading[DOWNLOAD_EXAM_STUDENTS_KEY]
+                    }
+                    className="inline-flex w-44 items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {downloadLoading[`exam_${type}`] ? (
+                    {downloadLoading[DOWNLOAD_EXAM_STUDENTS_KEY] ? (
                       <>
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
-                        下载中
+                        <div className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white" />
+                        下载中…
                       </>
                     ) : (
                       <>
-                        <ArrowDownTrayIcon className="h-3.5 w-3.5 mr-1" />
-                        Download {label}
+                        <ArrowDownTrayIcon className="mr-2 h-5 w-5 shrink-0" />
+                        下载报考学生
                       </>
                     )}
                   </button>
-                ))}
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex w-44 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700"
+                >
+                  <PlusIcon className="mr-2 h-5 w-5 shrink-0" />
+                  Add Exam
+                </button>
+                {canGenLabel && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLabelModal(true);
+                      setLabelError('');
+                    }}
+                    className="inline-flex w-44 items-center justify-center rounded-lg bg-violet-600 px-3 py-2 text-sm text-white transition-colors hover:bg-violet-700"
+                  >
+                    <TagIcon className="mr-2 h-5 w-5 shrink-0" />
+                    生成考试标签
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowBatchUploadModal(true)}
+                  className="inline-flex w-44 items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm text-white transition-colors hover:bg-emerald-700"
+                >
+                  <DocumentArrowUpIcon className="mr-2 h-5 w-5 shrink-0" />
+                  批量导入
+                </button>
               </div>
+
+              {isCoreUser && (
+                <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-gray-200 pt-4">
+                  {[
+                    { type: 'edexcel', label: 'Edexcel' },
+                    { type: 'cie', label: 'CIE' },
+                    { type: 'aqa', label: 'AQA' },
+                    { type: 'other', label: 'Other' },
+                    { type: 'all', label: 'All' },
+                  ].map(({ type, label }) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => handleDownloadExamCsv(type)}
+                      disabled={downloadLoading[`exam_${type}`]}
+                      className="flex items-center rounded-md bg-indigo-600 px-2 py-1.5 text-xs text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-400"
+                    >
+                      {downloadLoading[`exam_${type}`] ? (
+                        <>
+                          <div className="mr-1 h-3 w-3 animate-spin rounded-full border-b-2 border-white" />
+                          下载中
+                        </>
+                      ) : (
+                        <>
+                          <ArrowDownTrayIcon className="mr-1 h-3.5 w-3.5" />
+                          Download {label}
+                        </>
+                      )}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
@@ -1128,7 +1423,7 @@ export default function ExamPage() {
                     <ExcelExporter
                       config={firstFeeExportConfig()}
                       disabled={totalRecords === 0}
-                      className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="inline-flex items-center px-3 py-1.5 text-sm !bg-indigo-600 text-white rounded-md hover:!bg-indigo-700 disabled:!bg-indigo-400 disabled:cursor-not-allowed"
                     >
                       <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
                       下载当前
@@ -1138,7 +1433,7 @@ export default function ExamPage() {
                       <button
                         onClick={() => handleDownload('0')}
                         disabled={downloadLoading['0']}
-                        className="flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-colors"
                       >
                         {downloadLoading['0'] ? (
                           <>
@@ -1155,7 +1450,7 @@ export default function ExamPage() {
                       <button
                         onClick={() => handleDownload('1')}
                         disabled={downloadLoading['1']}
-                        className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-colors"
                       >
                         {downloadLoading['1'] ? (
                           <>
@@ -1172,7 +1467,7 @@ export default function ExamPage() {
                       <button
                         onClick={() => handleDownload('2')}
                         disabled={downloadLoading['2']}
-                        className="flex items-center px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-colors"
                       >
                         {downloadLoading['2'] ? (
                           <>
@@ -1474,8 +1769,8 @@ export default function ExamPage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <DocumentArrowUpIcon className="h-5 w-5 text-green-600" />
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <DocumentArrowUpIcon className="h-5 w-5 text-emerald-700" />
                     </div>
                     <h3 className="text-lg leading-6 font-medium text-gray-900">
                       批量导入考试
@@ -1511,7 +1806,7 @@ export default function ExamPage() {
                             支持 .xls, .xlsx, .csv 文件，最大 10MB
                           </p>
                           {selectedFile && (
-                            <p className="text-sm text-green-600 font-medium">
+                            <p className="text-sm text-emerald-800 font-medium">
                               已选择: {selectedFile.name}
                             </p>
                           )}
@@ -1544,7 +1839,7 @@ export default function ExamPage() {
                     <button
                       onClick={handleBatchUpload}
                       disabled={!selectedFile || batchUploadLoading}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-md hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed transition-colors"
                     >
                       {batchUploadLoading ? (
                         <div className="flex items-center justify-center">
@@ -1613,6 +1908,8 @@ export default function ExamPage() {
         )}
       </div>
     </div>
+    {labelModalEl}
+    </>
   );
 }
 

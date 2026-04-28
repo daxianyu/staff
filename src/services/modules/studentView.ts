@@ -1146,3 +1146,30 @@ export const requestDownloadExamStudents = async (
   });
   return response.json();
 };
+
+/** POST /api/exam/gen_label_file — multipart 字段名 file；成功时 data: { file_path: string }，多为 PDF（operation_right=29 或 core） */
+export const genExamLabelFile = async (
+  file: File
+): Promise<ApiResponse<{ file_path: string } | string>> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch('/api/exam/gen_label_file', {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: formData,
+    });
+    const data = await response.json();
+    return {
+      code: data.status === 0 ? 200 : 400,
+      message: data.message || '',
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('生成考试标签失败:', error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : '生成考试标签失败',
+    };
+  }
+};

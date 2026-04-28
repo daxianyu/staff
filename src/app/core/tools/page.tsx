@@ -79,11 +79,11 @@ const tools: Tool[] = [
     description: '在remarking收费的时候 由于价格每个考试局和类型不一样 价格也不一样 所以需要对费用进行配置',
     key: 'remark_conf',
   },
-  {
-    name: '权限复制',
-    description: '新来一个老师需要的权限跟另外一个一样，需要直接复制对应老师的权限',
-    key: 'copy_right',
-  },
+  // {
+  //   name: '权限复制',
+  //   description: '新来一个老师需要的权限跟另外一个一样，需要直接复制对应老师的权限',
+  //   key: 'copy_right',
+  // },
   {
     name: '配置report exam report开放时间',
     description: '开放exam report的时间 可以让学生查看自己的所有的成绩报告',
@@ -210,7 +210,7 @@ export default function ToolsOverviewPage() {
       <CleanCacheModal isOpen={openModal === 'clean_cache'} onClose={handleCloseModal} />
       <DoubleClassModal isOpen={openModal === 'double_class'} onClose={handleCloseModal} />
       <RemarkConfModal isOpen={openModal === 'remark_conf'} onClose={handleCloseModal} />
-      <CopyRightModal isOpen={openModal === 'copy_right'} onClose={handleCloseModal} />
+      {/* <CopyRightModal isOpen={openModal === 'copy_right'} onClose={handleCloseModal} /> */}
       <ReportTimeModal isOpen={openModal === 'report_time'} onClose={handleCloseModal} />
       <StartTimeModal isOpen={openModal === 'start_time'} onClose={handleCloseModal} />
       <FreeSearchModal isOpen={openModal === 'free_search'} onClose={handleCloseModal} />

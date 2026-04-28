@@ -265,6 +265,11 @@ export class MenuFilter {
       return operationRights.includes(OPERATION_RIGHTS.STUDENT_INFO);
     }
 
+    // 考试标签生成：operation_right=29（core_user 已在上方直接放行）
+    if (permission === PERMISSIONS.GEN_EXAM_LABEL) {
+      return operationRights.some((r) => Number(r) === OPERATION_RIGHTS.EXAM_LABEL_GEN);
+    }
+
     // 需要 operation_right为26 或 core_user=1 的权限 (Notice Board 编辑)
     if (permission === PERMISSIONS.EDIT_NOTICE_BOARD) {
       return operationRights.includes(OPERATION_RIGHTS.NOTICE_BOARD) || isCoreUser;
@@ -590,14 +595,14 @@ export const defaultMenuConfig: MenuItem[] = [
     key: 'exams',
     label: 'Exam Management',
     icon: 'clipboard-document-list',
-    requiredPermissions: ['edit_exams', PERMISSIONS.ENTER_GRADES, PERMISSIONS.VIEW_WITHDRAWAL_OVERVIEW, PERMISSIONS.VIEW_LATE_CASHIN_OVERVIEW, PERMISSIONS.VIEW_REMARK_OVERVIEW],
+    requiredPermissions: ['edit_exams', PERMISSIONS.GEN_EXAM_LABEL, PERMISSIONS.ENTER_GRADES, PERMISSIONS.VIEW_WITHDRAWAL_OVERVIEW, PERMISSIONS.VIEW_LATE_CASHIN_OVERVIEW, PERMISSIONS.VIEW_REMARK_OVERVIEW],
     children: [
       {
         key: 'exams-list',
         label: 'Exam List',
         path: '/exam',
         icon: 'clipboard-document-list',
-        requiredPermissions: ['edit_exams'],
+        requiredPermissions: ['edit_exams', PERMISSIONS.GEN_EXAM_LABEL],
       },
       {
         key: 'enter-exam-grades',
@@ -790,6 +795,13 @@ export const defaultMenuConfig: MenuItem[] = [
         path: '/front-page-admin/front-page',
         icon: 'home',
         requiredPermissions: [PERMISSIONS.EDIT_FRONT_PAGE],
+      },
+      {
+        key: 'phy-front-page-admin',
+        label: 'PHY Front Page',
+        path: '/phy/front-page-admin',
+        icon: 'home',
+        requiredPermissions: [PERMISSIONS.EDIT_PHY_FRONT_PAGE],
       },
     ],
   },

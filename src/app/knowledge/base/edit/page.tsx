@@ -294,7 +294,7 @@ export default function KnowledgeEditPage() {
       const response = await getArticleInfo(articleId);
       if (response.code === 200 && response.data) {
         const articleData = response.data;
-        if (articleData.author !== user?.id) {
+        if (user == null || Number(articleData.author) !== Number(user.id)) {
           setError('只有作者本人才能编辑文章');
           setLoading(false);
           return;

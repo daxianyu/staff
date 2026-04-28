@@ -56,6 +56,8 @@ export default function EnterExamGradesPage() {
   const [detailLoading, setDetailLoading] = useState(true);
   const [examData, setExamData] = useState<EnterGradesData | null>(null);
   const [evaluateList, setEvaluateList] = useState<ExamEvaluateItem[]>([]);
+  /** 评语列表按是否导师角色筛选 */
+  const [evaluateMentorFilter, setEvaluateMentorFilter] = useState<'all' | 'mentor' | 'subject'>('all');
   const [activeTab, setActiveTab] = useState<'students' | 'evaluates'>('students');
   
   // 学生成绩编辑状态
@@ -83,7 +85,7 @@ export default function EnterExamGradesPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Grade 选项
-  const gradeOptions = ['A*', 'A', 'B', 'C', 'D', 'E', 'U', 'X No result', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  const gradeOptions = ['A*', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'U', 'X No result', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
   const filteredExamList = examList.filter((exam) => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -95,6 +97,15 @@ export default function EnterExamGradesPage() {
 
   const hasListFilters =
     !!searchTerm.trim() || filterType !== '' || filterPeriod !== '';
+
+  const filteredEvaluates = evaluateList.filter((item) => {
+    if (evaluateMentorFilter === 'mentor') return String(item.is_mentor) === '1';
+    if (evaluateMentorFilter === 'subject') return String(item.is_mentor) !== '1';
+    return true;
+  });
+
+  const evaluateMentorCount = evaluateList.filter((item) => String(item.is_mentor) === '1').length;
+  const evaluateSubjectCount = evaluateList.filter((item) => String(item.is_mentor) !== '1').length;
 
   // 加载列表数据
   const loadListData = async () => {
@@ -212,6 +223,13 @@ export default function EnterExamGradesPage() {
       loadListData();
     }
   }, [searchParams, canView]);
+
+  // 进入不同考试详情时重置评语角色筛选
+  useEffect(() => {
+    if (examId) {
+      setEvaluateMentorFilter('all');
+    }
+  }, [examId]);
 
   if (!canView) {
     return (
@@ -525,7 +543,10 @@ export default function EnterExamGradesPage() {
                   学生成绩 ({examData.exam_students.length})
                 </button>
                 <button
-                  onClick={() => setActiveTab('evaluates')}
+                  onClick={() => {
+                    setActiveTab('evaluates');
+                    setEvaluateMentorFilter('all');
+                  }}
                   className={`px-6 py-3 text-sm font-medium border-b-2 ${
                     activeTab === 'evaluates'
                       ? 'border-blue-500 text-blue-600'
@@ -677,6 +698,44 @@ export default function EnterExamGradesPage() {
             {/* 评语列表标签页 */}
             {activeTab === 'evaluates' && (
               <div className="p-6">
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2">按填写角色</p>
+                  <div className="flex flex-wrap gap-1 border-b border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => setEvaluateMentorFilter('all')}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+                        evaluateMentorFilter === 'all'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      全部 ({evaluateList.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEvaluateMentorFilter('mentor')}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+                        evaluateMentorFilter === 'mentor'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      作为导师 ({evaluateMentorCount})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEvaluateMentorFilter('subject')}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+                        evaluateMentorFilter === 'subject'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      作为学科老师 ({evaluateSubjectCount})
+                    </button>
+                  </div>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -702,14 +761,14 @@ export default function EnterExamGradesPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {evaluateList.length === 0 ? (
+                      {filteredEvaluates.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                            暂无评语
+                            {evaluateList.length === 0 ? '暂无评语' : '当前筛选下暂无评语'}
                           </td>
                         </tr>
                       ) : (
-                        evaluateList.map((item) => (
+                        filteredEvaluates.map((item) => (
                           <tr key={item.record_id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                               {item.student_name}

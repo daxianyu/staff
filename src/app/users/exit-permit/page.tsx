@@ -24,6 +24,42 @@ import {
 } from '@heroicons/react/24/outline';
 import SearchableSelect from '@/components/SearchableSelect';
 
+/** 将接口返回的日期时间拆成两行展示（支持 `YYYY-MM-DD HH:mm:ss` 与 ISO）；无有效数据时单行 `-` */
+function splitDateTimeParts(raw: unknown): { date: string; time: string } {
+  if (raw == null) return { date: '-', time: '' };
+  const s = typeof raw === 'string' ? raw.trim() : String(raw).trim();
+  if (!s) return { date: '-', time: '' };
+  if (s.includes('T')) {
+    const [d, rest = ''] = s.split('T');
+    let time = rest.replace(/Z$/i, '').trim();
+    const dot = time.indexOf('.');
+    if (dot >= 0) time = time.slice(0, dot);
+    const datePart = (d && d.trim()) || '-';
+    return { date: datePart, time };
+  }
+  const m = s.match(/^(\S+)(\s+)(.+)$/);
+  if (m) return { date: m[1] || '-', time: (m[3] && m[3].trim()) || '' };
+  return { date: s, time: '' };
+}
+
+function ExitPermitDateTimeCell({ value }: { value?: unknown }) {
+  const { date, time } = splitDateTimeParts(value);
+  const rawStr = value == null ? '' : String(value).trim();
+  const title = rawStr || undefined;
+  return (
+    <div className="flex flex-col gap-0.5 leading-snug min-w-[6.5rem]" title={title}>
+      <span className="text-gray-900 tabular-nums">{date}</span>
+      {time ? <span className="text-gray-600 tabular-nums">{time}</span> : null}
+    </div>
+  );
+}
+
+function displayText(raw: unknown, fallback = '-'): string {
+  if (raw == null) return fallback;
+  const s = typeof raw === 'string' ? raw.trim() : String(raw).trim();
+  return s ? s : fallback;
+}
+
 export default function ExitPermitPage() {
   const { user, hasPermission } = useAuth();
   const [allRows, setAllRows] = useState<ExitPermitItem[]>([]);
@@ -120,7 +156,7 @@ export default function ExitPermitPage() {
     try {
       const result = await getStaffOutTable();
       if (result.code === 200) {
-        const rows = result.data?.rows || [];
+        const rows = Array.isArray(result.data?.rows) ? result.data.rows : [];
         setAllRows(rows);
         applyFiltersAndPaginate(rows, page || currentPage, newPageSize || pageSize);
       }
@@ -389,10 +425,10 @@ export default function ExitPermitPage() {
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       当前状态
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[7rem]">
                       外出开始时间
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[7rem]">
                       外出结束时间
                     </th>
                     <th className="hidden lg:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -410,32 +446,32 @@ export default function ExitPermitPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {data.map((item, index) => (
-                    <tr key={item.record_id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={item.record_id != null ? String(item.record_id) : `row-${index}`} className="hover:bg-gray-50 transition-colors">
                       <td className="px-3 py-4 text-sm text-gray-900 text-center">
                         {index + 1}
                       </td>
-                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[120px]" title={item.student_name}>
-                        {item.student_name}
+                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[120px]" title={displayText(item.student_name, '')}>
+                        {displayText(item.student_name)}
                       </td>
-                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[150px]" title={item.note || '-'}>
-                        {item.note || '-'}
+                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[150px]" title={displayText(item.note)}>
+                        {displayText(item.note)}
                       </td>
                       <td className="px-3 py-4 text-sm">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                          {item.status_name}
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(Number(item.status))}`}>
+                          {displayText(item.status_name)}
                         </span>
                       </td>
-                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[140px]" title={item.start_time}>
-                        {item.start_time}
+                      <td className="px-3 py-4 text-sm text-gray-900 align-top">
+                        <ExitPermitDateTimeCell value={item.start_time} />
                       </td>
-                      <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-[140px]" title={item.end_time}>
-                        {item.end_time}
+                      <td className="px-3 py-4 text-sm text-gray-900 align-top">
+                        <ExitPermitDateTimeCell value={item.end_time} />
                       </td>
-                      <td className="hidden lg:table-cell px-3 py-4 text-sm text-gray-500 truncate max-w-[140px]" title={item.create_time}>
-                        {item.create_time}
+                      <td className="hidden lg:table-cell px-3 py-4 text-sm text-gray-500 truncate max-w-[140px]" title={displayText(item.create_time, '')}>
+                        {displayText(item.create_time)}
                       </td>
-                      <td className="hidden lg:table-cell px-3 py-4 text-sm text-gray-500 truncate max-w-[140px]" title={item.update_time || '-'}>
-                        {item.update_time || '-'}
+                      <td className="hidden lg:table-cell px-3 py-4 text-sm text-gray-500 truncate max-w-[140px]" title={displayText(item.update_time, '')}>
+                        {displayText(item.update_time)}
                       </td>
                       {canEdit && (
                         <td className="px-3 py-4 text-sm font-medium">

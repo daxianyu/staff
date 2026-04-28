@@ -9,6 +9,11 @@ const getApiBaseUrl = (): string => {
 export async function middleware(request: NextRequest) {
   // 只记录API请求
   if (request.nextUrl.pathname.startsWith('/api')) {
+    // 文件上传接口：body 是 multipart 二进制流，不能用 text() 读取
+    // 交由 src/app/api/web_site/upload_image/route.ts 专门处理
+    if (request.nextUrl.pathname === '/api/web_site/upload_image') {
+      return NextResponse.next();
+    }
     // 创建新的headers对象
     const headers = new Headers();
     

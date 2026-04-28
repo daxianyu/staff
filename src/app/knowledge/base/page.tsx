@@ -58,9 +58,14 @@ export default function KnowledgeBasePage() {
   const [showFolderSelectModal, setShowFolderSelectModal] = useState(false);
   const [selectedFolderForNew, setSelectedFolderForNew] = useState<TreeNode | null>(null);
 
-  // 检查 tool_user 权限
+  // 检查 tool_user 权限（用于「新增文章」；编辑已有文章仅校验作者）
   const toolUser = (user as { tool_user?: unknown } | null)?.tool_user;
   const canEdit = toolUser === 1 || toolUser === true || toolUser === '1';
+
+  const isCurrentUserAuthor = useCallback(
+    (authorId: number) => user != null && Number(authorId) === Number(user.id),
+    [user]
+  );
 
   // 计算总文章数量
   const countTotalArticles = useCallback((nodes: TreeNode[]): number => {
@@ -273,8 +278,7 @@ export default function KnowledgeBasePage() {
   const handleEdit = useCallback(() => {
     if (!selectedArticle) return;
     
-    // 检查是否是作者
-    if (selectedArticle.author !== user?.id) {
+    if (!isCurrentUserAuthor(selectedArticle.author)) {
       setError('只有作者本人才能编辑文章');
       return;
     }
@@ -289,7 +293,7 @@ export default function KnowledgeBasePage() {
     
     // 在新标签页打开编辑页面
     openUrlWithFallback(`/knowledge/base/edit?articleId=${selectedArticle.id}&spaceId=${spaceId}`);
-  }, [selectedArticle, selectedNode, user]);
+  }, [selectedArticle, selectedNode, user, isCurrentUserAuthor]);
 
   // 递归渲染树节点（用于左侧目录树）
   const renderTreeNode = useCallback((nodes: TreeNode[]) => {
@@ -493,7 +497,7 @@ export default function KnowledgeBasePage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {canEdit && selectedArticle.author === user?.id && (
+                    {isCurrentUserAuthor(selectedArticle.author) && (
                       <button
                         onClick={handleEdit}
                         className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-shrink-0"

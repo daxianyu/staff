@@ -253,6 +253,9 @@ export const PERMISSIONS = {
   // Student Info 全体学生信息 (operation_right=27 或 core_user)
   VIEW_STUDENT_INFO: 'view_student_info',
 
+  // 考试标签生成 (operation_right=29 或 core_user)
+  GEN_EXAM_LABEL: 'gen_exam_label',
+
   // My Feedback（全体在职教师）
   VIEW_MY_FEEDBACK: 'view_my_feedback',
   EDIT_MY_FEEDBACK: 'edit_my_feedback',
@@ -263,6 +266,11 @@ export const PERMISSIONS = {
   // Remark配置权限
   VIEW_REMARK_CONF: 'view_remark_conf',
   EDIT_REMARK_CONF: 'edit_remark_conf',
+
+  // PHY 学校权限（浦华曜ONE）
+  EDIT_PHY_FRONT_PAGE: 'edit_phy_front_page',
+  // BHY 学校权限（博华源）
+  EDIT_BHY_FRONT_PAGE: 'edit_bhy_front_page',
 
   // Admission Admin 相关权限
   VIEW_ADMISSION_MANAGE: 'core_admin', // 查看所有sales记录
@@ -327,6 +335,9 @@ export const OPERATION_RIGHTS = {
 
   // Student Info 全体学生列表
   STUDENT_INFO: 27,
+
+  // 考试标签 Excel 生成
+  EXAM_LABEL_GEN: 29,
 } as const;
 
 // 预定义角色常量（向后兼容）
