@@ -389,8 +389,8 @@ export const updateAboutUs = async (params: {
 };
 
 export const addCampusNews = async (params: any): Promise<ApiResponse<unknown>> => {
-  // Backend expects: news_title, news_cover, news_desc, show_home_page, news_link, news_type
-  const backendParams = {
+  // Backend expects: news_title, news_cover, news_desc, show_home_page, news_link, news_type, pub_time（可选 yyyy-mm-dd）
+  const backendParams: Record<string, unknown> = {
     news_title: params.title,
     news_cover: params.image_url,
     news_desc: params.description || '',
@@ -398,6 +398,8 @@ export const addCampusNews = async (params: any): Promise<ApiResponse<unknown>> 
     news_link: params.link || '',
     news_type: 0, // Default type
   };
+  const pt = typeof params.pub_time === 'string' ? params.pub_time.trim() : '';
+  if (pt) backendParams.pub_time = pt;
   try {
     const { data } = await request('/api/web_site/update_campus_news', {
       method: 'POST',

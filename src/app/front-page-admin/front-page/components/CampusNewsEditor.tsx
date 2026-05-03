@@ -14,6 +14,13 @@ const CampusNewsEditor: React.FC<Props> = ({ data, refresh }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
 
+    const toYmd = (v: unknown): string | undefined => {
+        if (v == null || v === '') return undefined;
+        const s = typeof v === 'string' ? v : String(v);
+        const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+        return m ? m[1] : undefined;
+    };
+
     const handleEdit = (record: any) => {
         setEditingItem(record);
         form.setFieldsValue({
@@ -21,6 +28,7 @@ const CampusNewsEditor: React.FC<Props> = ({ data, refresh }) => {
             cover: record.cover,
             link: record.link,
             desc: record.desc,
+            pub_time: toYmd(record.date ?? record.pub_time ?? record.create_time),
         });
         setIsModalVisible(true);
     };
@@ -63,12 +71,14 @@ const CampusNewsEditor: React.FC<Props> = ({ data, refresh }) => {
     const onFinish = async (values: any) => {
         setLoading(true);
         try {
-            const params = {
+            const params: Record<string, unknown> = {
                 title: values.title,
                 image_url: values.cover,
                 link: values.link,
                 description: values.desc,
             };
+            const pt = typeof values.pub_time === 'string' ? values.pub_time.trim() : '';
+            if (pt) params.pub_time = pt;
 
             if (editingItem) {
                 // Since backend only supports INSERT for update_campus_news, we simulate update by delete + add
@@ -251,6 +261,13 @@ const CampusNewsEditor: React.FC<Props> = ({ data, refresh }) => {
                         rules={[{ required: true, message: '请输入标题' }]}
                     >
                         <Input placeholder="请输入标题" className={inputClass} />
+                    </Form.Item>
+                    <Form.Item
+                        name="pub_time"
+                        label={<span className="text-sm font-medium text-gray-700">发布时间</span>}
+                        extra={<span className="text-xs text-gray-400">留空则使用提交时的当前日期</span>}
+                    >
+                        <Input type="date" className={inputClass} />
                     </Form.Item>
                     <Form.Item
                         name="link"

@@ -221,6 +221,14 @@ export default function ArchivesDetailPage() {
           }
         }
 
+        // mentor_level: /api/archives/get_edit_select 返回的导师级别选项
+        if (Array.isArray(data.mentor_level)) {
+          options.mentor_level = data.mentor_level.map((item: string) => ({
+            value: item,
+            label: String(item),
+          }));
+        }
+
         // teacher_position_dict: 岗位名称 -> 岗位级别级联（导师等级）
         if (data.teacher_position_dict && typeof data.teacher_position_dict === 'object') {
           const dict: Record<string, string[]> = {};
@@ -372,7 +380,13 @@ export default function ArchivesDetailPage() {
     if (field === 'tc_status' || field === 'teacher_certification_status') {
       return 'teacher_certification_status';
     }
-    if (field === 'position_level' || field === 'teacher_level' || field === 'promotion_mentor_level' || field === 'promotion_teacher_level') {
+    if (field === 'position_level' || field === 'teacher_level') {
+      return 'base_level';
+    }
+    if (field === 'promotion_mentor_level') {
+      return 'mentor_level';
+    }
+    if (field === 'promotion_teacher_level') {
       return 'base_level';
     }
     if (field === 'accounting_result') {

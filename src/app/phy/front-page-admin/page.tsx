@@ -11,6 +11,7 @@ import {
   InformationCircleIcon,
   UserGroupIcon,
   AcademicCapIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,16 +27,20 @@ import {
   deletePhyCoursesInfo,
   updatePhyNews,
   deletePhyNews,
+  updatePhyCampusScene,
+  deletePhyCampusScene,
   type PhySiteInfo,
   type PhyNewsItem,
   type PhyAboutUsItem,
   type PhyCourseItem,
   type PhyCourseInfoItem,
   type PhyTeacherItem,
+  type PhyCampusSceneItem,
   type UpdatePhyCoursesParams,
   type UpdatePhyAboutUsParams,
   type UpdatePhyCoursesInfoParams,
   type UpdatePhyNewsParams,
+  type UpdatePhyCampusSceneParams,
 } from '@/services/modules/phyFrontPage';
 
 // 对应 phy-website /aboutus 的 4 个子页面
@@ -52,22 +57,26 @@ const COURSES_INFO_SECTIONS = [
   { type: 'alevel',  label: 'A-Level', desc: '对应 /courses/alevel' },
 ] as const;
 
-type TabKey = 'news' | 'aboutus' | 'teachers' | 'courses';
+type TabKey = 'news' | 'aboutus' | 'teachers' | 'courses' | 'campus';
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'news',     label: '最新动态', icon: <NewspaperIcon className="w-4 h-4" /> },
   { key: 'aboutus',  label: '关于我们', icon: <InformationCircleIcon className="w-4 h-4" /> },
   { key: 'teachers', label: '师资团队', icon: <UserGroupIcon className="w-4 h-4" /> },
   { key: 'courses',  label: '课程设置', icon: <AcademicCapIcon className="w-4 h-4" /> },
+  { key: 'campus',   label: '校园',     icon: <PhotoIcon className="w-4 h-4" /> },
 ];
 
 // ---- 公用：图片上传字段 ----
 function ImageUploadField({
   value,
   onChange,
+  /** 校园轮播编辑：预览与官网一致 200×340 */
+  previewAspect,
 }: {
   value: string;
   onChange: (url: string) => void;
+  previewAspect?: 'campus';
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -118,11 +127,21 @@ function ImageUploadField({
       </div>
       {uploadError && <p className="text-red-500 text-xs mt-1">{uploadError}</p>}
       {value && (
-        <div className="mt-2 relative inline-block">
+        <div
+          className={
+            previewAspect === 'campus'
+              ? 'mt-2 relative inline-block w-[200px] max-w-full aspect-[200/340] align-top'
+              : 'mt-2 relative inline-block'
+          }
+        >
           <img
             src={value}
             alt="封面预览"
-            className="h-24 rounded border border-gray-200 object-cover"
+            className={
+              previewAspect === 'campus'
+                ? 'absolute inset-0 h-full w-full rounded border border-gray-200 object-cover'
+                : 'h-24 rounded border border-gray-200 object-cover'
+            }
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
           <button
@@ -139,35 +158,42 @@ function ImageUploadField({
   );
 }
 
-// ---- 公用：删除确认弹窗 ----
+// ---- 公用：删除确认弹窗（层叠在其它 z-50 模态之上） ----
 function DeleteConfirmModal({
   label,
   onConfirm,
   onCancel,
   loading,
+  error,
 }: {
   label: string;
   onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;
+  /** 删除失败 / 主键缺失等 */
+  error?: string;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      onClick={onCancel}
+    >
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-            <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-100">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
           </div>
           <div>
             <h3 className="font-semibold text-gray-800">确认删除</h3>
-            <p className="text-sm text-gray-500 mt-1">确定删除「{label}」？此操作不可撤销。</p>
+            <p className="mt-1 text-sm text-gray-500">确定删除「{label}」？此操作不可撤销。</p>
+            {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" onClick={onCancel} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
             取消
           </button>
-          <button onClick={onConfirm} disabled={loading} className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50">
+          <button type="button" onClick={onConfirm} disabled={loading} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50">
             {loading ? '删除中...' : '确认删除'}
           </button>
         </div>
@@ -240,7 +266,7 @@ function NewsSectionBlock({
   const [error, setError] = useState('');
 
   const emptyForm = (): NewsFormData => ({
-    news_title: '', news_cover: '', news_desc: '', news_link: '', tag: '', news_type: newsType, show_home_page: 1,
+    news_title: '', news_cover: '', news_desc: '', news_link: '', tag: '', news_type: newsType, show_home_page: 1, pub_time: '',
   });
   const [formData, setFormData] = useState<NewsFormData>(emptyForm());
 
@@ -254,6 +280,12 @@ function NewsSectionBlock({
   const openEdit = (item: PhyNewsItem) => {
     const id = item.id ?? item.record_id ?? null;
     setEditingId(id);
+    let pubTime = '';
+    const ct = item.create_time;
+    if (ct != null && ct !== '') {
+      const s = typeof ct === 'string' ? ct : String(ct);
+      pubTime = s.slice(0, 10);
+    }
     setFormData({
       news_title:    item.title,
       news_cover:    item.cover_url ?? item.coverUrl ?? '',
@@ -262,6 +294,7 @@ function NewsSectionBlock({
       tag:           item.tag ?? '',
       news_type:     newsType,
       show_home_page: item.show_home_page ?? 1,
+      pub_time:      pubTime,
     });
     setError('');
     setShowModal(true);
@@ -385,6 +418,16 @@ function NewsSectionBlock({
                 </p>
               )}
               {field('news_title', '标题 *', '请输入标题')}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">发布时间</label>
+                <input
+                  type="date"
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formData.pub_time ?? ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, pub_time: e.target.value }))}
+                />
+                <p className="text-xs text-gray-400 mt-0.5">留空则使用保存时的当前日期</p>
+              </div>
               <ImageUploadField
                 value={formData.news_cover}
                 onChange={(url) => setFormData((p) => ({ ...p, news_cover: url }))}
@@ -803,13 +846,13 @@ function CoursesCardsSection({
   };
   const openEdit = (item: PhyCourseItem) => {
     setEditItem(item);
-    setFormData({ title: item.title, summary: item.summary || '', coverUrl: item.coverUrl || '', buttonText: item.buttonText || '', link: item.link || '', record_id: item.record_id });
+    setFormData({ title: item.title, summary: item.summary || '', coverUrl: item.coverUrl || '', buttonText: item.buttonText || '', link: item.link || '', id: item.id ?? item.record_id });
     setError('');
     setShowModal(true);
   };
   const handleSave = async () => {
-    if (!formData.title.trim() || !formData.summary.trim() || !formData.coverUrl.trim() || !formData.buttonText.trim() || !formData.link.trim()) {
-      setError('所有字段均为必填');
+    if (!formData.title.trim() || !formData.coverUrl.trim() || !formData.buttonText.trim() || !formData.link.trim()) {
+      setError('请填写标题、封面图、按钮文字与链接');
       return;
     }
     setSaving(true); setError('');
@@ -821,7 +864,9 @@ function CoursesCardsSection({
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
-    const res = await deletePhyCourses(deleteTarget.record_id);
+    const cid = deleteTarget.id ?? deleteTarget.record_id;
+    if (cid == null) return;
+    const res = await deletePhyCourses(cid);
     setDeleting(false);
     if (res.code === 200) { setDeleteTarget(null); onRefresh(); }
   };
@@ -832,8 +877,8 @@ function CoursesCardsSection({
         <p className="text-gray-400 text-sm text-center py-4">暂无数据</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
-            <div key={item.record_id} className="border border-gray-200 rounded-lg overflow-hidden">
+          {items.map((item, idx) => (
+            <div key={item.id ?? item.record_id ?? idx} className="border border-gray-200 rounded-lg overflow-hidden">
               {item.coverUrl && (
                 <img src={item.coverUrl} alt={item.title} className="w-full h-28 object-cover"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -869,7 +914,7 @@ function CoursesCardsSection({
               {error && <p className="text-sm text-red-500">{error}</p>}
               {([
                 { key: 'title' as const,      label: '标题 *' },
-                { key: 'summary' as const,    label: '摘要 *' },
+                { key: 'summary' as const,    label: '摘要' },
                 { key: 'coverUrl' as const,   label: '封面图 URL *' },
                 { key: 'buttonText' as const, label: '按钮文字 *' },
                 { key: 'link' as const,       label: '链接 *' },
@@ -1054,6 +1099,331 @@ function CoursesTab({
   );
 }
 
+function pickCampusSceneRecordId(item: PhyCampusSceneItem | null | undefined): number | null {
+  if (!item) return null;
+  const o = item as unknown as Record<string, unknown>;
+  for (const k of ['record_id', 'id', 'Id', 'recordId']) {
+    const v = o[k];
+    if (v == null || v === '') continue;
+    const n = Number(v);
+    if (Number.isFinite(n) && n >= 0) return n;
+  }
+  return null;
+}
+
+function campusSceneItemsFromSite(info: PhySiteInfo | null): PhyCampusSceneItem[] {
+  if (!info) return [];
+  const a = info.campus_scene;
+  const b = info.campusScene;
+  if (Array.isArray(a) && a.length > 0) return a;
+  if (Array.isArray(b) && b.length > 0) return b;
+  return Array.isArray(a) ? a : (Array.isArray(b) ? b : []);
+}
+
+/**
+ * 与官网 phy-website `CampusCarousel` 单卡一致：比例 200:340、圆角 12px、封面 cover、
+ * 底部线性渐变 + 白字标题/摘要（同 phy-en-layout.css .campus-carousel__*）
+ */
+function CampusSceneHomePreview({
+  coverUrl,
+  title,
+  summary,
+  className = '',
+  actions,
+}: {
+  coverUrl: string;
+  title: string;
+  summary: string;
+  className?: string;
+  /** 管理端叠在图上的操作（如编辑/删除） */
+  actions?: React.ReactNode;
+}) {
+  const hasCaption = Boolean(title?.trim() || summary?.trim());
+  return (
+    <div
+      className={`group relative block h-[340px] w-[200px] shrink-0 overflow-hidden rounded-[12px] bg-slate-200 ${className}`}
+    >
+      <div
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-[400ms] ease-in-out group-hover:scale-[1.03]"
+        style={coverUrl?.trim() ? { backgroundImage: `url(${coverUrl})` } : undefined}
+      />
+      {actions ? (
+        <div className="absolute top-2 right-2 z-20 flex gap-1" onClick={(e) => e.stopPropagation()}>
+          {actions}
+        </div>
+      ) : null}
+      {hasCaption ? (
+        <div
+          className="absolute left-0 right-0 bottom-0 z-10 px-2.5 pb-3 pt-2.5 text-left"
+          style={{
+            background: 'linear-gradient(180deg, transparent 0%, rgba(16, 60, 109, 0.55) 38%, rgba(10, 35, 65, 0.88) 100%)',
+          }}
+        >
+          {title?.trim() ? (
+            <p
+              className="m-0 text-[0.8125rem] font-semibold leading-[1.3] text-white"
+              style={{ textShadow: '0 1px 3px rgba(0,0,0,0.45)' }}
+            >
+              {title}
+            </p>
+          ) : null}
+          {summary?.trim() ? (
+            <p
+              className="m-0 mt-1 line-clamp-2 overflow-hidden text-[0.6875rem] font-normal leading-[1.35] text-[rgba(255,255,255,0.96)] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]"
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}
+            >
+              {summary}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ========== 校园 Tab（首页「浦华曜ONE · 校园」轮播） ==========
+function CampusSceneTab({
+  items,
+  onRefresh,
+}: {
+  items: PhyCampusSceneItem[];
+  onRefresh: () => void;
+}) {
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState<PhyCampusSceneItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PhyCampusSceneItem | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [formData, setFormData] = useState<UpdatePhyCampusSceneParams>({
+    title: '',
+    summary: '',
+    coverUrl: '',
+    link: '',
+  });
+  const [error, setError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  const openAdd = () => {
+    setEditItem(null);
+    setFormData({ title: '', summary: '', coverUrl: '', link: '' });
+    setError('');
+    setShowModal(true);
+  };
+  const openEdit = (item: PhyCampusSceneItem) => {
+    setEditItem(item);
+    const rid = pickCampusSceneRecordId(item);
+    setFormData({
+      title: item.title,
+      summary: item.summary || '',
+      coverUrl: item.coverUrl ?? item.cover_url ?? '',
+      link: item.link || '',
+      ...(rid != null ? { record_id: rid } : {}),
+    });
+    setError('');
+    setShowModal(true);
+  };
+  const handleSave = async () => {
+    if (!formData.title.trim() || !formData.summary.trim() || !formData.coverUrl.trim() || !formData.link.trim()) {
+      setError('标题、摘要、封面图、链接均为必填');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    const res = await updatePhyCampusScene(formData);
+    setSaving(false);
+    if (res.code === 200) {
+      setShowModal(false);
+      onRefresh();
+    } else {
+      setError(res.message || '保存失败');
+    }
+  };
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError('');
+    const rid = pickCampusSceneRecordId(deleteTarget);
+    if (rid == null) {
+      setDeleteError('无法取得记录主键，请确认接口 get_site_info 的校园项包含 id 或 record_id 字段');
+      return;
+    }
+    setDeleting(true);
+    const res = await deletePhyCampusScene(rid);
+    setDeleting(false);
+    if (res.code === 200) {
+      setDeleteTarget(null);
+      setDeleteError('');
+      onRefresh();
+    } else {
+      setDeleteError(res.message || '删除失败');
+    }
+  };
+
+  const list = Array.isArray(items) ? items : [];
+
+  return (
+    <SectionCard
+      title="校园内容"
+      desc="与官网首页「浦华曜ONE · 校园」轮播一致：单卡 200×340、左下角标题与摘要叠在渐变上。以下列表为同比例预览。标题、摘要、封面、链接均必填；带 record_id 为更新，否则为新增"
+      onAdd={openAdd}
+    >
+      {list.length === 0 ? (
+        <p className="text-gray-400 text-sm text-center py-4">暂无数据</p>
+      ) : (
+        <div className="w-full min-w-0">
+          <p className="text-xs text-gray-500 mb-3">与首页相同的横向间距（24px）与卡片比例，便于对照上线效果</p>
+          <div className="flex flex-wrap gap-6">
+            {list.map((item, idx) => {
+              const key = item.record_id ?? item.id ?? idx;
+              const cover = item.coverUrl ?? item.cover_url ?? '';
+              return (
+                <div key={key} className="flex flex-col items-center gap-2">
+                  <CampusSceneHomePreview
+                    coverUrl={cover}
+                    title={item.title}
+                    summary={item.summary || ''}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openEdit(item)}
+                          className="h-8 w-8 flex items-center justify-center rounded-full bg-white/90 text-blue-600 shadow transition hover:bg-white"
+                          title="编辑"
+                        >
+                          <PencilIcon className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError('');
+                            setDeleteTarget(item);
+                          }}
+                          className="h-8 w-8 flex items-center justify-center rounded-full bg-white/90 text-red-500 shadow transition hover:bg-white"
+                          title="删除"
+                        >
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    }
+                  />
+                  {item.link ? (
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="max-w-[200px] truncate text-center text-[10px] text-slate-500 hover:text-blue-600 hover:underline"
+                      title={item.link}
+                    >
+                      {item.link}
+                    </a>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b p-4">
+              <h3 className="font-semibold text-gray-800">{editItem ? '编辑校园内容' : '新增校园内容'}</h3>
+              <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="grid gap-6 p-4 md:grid-cols-2">
+              <div className="min-w-0 space-y-3">
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <div>
+                  <label className="mb-1 block text-sm text-gray-600">标题 *</label>
+                  <input
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.title}
+                    onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-gray-600">摘要 *</label>
+                  <textarea
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.summary}
+                    onChange={(e) => setFormData((p) => ({ ...p, summary: e.target.value }))}
+                  />
+                </div>
+                <ImageUploadField
+                  value={formData.coverUrl}
+                  onChange={(url) => setFormData((p) => ({ ...p, coverUrl: url }))}
+                  previewAspect="campus"
+                />
+                <div>
+                  <label className="mb-1 block text-sm text-gray-600">跳转链接 *</label>
+                  <input
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https:// 或站内路径"
+                    value={formData.link}
+                    onChange={(e) => setFormData((p) => ({ ...p, link: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="min-w-0 border-t border-gray-100 pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+                <p className="mb-3 text-sm font-medium text-gray-800">官网首页效果预览</p>
+                <p className="mb-3 text-xs text-gray-500">与「浦华曜ONE · 校园」轮播单张卡片同比例、同字体与渐变叠层；悬停时封面略有放大。</p>
+                <div className="flex flex-col items-center">
+                  <CampusSceneHomePreview
+                    coverUrl={formData.coverUrl}
+                    title={formData.title}
+                    summary={formData.summary}
+                    className="mx-auto"
+                  />
+                  {formData.link?.trim() ? (
+                    <p
+                      className="mt-3 w-full max-w-[200px] break-all text-center text-[10px] text-slate-500"
+                      title={formData.link}
+                    >
+                      跳转：{formData.link}
+                    </p>
+                  ) : (
+                    <p className="mt-3 text-center text-xs text-gray-400">填写链接后可在官网点击整张卡片跳转</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t p-4">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-600 hover:bg-gray-200"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          label={deleteTarget.title}
+          onConfirm={handleDelete}
+          onCancel={() => { setDeleteTarget(null); setDeleteError(''); }}
+          loading={deleting}
+          error={deleteError}
+        />
+      )}
+    </SectionCard>
+  );
+}
+
 // ========== 主页面 ==========
 export default function PhyFrontPageAdmin() {
   const { hasPermission } = useAuth();
@@ -1138,6 +1508,12 @@ export default function PhyFrontPageAdmin() {
               <CoursesTab
                 courses={siteInfo?.courses ?? []}
                 coursesInfo={siteInfo?.courses_info ?? []}
+                onRefresh={fetchData}
+              />
+            )}
+            {activeTab === 'campus' && (
+              <CampusSceneTab
+                items={campusSceneItemsFromSite(siteInfo)}
                 onRefresh={fetchData}
               />
             )}
