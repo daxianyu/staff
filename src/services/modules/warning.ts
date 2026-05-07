@@ -33,8 +33,10 @@ export interface StudentOption {
 
 export interface WarningSelectResponse {
   student_list: StudentOption[];
-  oral_warn_select: Record<string, string>;
-  write_warn_select: Record<string, string>;
+  /** 警告类型编号 -> 类型名称（与 warning_select 下标对应：编号 n 对应 warning_select[n - 1]） */
+  waring_key: Record<string, string>;
+  /** 与 waring_key 编号一一对应：第 i 项为 warn_type === i + 1 时的可选条目 */
+  warning_select: Record<string, string>[];
 }
 
 export interface AddWarningRequest {

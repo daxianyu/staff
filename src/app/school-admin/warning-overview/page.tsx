@@ -28,6 +28,33 @@ import {
 } from '@/services/auth';
 import SearchableSelect from '@/components/SearchableSelect';
 
+/** 警告类型标签配色（按 waring_key 顺序循环） */
+const WARN_TYPE_BADGE_STYLES = [
+  'bg-yellow-100 text-yellow-800',
+  'bg-red-100 text-red-800',
+  'bg-amber-100 text-amber-800',
+  'bg-orange-100 text-orange-800',
+  'bg-rose-100 text-rose-800',
+  'bg-indigo-100 text-indigo-800',
+];
+
+/** Top5 小标签底色（与类型顺序对应） */
+const TOP_RANK_CHIP_STYLES = [
+  'px-2 py-0.5 bg-yellow-50 text-yellow-700 text-[10px] font-bold rounded border border-yellow-100',
+  'px-2 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded border border-red-100',
+  'px-2 py-0.5 bg-amber-50 text-amber-800 text-[10px] font-bold rounded border border-amber-100',
+  'px-2 py-0.5 bg-orange-50 text-orange-800 text-[10px] font-bold rounded border border-orange-100',
+  'px-2 py-0.5 bg-rose-50 text-rose-800 text-[10px] font-bold rounded border border-rose-100',
+  'px-2 py-0.5 bg-indigo-50 text-indigo-800 text-[10px] font-bold rounded border border-indigo-100',
+];
+
+type StudentTypeStat = {
+  student_id: number;
+  student_name: string;
+  /** warn_type -> 次数 */
+  countsByType: Record<number, number>;
+};
+
 export default function WarningOverviewPage() {
   const { hasPermission } = useAuth();
   const [warnings, setWarnings] = useState<WarningRecord[]>([]);
@@ -40,10 +67,10 @@ export default function WarningOverviewPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedWarning, setSelectedWarning] = useState<WarningRecord | null>(null);
 
-  // 选项数据
+  // 选项数据（get_warning_select：waring_key + warning_select，不再使用 oral/write 分字段）
   const [studentOptions, setStudentOptions] = useState<StudentOption[]>([]);
-  const [oralWarnOptions, setOralWarnOptions] = useState<Record<string, string>>({});
-  const [writeWarnOptions, setWriteWarnOptions] = useState<Record<string, string>>({});
+  const [waringKey, setWaringKey] = useState<Record<string, string>>({});
+  const [warningSelectList, setWarningSelectList] = useState<Record<string, string>[]>([]);
 
   // 表单数据
   const [formData, setFormData] = useState({
@@ -61,8 +88,8 @@ export default function WarningOverviewPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [activeTab, setActiveTab] = useState<'records' | 'statistics'>('records');
 
-  // 统计表格排序状态
-  const [statSortField, setStatSortField] = useState<'oral' | 'written'>('written');
+  // 学生统计表排序：'total' 或具体 warn_type 数字字符串
+  const [statSortField, setStatSortField] = useState<string>('total');
   const [statSortDirection, setStatSortDirection] = useState<'desc' | 'asc'>('desc');
 
   // 权限检查
@@ -84,8 +111,8 @@ export default function WarningOverviewPage() {
 
       if (selectResponse.code === 200 && selectResponse.data) {
         setStudentOptions(selectResponse.data.student_list);
-        setOralWarnOptions(selectResponse.data.oral_warn_select);
-        setWriteWarnOptions(selectResponse.data.write_warn_select);
+        setWaringKey(selectResponse.data.waring_key ?? {});
+        setWarningSelectList(Array.isArray(selectResponse.data.warning_select) ? selectResponse.data.warning_select : []);
       }
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -99,49 +126,80 @@ export default function WarningOverviewPage() {
     loadData();
   }, []);
 
-  // 过滤数据
-  const filteredWarnings = warnings.filter(warning =>
-    warning.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    warning.campus_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    warning.warn_reason.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 过滤数据（含表格「警告原因」列展示的 warn_select_str；字段做空值保护避免 toLowerCase 抛错导致整表失效）
+  const filteredWarnings = warnings.filter(warning => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    const s = (v: string | undefined | null) => (v ?? '').toLowerCase();
+    return (
+      s(warning.student_name).includes(term) ||
+      s(warning.campus_name).includes(term) ||
+      s(warning.warn_reason).includes(term) ||
+      s(warning.warn_select_str).includes(term) ||
+      s(warning.warn_type_str).includes(term) ||
+      s(warning.operator_name).includes(term) ||
+      s(warning.warn_time).includes(term)
+    );
+  });
 
-  // 计算每个学生的警告统计
+  const warnTypeKeysSorted = Object.keys(waringKey)
+    .map(k => Number(k))
+    .filter(n => !Number.isNaN(n))
+    .sort((a, b) => a - b);
+
+  // 各 warn_type 全局条数（与 waring_key 类型一致；未在 key 中的类型也会计入「合计」与学生行）
+  const globalCountByWarnType = warnings.reduce((acc, w) => {
+    acc[w.warn_type] = (acc[w.warn_type] || 0) + 1;
+    return acc;
+  }, {} as Record<number, number>);
+
   const studentStats = warnings.reduce((acc, curr) => {
     if (!acc[curr.student_id]) {
       acc[curr.student_id] = {
         student_id: curr.student_id,
         student_name: curr.student_name,
-        oral: 0,
-        written: 0,
+        countsByType: {},
       };
     }
-    if (curr.warn_type === 1) {
-      acc[curr.student_id].oral += 1;
-    } else if (curr.warn_type === 2) {
-      acc[curr.student_id].written += 1;
-    }
+    acc[curr.student_id].countsByType[curr.warn_type] =
+      (acc[curr.student_id].countsByType[curr.warn_type] || 0) + 1;
     return acc;
-  }, {} as Record<number, { student_id: number; student_name: string; oral: number; written: number }>);
+  }, {} as Record<number, StudentTypeStat>);
 
   const studentStatList = Object.values(studentStats);
 
-  // 排序统计数据
-  const sortedStudentStats = [...studentStatList].sort((a, b) => {
-    const valA = a[statSortField];
-    const valB = b[statSortField];
+  /** 学生统计 Tab：按姓名 / student_id 筛选（与警告记录 Tab 的筛选维度不同） */
+  const studentStatListFiltered = studentStatList.filter(stat => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    const name = (stat.student_name ?? '').toLowerCase();
+    const idStr = String(stat.student_id);
+    return name.includes(term) || idStr.includes(term);
+  });
+
+  const studentWarningTotal = (s: StudentTypeStat) =>
+    Object.values(s.countsByType).reduce((a, b) => a + b, 0);
+
+  // 排序统计数据（仅「学生统计」Tab 使用 filtered 列表；顶部卡片与排行仍用全量）
+  const sortedStudentStats = [...studentStatListFiltered].sort((a, b) => {
+    let valA: number;
+    let valB: number;
+    if (statSortField === 'total') {
+      valA = studentWarningTotal(a);
+      valB = studentWarningTotal(b);
+    } else {
+      const k = Number(statSortField);
+      valA = a.countsByType[k] || 0;
+      valB = b.countsByType[k] || 0;
+    }
     return statSortDirection === 'asc' ? valA - valB : valB - valA;
   });
 
-  // 统计信息
   const uniqueStudents = studentStatList.length;
   const totalWarnings = warnings.length;
-  const oralWarnings = warnings.filter(w => w.warn_type === 1).length;
-  const writtenWarnings = warnings.filter(w => w.warn_type === 2).length;
 
-  // 获取警告数量排名前5的学生 (按书面优先，然后口头)
   const topStudents = [...studentStatList]
-    .sort((a, b) => (b.written * 10 + b.oral) - (a.written * 10 + a.oral))
+    .sort((a, b) => studentWarningTotal(b) - studentWarningTotal(a))
     .slice(0, 5);
 
   // 处理搜索
@@ -160,7 +218,7 @@ export default function WarningOverviewPage() {
     setCurrentPage(1);
   };
 
-  const handleStatSort = (field: 'oral' | 'written') => {
+  const handleStatSort = (field: string) => {
     if (statSortField === field) {
       setStatSortDirection(statSortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -172,8 +230,8 @@ export default function WarningOverviewPage() {
   // 排序记录数据
   const sortedWarnings = [...filteredWarnings].sort((a, b) => {
     if (sortField === 'warning_count') {
-      const countA = (studentStats[a.student_id]?.oral || 0) + (studentStats[a.student_id]?.written || 0);
-      const countB = (studentStats[b.student_id]?.oral || 0) + (studentStats[b.student_id]?.written || 0);
+      const countA = studentStats[a.student_id] ? studentWarningTotal(studentStats[a.student_id]) : 0;
+      const countB = studentStats[b.student_id] ? studentWarningTotal(studentStats[b.student_id]) : 0;
       return sortDirection === 'asc' ? countA - countB : countB - countA;
     }
     // 默认按警告时间排序
@@ -189,11 +247,23 @@ export default function WarningOverviewPage() {
   const endIndex = startIndex + pageSize;
   const paginatedWarnings = sortedWarnings.slice(startIndex, endIndex);
 
+  // 当前警告类型对应的勾选条目（waring_key 的 key 与 warning_select 下标：n → [n-1]）
+  const getWarnContentOptions = (warnType: number): Record<string, string> => {
+    const idx = warnType - 1;
+    if (idx < 0 || idx >= warningSelectList.length) return {};
+    return warningSelectList[idx] ?? {};
+  };
+
   // 处理新增
   const handleAdd = () => {
+    const keys = Object.keys(waringKey)
+      .map(k => Number(k))
+      .filter(n => !Number.isNaN(n))
+      .sort((a, b) => a - b);
+    const initialType = keys.length ? keys[0] : 1;
     setFormData({
       student_id: 0,
-      warn_type: 1,
+      warn_type: initialType,
       warn_select: '',
       warn_reason: '',
       warn_time: new Date().toISOString().split('T')[0],
@@ -329,8 +399,8 @@ export default function WarningOverviewPage() {
           <p className="mt-2 text-sm text-gray-600">管理学生警告信息</p>
         </div>
 
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* 统计卡片：涉及学生、总数 + 按 waring_key 各类型条数 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
             <div className="flex items-center">
               <UserGroupIcon className="h-10 w-10 text-blue-500" />
@@ -349,24 +419,25 @@ export default function WarningOverviewPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-            <div className="flex items-center">
-              <DocumentTextIcon className="h-10 w-10 text-yellow-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500 text-nowrap">口头警告数</p>
-                <p className="text-2xl font-bold text-gray-900">{oralWarnings}</p>
+          {warnTypeKeysSorted.map((k, i) => {
+            const borderColors = ['border-yellow-500', 'border-purple-500', 'border-amber-500', 'border-teal-500', 'border-orange-500', 'border-indigo-500'];
+            const iconColors = ['text-yellow-500', 'text-purple-500', 'text-amber-500', 'text-teal-500', 'text-orange-500', 'text-indigo-500'];
+            const bc = borderColors[i % borderColors.length];
+            const ic = iconColors[i % iconColors.length];
+            return (
+              <div key={k} className={`bg-white rounded-lg shadow p-6 border-l-4 ${bc}`}>
+                <div className="flex items-center">
+                  <DocumentTextIcon className={`h-10 w-10 ${ic}`} />
+                  <div className="ml-4 min-w-0">
+                    <p className="text-sm font-medium text-gray-500 line-clamp-2" title={waringKey[String(k)]}>
+                      {waringKey[String(k)] ?? `类型 ${k}`}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{globalCountByWarnType[k] ?? 0}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
-            <div className="flex items-center">
-              <DocumentTextIcon className="h-10 w-10 text-purple-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500 text-nowrap">书面警告数</p>
-                <p className="text-2xl font-bold text-gray-900">{writtenWarnings}</p>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* 警告排行 */}
@@ -380,14 +451,25 @@ export default function WarningOverviewPage() {
               <div key={student.student_id} className="p-4 flex flex-col items-center justify-center">
                 <span className="text-xs text-gray-400 mb-1">NO.{index + 1}</span>
                 <span className="text-sm font-bold text-gray-900 mb-1">{student.student_name}</span>
-                <div className="flex gap-1">
-                  <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-[10px] font-bold rounded border border-yellow-100">
-                    口头:{student.oral}
-                  </span>
-                  <span className="px-2 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded border border-red-100">
-                    书面:{student.written}
-                  </span>
+                <div className="flex flex-wrap gap-1 justify-center">
+                  {warnTypeKeysSorted.map((k, ti) => {
+                    const c = student.countsByType[k] || 0;
+                    if (c === 0) return null;
+                    const label = waringKey[String(k)] ?? k;
+                    const short =
+                      label.length > 6 ? `${label.slice(0, 6)}…` : label;
+                    return (
+                      <span
+                        key={k}
+                        title={`${label}: ${c}`}
+                        className={`max-w-[120px] truncate ${TOP_RANK_CHIP_STYLES[ti % TOP_RANK_CHIP_STYLES.length]}`}
+                      >
+                        {short}:{c}
+                      </span>
+                    );
+                  })}
                 </div>
+                <span className="text-xs text-gray-500 mt-1">合计 {studentWarningTotal(student)}</span>
               </div>
             ))}
             {topStudents.length === 0 && (
@@ -427,7 +509,11 @@ export default function WarningOverviewPage() {
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="搜索学生姓名、校区或警告原因..."
+                placeholder={
+                  activeTab === 'statistics'
+                    ? '搜索学生姓名或学号…'
+                    : '搜索学生、校区、警告类型、警告原因、操作人…'
+                }
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -516,17 +602,24 @@ export default function WarningOverviewPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-full border border-red-100">
-                            {(studentStats[warning.student_id]?.oral || 0) + (studentStats[warning.student_id]?.written || 0)} 次
+                            {studentStats[warning.student_id]
+                              ? studentWarningTotal(studentStats[warning.student_id])
+                              : 0}{' '}
+                            次
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{warning.campus_name}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${warning.warn_type === 1
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                            }`}>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${(() => {
+                              const idx = warnTypeKeysSorted.indexOf(warning.warn_type);
+                              if (idx >= 0)
+                                return WARN_TYPE_BADGE_STYLES[idx % WARN_TYPE_BADGE_STYLES.length];
+                              return 'bg-gray-100 text-gray-800';
+                            })()}`}
+                          >
                             {warning.warn_type_str}
                           </span>
                         </td>
@@ -661,50 +754,78 @@ export default function WarningOverviewPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生姓名</th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 group"
-                      onClick={() => handleStatSort('oral')}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      学生姓名
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 group whitespace-nowrap"
+                      onClick={() => handleStatSort('total')}
                     >
                       <div className="flex items-center gap-1">
-                        口头警告次数
-                        <span className={`${statSortField === 'oral' ? 'text-blue-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
-                          {statSortField === 'oral' ? (statSortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                        合计
+                        <span
+                          className={`${statSortField === 'total' ? 'text-blue-600' : 'text-gray-300 group-hover:text-gray-400'}`}
+                        >
+                          {statSortField === 'total' ? (statSortDirection === 'asc' ? '↑' : '↓') : '↕'}
                         </span>
                       </div>
                     </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 group"
-                      onClick={() => handleStatSort('written')}
-                    >
-                      <div className="flex items-center gap-1">
-                        书面警告次数
-                        <span className={`${statSortField === 'written' ? 'text-blue-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
-                          {statSortField === 'written' ? (statSortDirection === 'asc' ? '↑' : '↓') : '↕'}
-                        </span>
-                      </div>
-                    </th>
+                    {warnTypeKeysSorted.map(k => (
+                      <th
+                        key={k}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 group whitespace-nowrap max-w-[140px]"
+                        onClick={() => handleStatSort(String(k))}
+                        title={waringKey[String(k)]}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span className="line-clamp-2">{waringKey[String(k)] ?? `类型${k}`}</span>
+                          <span
+                            className={`${statSortField === String(k) ? 'text-blue-600' : 'text-gray-300 group-hover:text-gray-400'}`}
+                          >
+                            {statSortField === String(k) ? (statSortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                          </span>
+                        </div>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {sortedStudentStats.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-6 py-12 text-center text-gray-500 text-sm">暂无统计数据</td>
+                      <td
+                        colSpan={2 + warnTypeKeysSorted.length}
+                        className="px-6 py-12 text-center text-gray-500 text-sm"
+                      >
+                        {studentStatList.length === 0
+                          ? '暂无统计数据'
+                          : '无匹配学生，请调整搜索关键词'}
+                      </td>
                     </tr>
                   ) : (
-                    sortedStudentStats.map((stat) => (
+                    sortedStudentStats.map(stat => (
                       <tr key={stat.student_id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{stat.student_name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${stat.oral > 0 ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 'bg-gray-100 text-gray-400'}`}>
-                            {stat.oral} 次
-                          </span>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {stat.student_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${stat.written > 0 ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-gray-100 text-gray-400'}`}>
-                            {stat.written} 次
+                          <span className="px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                            {studentWarningTotal(stat)} 次
                           </span>
                         </td>
+                        {warnTypeKeysSorted.map(k => {
+                          const n = stat.countsByType[k] || 0;
+                          return (
+                            <td key={k} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                  n > 0 ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-gray-100 text-gray-400'
+                                }`}
+                              >
+                                {n} 次
+                              </span>
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))
                   )}
@@ -746,14 +867,21 @@ export default function WarningOverviewPage() {
                     onChange={(e) => setFormData(prev => ({ ...prev, warn_type: Number(e.target.value), warn_select: '' }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value={1}>口头警告</option>
-                    <option value={2}>书面警告</option>
+                    {Object.entries(waringKey)
+                      .sort(([a], [b]) => Number(a) - Number(b))
+                      .map(([key, label]) => (
+                        <option key={key} value={Number(key)}>
+                          {label}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">警告内容</label>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {Object.entries(formData.warn_type === 1 ? oralWarnOptions : writeWarnOptions).map(([key, value]) => (
+                    {Object.entries(getWarnContentOptions(formData.warn_type))
+                      .sort(([a], [b]) => Number(a) - Number(b))
+                      .map(([key, value]) => (
                       <label key={key} className="flex items-center">
                         <input
                           type="checkbox"
@@ -836,14 +964,21 @@ export default function WarningOverviewPage() {
                     onChange={(e) => setFormData(prev => ({ ...prev, warn_type: Number(e.target.value), warn_select: '' }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value={1}>口头警告</option>
-                    <option value={2}>书面警告</option>
+                    {Object.entries(waringKey)
+                      .sort(([a], [b]) => Number(a) - Number(b))
+                      .map(([key, label]) => (
+                        <option key={key} value={Number(key)}>
+                          {label}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">警告内容</label>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {Object.entries(formData.warn_type === 1 ? oralWarnOptions : writeWarnOptions).map(([key, value]) => (
+                    {Object.entries(getWarnContentOptions(formData.warn_type))
+                      .sort(([a], [b]) => Number(a) - Number(b))
+                      .map(([key, value]) => (
                       <label key={key} className="flex items-center">
                         <input
                           type="checkbox"
