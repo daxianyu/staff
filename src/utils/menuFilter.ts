@@ -514,7 +514,7 @@ export const defaultMenuConfig: MenuItem[] = [
       },
       {
         key: 'estimated-score',
-        label: 'Estimated Score',
+        label: 'Predicted Grade',
         path: '/mentee/estimated-score',
         icon: 'clipboard-document-list',
         requiredPermissions: [PERMISSIONS.VIEW_ESTIMATED_SCORE],

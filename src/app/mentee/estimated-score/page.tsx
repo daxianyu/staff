@@ -210,11 +210,11 @@ function SignupBucketTable({
           </th>
           {mode === 'mentor' && (
             <th scope="col" className={`${MID_TH} whitespace-nowrap`}>
-              参加 Predicted Grade 考试
+              参加预估分考试
             </th>
           )}
           <th scope="col" className={`${MID_TH} whitespace-nowrap`}>
-            Predicted Grade
+           预估分
           </th>
           {mode === 'leader' && (
             <>
@@ -301,8 +301,8 @@ function SignupBucketTable({
                     ) : canEditNote && isEstimatedScoreFilled(r) ? (
                       <span
                         className={ICON_BTN_MUTED}
-                        title="Predicted Grade 已定"
-                        aria-label="Predicted Grade 已定"
+                        title="预估分 已定"
+                        aria-label="预估分 已定"
                         role="img"
                       >
                         <LockClosedIcon className="h-4 w-4" />
@@ -338,8 +338,8 @@ function SignupBucketTable({
                             type="button"
                             onClick={() => onOpenLeaderScores(r)}
                             className={ICON_BTN_BLUE}
-                            title="录入 Predicted Grade 与考试等第"
-                            aria-label="录入 Predicted Grade 与考试等第"
+                            title="录入预估分与考试等第"
+                            aria-label="录入预估分与考试等第"
                           >
                             <ClipboardDocumentCheckIcon className="h-4 w-4" />
                           </button>
@@ -577,7 +577,7 @@ export default function EstimatedScoreMentorPage() {
     }
     if (wantEst) {
       if (!g) {
-        setToast({ text: '请输入 Predicted Grade', variant: 'error' });
+        setToast({ text: '请输入预估分', variant: 'error' });
         return;
       }
     }
@@ -591,7 +591,7 @@ export default function EstimatedScoreMentorPage() {
     if (wantEst) {
       const res = await updateEstimatedScoreGrade(row.record_id, g);
       if (res.code !== 200) {
-        setToast({ text: res.message || 'Predicted Grade 更新失败', variant: 'error' });
+        setToast({ text: res.message || '预估分更新失败', variant: 'error' });
         return;
       }
     }
@@ -604,7 +604,7 @@ export default function EstimatedScoreMentorPage() {
     }
 
     setToast({
-      text: [wantEst && 'Predicted Grade 已更新', wantExam && '考试等第已更新'].filter(Boolean).join('；') || '已保存',
+      text: [wantEst && '预估分 已更新', wantExam && '考试等第已更新'].filter(Boolean).join('；') || '已保存',
       variant: 'success',
     });
     setLeaderScoreModal(null);
@@ -661,7 +661,7 @@ export default function EstimatedScoreMentorPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-red-600 text-lg font-medium">权限不足</p>
-          <p className="text-gray-600 text-sm mt-2">您没有查看 Predicted Grade 申请的权限</p>
+          <p className="text-gray-600 text-sm mt-2">您没有查看预估分申请的权限</p>
         </div>
       </div>
     );
@@ -744,7 +744,7 @@ export default function EstimatedScoreMentorPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">学生 Predicted Grade 申请</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-6">学生预估分申请</h1>
 
         {error && (
           <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4">{error}</div>
@@ -823,7 +823,7 @@ export default function EstimatedScoreMentorPage() {
                 <div
                   className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto"
                   role="tablist"
-                  aria-label="Predicted Grade 列表分类"
+                  aria-label="预估分列表分类"
                 >
                   <button
                     type="button"
@@ -920,15 +920,15 @@ export default function EstimatedScoreMentorPage() {
         {leaderScoreModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4">
-              <h3 className="text-lg font-medium mb-3">录入 Predicted Grade 与考试等第</h3>
+              <h3 className="text-lg font-medium mb-3">录入预估分与考试等第</h3>
               <p className="text-sm text-gray-600 mb-3">
                 {leaderScoreModal.student_name} · {leaderScoreModal.subject_name}
               </p>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Predicted Grade</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">预估分</label>
               <input
                 type="text"
                 autoComplete="off"
-                placeholder="请输入 Predicted Grade"
+                placeholder="请输入预估分"
                 value={gradePick}
                 onChange={(e) => setGradePick(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 mb-4"
@@ -1028,7 +1028,7 @@ export default function EstimatedScoreMentorPage() {
                 <TrashIcon className="h-6 w-6 text-red-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">删除这条 Predicted Grade 申请？</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">删除这条预估分申请？</h3>
                 <p className="text-sm text-gray-600 mb-1">
                   {deleteTarget.student_name} · {deleteTarget.subject_name}
                 </p>
