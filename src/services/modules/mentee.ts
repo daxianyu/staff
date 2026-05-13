@@ -6,6 +6,8 @@ export interface MenteeStudent {
   student_id: number;
   graduation_date: string;
   student_name: string;
+  /** 是否已申请预估分考试（后端字段名以接口为准） */
+  take_exam?: number | boolean;
 }
 
 export interface MenteeStudentInfo {

@@ -25,11 +25,9 @@ import {
   getArticleInfo, 
   likeArticle,
   unLikeArticle,
-  getWorkspaceSelect,
   type KnowledgeTreeData,
   type KnowledgeNode,
   type ArticleDetail,
-  type SelectOption
 } from '@/services/auth';
 
 // 树节点接口
@@ -85,11 +83,16 @@ export default function KnowledgeBasePage() {
 
   // 将新的知识库数据转换为树形结构
   const convertToTreeData = useCallback((knowledgeNodes: KnowledgeTreeData, spaceMap: Map<string, number>): TreeNode[] => {
+    console.log('[spaceMap] 可用 workspace 名称:', [...spaceMap.keys()]);
+
     const convertNode = (node: KnowledgeNode, parentId: string = '', parentSpaceId?: number): TreeNode => {
       const nodeId = parentId ? `${parentId}-${node.text}` : node.text;
       
       if (node.article_id) {
         // 叶子节点（文章）
+        if (!parentSpaceId) {
+          console.warn(`[spaceId缺失] 文章"${node.text}"(id=${node.article_id}) 未能获取到 spaceId，parentSpaceId=${parentSpaceId}`);
+        }
         return {
           id: `article-${node.article_id}`,
           name: node.text,
@@ -99,7 +102,13 @@ export default function KnowledgeBasePage() {
         };
       } else {
         // 文件夹节点 - 通过名称查找 space_id
-        const spaceId = spaceMap.get(node.text) || parentSpaceId;
+        const trimmedText = node.text.trim();
+        const foundSpaceId = spaceMap.get(trimmedText);
+        const spaceId = foundSpaceId || parentSpaceId;
+        if (!parentId) {
+          // 顶层节点，重点检查是否匹配到 spaceId
+          console.log(`[顶层文件夹] "${node.text}" (trim="${trimmedText}") => spaceId=${foundSpaceId ?? '未找到'}`);
+        }
         return {
           id: `folder-${nodeId}`,
           name: node.text,
@@ -113,16 +122,18 @@ export default function KnowledgeBasePage() {
     return knowledgeNodes.map(node => convertNode(node));
   }, []);
 
-  // 获取 workspace 列表
+  // 获取 workspace 列表（使用全量接口，不受权限过滤影响）
   const loadWorkspaceMap = useCallback(async () => {
     try {
-      const response = await getWorkspaceSelect();
+      const response = await getAllWorkspace();
+      console.log('[getAllWorkspace] 原始响应:', JSON.stringify(response));
       if (response.code === 200 && response.data) {
         const map = new Map<string, number>();
-        const options = Array.isArray(response.data) ? response.data : [];
-        options.forEach((opt: SelectOption) => {
-          map.set(opt.name, opt.id);
+        const rows = response.data.rows ?? [];
+        rows.forEach((row) => {
+          map.set(row.space_name.trim(), row.record_id);
         });
+        console.log('[spaceMap] 全量 workspace 数量:', rows.length, '名称:', [...map.keys()]);
         return map;
       }
     } catch (err) {

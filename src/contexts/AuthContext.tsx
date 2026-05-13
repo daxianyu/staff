@@ -397,6 +397,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       PERMISSIONS.ADD_STUDENT_COMPLAINT,
       PERMISSIONS.EDIT_ASSIGNMENT_REQUEST,
       PERMISSIONS.MANAGE_STUDENT_EXAMS,
+      PERMISSIONS.VIEW_ESTIMATED_SCORE,
+      PERMISSIONS.EDIT_ESTIMATED_SCORE_NOTE,
     ];
     if (basicPermissions.includes(permission as any)) {
       return true; // 所有staff用户都可以访问

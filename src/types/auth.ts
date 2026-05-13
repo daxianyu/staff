@@ -159,6 +159,9 @@ export const PERMISSIONS = {
 
   // Mentee 相关权限
   VIEW_MENTEE: 'view_mentee',
+  /** 预估分（导师）：可与 view_mentee 同时配置，未单独配置时沿用 mentee 权限 */
+  VIEW_ESTIMATED_SCORE: 'view_estimated_score',
+  EDIT_ESTIMATED_SCORE_NOTE: 'edit_estimated_score_note',
   EDIT_MENTEE: 'edit_mentee',
   VIEW_MY_MENTORS: 'view_my_mentors',
   MANAGE_STUDENT_STATUS: 'manage_student_status',

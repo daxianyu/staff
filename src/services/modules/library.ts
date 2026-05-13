@@ -14,6 +14,7 @@ export interface PastpaperItem {
 export interface KnowledgeNode {
   text: string;
   article_id?: number;
+  space_id?: number;
   nodes?: KnowledgeNode[];
 }
 

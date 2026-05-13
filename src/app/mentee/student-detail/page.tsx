@@ -763,6 +763,14 @@ export default function StudentDetailPage() {
   const [feedbackPdfSelected, setFeedbackPdfSelected] = useState<Set<number>>(new Set());
   const [feedbackPdfExporting, setFeedbackPdfExporting] = useState(false);
 
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'exam-score') {
+      setActiveTab('exam-score');
+      setExamGroupExpanded(true);
+    }
+  }, [searchParams]);
+
   // 加载数据
   useEffect(() => {
     // 没带 student_id 时，不应该一直 loading

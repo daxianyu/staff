@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PERMISSIONS } from '@/types/auth';
 import { openUrlWithFallback } from '@/utils/openUrlWithFallback';
-import { TableActionLink } from '@/components/TableActionLink';
 import {
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
@@ -36,6 +35,16 @@ import {
   type EvaluateSelect,
 } from '@/services/auth';
 import { buildFileUrl } from '@/config/env';
+import { withStaffBasePath } from '@/utils/withStaffBasePath';
+
+function menteeTakeExamYes(v: MenteeStudent['take_exam']): boolean {
+  return v === true || v === 1;
+}
+
+function menteeTakeExamCell(v: MenteeStudent['take_exam']): string {
+  if (v === undefined || v === null) return '—';
+  return menteeTakeExamYes(v) ? '是' : '否';
+}
 
 interface StudentStatusModalProps {
   isOpen: boolean;
@@ -889,6 +898,9 @@ export default function MenteePage() {
                         Student Name
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Predicted Grade 申请
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Operations
                       </th>
                     </tr>
@@ -904,14 +916,26 @@ export default function MenteePage() {
                               </div>
                             </div>
                             <div className="ml-4">
-                              <TableActionLink
-                                href={`/mentee/student-detail?id=${student.student_id}`}
-                                className="text-sm font-medium text-gray-900 hover:text-gray-900 transition-colors"
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  window.open(
+                                    withStaffBasePath(
+                                      `/mentee/student-detail?id=${student.student_id}&tab=exam-score`
+                                    ),
+                                    '_blank',
+                                    'noopener,noreferrer'
+                                  )
+                                }
+                                className="text-sm font-medium text-blue-700 hover:text-blue-900 hover:underline text-left"
                               >
                                 {student.student_name} (毕业：{student.graduation_date})
-                              </TableActionLink>
+                              </button>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {menteeTakeExamCell(student.take_exam)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <OperationsMenu

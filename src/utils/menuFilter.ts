@@ -311,6 +311,8 @@ export class MenuFilter {
       PERMISSIONS.ADD_STUDENT_COMPLAINT,
       PERMISSIONS.EDIT_ASSIGNMENT_REQUEST,
       PERMISSIONS.MANAGE_STUDENT_EXAMS,
+      PERMISSIONS.VIEW_ESTIMATED_SCORE,
+      PERMISSIONS.EDIT_ESTIMATED_SCORE_NOTE,
     ];
     if (basicPermissions.includes(permission as any)) {
       return true; // 所有staff用户都可以访问
@@ -511,11 +513,11 @@ export const defaultMenuConfig: MenuItem[] = [
         requiredPermissions: [PERMISSIONS.VIEW_EXIT_PERMIT],
       },
       {
-        key: 'class-signup',
-        label: 'Class Signup',
-        path: '/mentor/class-signup',
-        icon: 'book',
-        requiredPermissions: [],
+        key: 'estimated-score',
+        label: 'Estimated Score',
+        path: '/mentee/estimated-score',
+        icon: 'clipboard-document-list',
+        requiredPermissions: [PERMISSIONS.VIEW_ESTIMATED_SCORE],
       },
       {
         key: 'class-change',

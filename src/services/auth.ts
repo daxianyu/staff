@@ -23,6 +23,7 @@ export * from './modules/accounting';
 export * from './modules/mentee';
 export * from './modules/classroom';
 export * from './modules/subjects';
+export * from './modules/estimatedScore';
 export * from './modules/textbook';
 export * from './modules/library';
 export * from './modules/remark';
