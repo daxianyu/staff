@@ -2,6 +2,18 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 
+// 全局通知桥接 - 供非 React 代码（如 apiClient）调用
+type GlobalNotifyFn = (message: string, type?: NotifyType, duration?: number) => void;
+let _globalNotify: GlobalNotifyFn | null = null;
+
+export const registerGlobalNotify = (fn: GlobalNotifyFn | null) => {
+  _globalNotify = fn;
+};
+
+export const notifyGlobal = (message: string, type: NotifyType = 'error', duration = 5000) => {
+  _globalNotify?.(message, type, duration);
+};
+
 // 通知类型
 export type NotifyType = 'success' | 'warning' | 'error' | 'info';
 
@@ -46,6 +58,12 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
       }, duration);
     }
   }, [removeNotification]);
+
+  // 注册全局桥接，供 apiClient 等非 React 代码调用
+  useEffect(() => {
+    registerGlobalNotify(notify);
+    return () => registerGlobalNotify(null);
+  }, [notify]);
 
   return (
     <NotifyContext.Provider value={{ notifications, notify, removeNotification }}>

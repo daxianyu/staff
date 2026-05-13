@@ -1,4 +1,5 @@
 import type { ApiEnvelope, ApiResponse } from './types';
+import { notifyGlobal } from '@/components/Notify';
 
 const TOKEN_STORAGE_KEY = 'token';
 const USER_STORAGE_KEY = 'user';
@@ -118,8 +119,13 @@ export const request = async <T = unknown>(input: RequestInfo | URL, options: Re
   return { response, data };
 };
 
-export const normalizeApiResponse = <T>(payload: ApiEnvelope<T> | null | undefined): ApiResponse<T> => ({
-  code: payload?.status === 0 ? 200 : 400,
-  message: payload?.message || '',
-  data: payload?.data,
-});
+export const normalizeApiResponse = <T>(payload: ApiEnvelope<T> | null | undefined): ApiResponse<T> => {
+  if (payload?.status !== 0 && payload?.message) {
+    notifyGlobal(payload.message, 'error');
+  }
+  return {
+    code: payload?.status === 0 ? 200 : 400,
+    message: payload?.message || '',
+    data: payload?.data,
+  };
+};

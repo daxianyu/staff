@@ -97,6 +97,25 @@ export default function ClassesPage() {
   // 已选学生展开状态
   const [showSelectedStudents, setShowSelectedStudents] = useState(false);
 
+  // 匹配时忽略所有空白，避免「张 三」搜不到「张三」、或仅空格类输入把列表滤空
+  const addModalStudentSearchCompact = studentSearchQuery.trim().replace(/\s+/g, '');
+  const addModalHasStudentSearch = addModalStudentSearchCompact.length > 0;
+  const addModalFilteredStudents = !addModalHasStudentSearch
+    ? studentsList
+    : studentsList.filter((student) => {
+        const nameCompact = (student.name ?? '').replace(/\s+/g, '').toLowerCase();
+        const q = addModalStudentSearchCompact.toLowerCase();
+        return (
+          nameCompact.includes(q) ||
+          student.id.toString().includes(addModalStudentSearchCompact)
+        );
+      });
+  const addModalAllFilteredSelected =
+    addModalFilteredStudents.length > 0 &&
+    addModalFilteredStudents.every((student) =>
+      newClassData.selectedStudents.includes(student.id)
+    );
+
   const canManageClasses = hasPermission(PERMISSIONS.EDIT_CLASSES); // 使用正确的classes权限
   const canDeleteClasses = hasPermission(PERMISSIONS.DELETE_CLASSES); // 删除权限
 
@@ -1023,68 +1042,72 @@ export default function ClassesPage() {
                       type="text"
                       placeholder="搜索学生姓名或ID..."
                       value={studentSearchQuery}
-                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setStudentSearchQuery(value.trim() ? value : '');
+                      }}
+                      onBlur={() => setStudentSearchQuery((s) => s.trim())}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          setStudentSearchQuery((s) => s.trim());
+                        }
+                      }}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   
                   {/* 快捷操作按钮 */}
-                  {(() => {
-                    const filteredStudents = studentsList.filter(student =>
-                      student.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-                      student.id.toString().includes(studentSearchQuery)
-                    );
-                    
-                    const allFilteredSelected = filteredStudents.length > 0 && 
-                      filteredStudents.every(student => newClassData.selectedStudents.includes(student.id));
-                    
-                    return (
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const currentlySelected = [...newClassData.selectedStudents];
-                            filteredStudents.forEach(student => {
-                              if (!currentlySelected.includes(student.id)) {
-                                currentlySelected.push(student.id);
-                              }
-                            });
-                            setNewClassData({...newClassData, selectedStudents: currentlySelected});
-                            if (validationErrors.students) {
-                              setValidationErrors(prev => ({ ...prev, students: '' }));
-                            }
-                          }}
-                          disabled={allFilteredSelected}
-                          className="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          全选{studentSearchQuery ? '当前' : ''}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const filteredIds = filteredStudents.map(s => s.id);
-                            const remainingSelected = newClassData.selectedStudents.filter(id => !filteredIds.includes(id));
-                            setNewClassData({...newClassData, selectedStudents: remainingSelected});
-                          }}
-                          disabled={!filteredStudents.some(student => newClassData.selectedStudents.includes(student.id))}
-                          className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          取消选择{studentSearchQuery ? '当前' : ''}
-                        </button>
-                        {newClassData.selectedStudents.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setNewClassData({...newClassData, selectedStudents: []});
-                            }}
-                            className="px-3 py-1 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50"
-                          >
-                            清空所有
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentlySelected = [...newClassData.selectedStudents];
+                        addModalFilteredStudents.forEach((student) => {
+                          if (!currentlySelected.includes(student.id)) {
+                            currentlySelected.push(student.id);
+                          }
+                        });
+                        setNewClassData({ ...newClassData, selectedStudents: currentlySelected });
+                        if (validationErrors.students) {
+                          setValidationErrors((prev) => ({ ...prev, students: '' }));
+                        }
+                      }}
+                      disabled={addModalAllFilteredSelected}
+                      className="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      全选{addModalHasStudentSearch ? '当前' : ''}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const filteredIds = addModalFilteredStudents.map((s) => s.id);
+                        const remainingSelected = newClassData.selectedStudents.filter(
+                          (id) => !filteredIds.includes(id)
+                        );
+                        setNewClassData({ ...newClassData, selectedStudents: remainingSelected });
+                      }}
+                      disabled={
+                        !addModalFilteredStudents.some((student) =>
+                          newClassData.selectedStudents.includes(student.id)
+                        )
+                      }
+                      className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      取消选择{addModalHasStudentSearch ? '当前' : ''}
+                    </button>
+                    {newClassData.selectedStudents.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewClassData({ ...newClassData, selectedStudents: [] });
+                        }}
+                        className="px-3 py-1 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50"
+                      >
+                        清空所有
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 <div className={`border rounded-md max-h-60 overflow-y-auto ${
@@ -1096,23 +1119,14 @@ export default function ClassesPage() {
                     </div>
                   ) : (
                     <div className="p-2">
-                      {(() => {
-                        // 过滤学生列表
-                        const filteredStudents = studentsList.filter(student =>
-                          student.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-                          student.id.toString().includes(studentSearchQuery)
-                        );
-                        
-                        if (filteredStudents.length === 0 && studentSearchQuery) {
-                          return (
-                            <div className="p-4 text-center text-gray-500">
-                              没有找到匹配的学生
-                            </div>
-                          );
-                        }
-                        
-                        return filteredStudents.map((student) => (
-                          <label key={student.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
+                      {addModalFilteredStudents.length === 0 && addModalHasStudentSearch ? (
+                        <div className="p-4 text-center text-gray-500">没有找到匹配的学生</div>
+                      ) : (
+                        addModalFilteredStudents.map((student) => (
+                          <label
+                            key={student.id}
+                            className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer"
+                          >
                             <input
                               type="checkbox"
                               checked={newClassData.selectedStudents.includes(student.id)}
@@ -1120,13 +1134,11 @@ export default function ClassesPage() {
                               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                             <div className="flex-1">
-                              <div className="text-sm font-medium text-gray-900">
-                                {student.name}
-                              </div>
+                              <div className="text-sm font-medium text-gray-900">{student.name}</div>
                             </div>
                           </label>
-                        ));
-                      })()}
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
