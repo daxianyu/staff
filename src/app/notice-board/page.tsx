@@ -32,19 +32,51 @@ const getFileUrl = (path: string) => {
   return `${base}${path.startsWith('/') ? path : '/' + path}`;
 };
 
+/** 纯 HTML 旧公告：相对路径 img/a 补全为当前 API 域名可访问地址 */
+function rewriteRelativeMediaInHtml(html: string, resolve: (path: string) => string): string {
+  if (typeof document === 'undefined') return html;
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('img[src]').forEach((el) => {
+      const src = el.getAttribute('src')?.trim() ?? '';
+      if (!src || /^https?:|^data:|^blob:|^\/\//i.test(src)) return;
+      el.setAttribute('src', resolve(src));
+    });
+    doc.querySelectorAll('a[href]').forEach((el) => {
+      const href = el.getAttribute('href')?.trim() ?? '';
+      if (!href || /^https?:|^mailto:|^#|^\/\//i.test(href)) return;
+      el.setAttribute('href', resolve(href));
+    });
+    return doc.body.innerHTML;
+  } catch {
+    return html;
+  }
+}
+
+/** 明显含 Markdown 时优先 MD 渲染（避免整段被误判成 HTML，图片变成纯文本） */
+function preferMarkdownRendering(s: string): boolean {
+  if (/!\[[^\]]*\]\([^)]*\)/.test(s)) return true;
+  if (/(^|\n)\s*#{1,6}(?:\s|$)/m.test(s)) return true;
+  if (/```[\s\S]*?```/.test(s)) return true;
+  return false;
+}
+
 /** 旧数据可能为 HTML；新公告为 Markdown */
 function NoticeContentBody({ content }: { content: string }) {
   const trimmed = (content || '').trim();
-  const looksLikeHtml = /^<[a-z][\s\S]*>/i.test(trimmed) && /<\/[a-z][\s\S]*>/i.test(trimmed);
-  if (looksLikeHtml) {
+  const looksLikeHtml =
+    /^<[a-z][\s\S]*>/i.test(trimmed) && /<\/[a-z][\s\S]*>/i.test(trimmed);
+
+  if (looksLikeHtml && !preferMarkdownRendering(trimmed)) {
+    const html = rewriteRelativeMediaInHtml(trimmed, getFileUrl);
     return (
       <div
         className="prose prose-sm max-w-none text-gray-800"
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: html }}
       />
     );
   }
-  return <MarkdownContent content={content} />;
+  return <MarkdownContent content={content} resolveMediaUrl={getFileUrl} />;
 }
 
 // 毕业年选项（用于年级选择）
@@ -387,12 +419,13 @@ export default function NoticeBoardPage() {
                   onChange={setFormContent}
                   disabled={submitting}
                   minHeightPx={340}
+                  previewResolveMediaUrl={getFileUrl}
                   uploadFile={async (file) => {
                     const res = await uploadNoticeFile(file);
                     if (res.code === 200 && res.data?.file_path) {
                       return {
                         ok: true,
-                        url: getFileUrl(res.data.file_path),
+                        url: res.data.file_path,
                         name: file.name,
                       };
                     }

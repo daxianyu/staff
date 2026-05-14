@@ -2,13 +2,24 @@ import type { ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import { repairBrokenMarkdownImages } from '@/utils/markdownSafe';
 
 interface MarkdownContentProps {
   content: string;
   className?: string;
+  /** 将 Markdown 中的相对资源路径转为当前环境可访问的 URL（不写死在正文里） */
+  resolveMediaUrl?: (src: string) => string;
 }
 
-export default function MarkdownContent({ content, className = '' }: MarkdownContentProps) {
+function resolveSrc(raw: string | Blob | undefined, resolve?: (src: string) => string): string {
+  const s = typeof raw === 'string' ? raw : '';
+  if (!resolve || !s) return s;
+  if (/^(https?:|mailto:|data:|blob:|#)/i.test(s)) return s;
+  return resolve(s);
+}
+
+export default function MarkdownContent({ content, className = '', resolveMediaUrl }: MarkdownContentProps) {
+  const normalized = repairBrokenMarkdownImages(content);
   return (
     <article className={`max-w-none break-words text-gray-700 ${className}`.trim()}>
       <ReactMarkdown
@@ -30,7 +41,7 @@ export default function MarkdownContent({ content, className = '' }: MarkdownCon
           p: ({ children }) => <p className="mt-4 leading-7 text-gray-700 first:mt-0">{children}</p>,
           a: ({ href, children }) => (
             <a
-              href={href}
+              href={resolveSrc(href, resolveMediaUrl)}
               target="_blank"
               rel="noreferrer"
               className="break-all font-medium text-blue-600 underline underline-offset-2"
@@ -86,14 +97,14 @@ export default function MarkdownContent({ content, className = '' }: MarkdownCon
           img: ({ src, alt }) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={src || ''}
+              src={resolveSrc(src, resolveMediaUrl)}
               alt={alt || ''}
               className="mt-5 max-h-[460px] rounded-xl border border-gray-200 bg-white object-contain shadow-sm"
             />
           ),
         }}
       >
-        {content}
+        {normalized}
       </ReactMarkdown>
     </article>
   );

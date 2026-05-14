@@ -11,6 +11,7 @@ import {
   PhotoIcon,
 } from '@heroicons/react/24/outline';
 import MarkdownContent from '@/components/markdown/MarkdownContent';
+import { markdownLinkDestination } from '@/utils/markdownSafe';
 
 type ViewMode = 'write' | 'split' | 'preview';
 
@@ -55,6 +56,8 @@ export interface SimpleMarkdownEditorProps {
   placeholder?: string;
   /** 上传文件并返回可访问 URL（完整或相对路径，用于插入 Markdown） */
   uploadFile: (file: File) => Promise<{ ok: boolean; url: string; name: string }>;
+  /** 预览区：相对路径图片/附件链接解析（正文建议存相对路径，展示时再拼 API 域名） */
+  previewResolveMediaUrl?: (src: string) => string;
   disabled?: boolean;
   minHeightPx?: number;
 }
@@ -64,6 +67,7 @@ export default function SimpleMarkdownEditor({
   onChange,
   placeholder = '支持 Markdown：标题、列表、粗体、链接、代码块等。',
   uploadFile,
+  previewResolveMediaUrl,
   disabled = false,
   minHeightPx = 320,
 }: SimpleMarkdownEditorProps) {
@@ -160,7 +164,8 @@ export default function SimpleMarkdownEditor({
 
   const buildMdLink = (name: string, url: string, image: boolean) => {
     const safe = name.replace(/\[/g, '\\[').replace(/\]/g, '\\]');
-    return image ? `![${safe}](${url})` : `[${safe}](${url})`;
+    const dest = markdownLinkDestination(url);
+    return image ? `![${safe}](${dest})` : `[${safe}](${dest})`;
   };
 
   const insertAtCursor = useCallback(
@@ -359,7 +364,7 @@ export default function SimpleMarkdownEditor({
             style={{ minHeight: minHeightPx }}
           >
             {value.trim() ? (
-              <MarkdownContent content={value} />
+              <MarkdownContent content={value} resolveMediaUrl={previewResolveMediaUrl} />
             ) : (
               <div className="flex h-full min-h-[200px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-sm text-gray-400">
                 预览：编写左侧 Markdown

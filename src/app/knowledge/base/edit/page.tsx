@@ -24,6 +24,7 @@ import {
   type ArticleDetail,
 } from '@/services/auth';
 import { buildFileUrl } from '@/config/env';
+import { markdownLinkDestination } from '@/utils/markdownSafe';
 
 type EditorViewMode = 'write' | 'split' | 'preview';
 
@@ -212,7 +213,8 @@ export default function KnowledgeEditPage() {
   const buildMarkdownLink = useCallback((file: File, url: string, mode: 'image' | 'file' | 'auto') => {
     const safeName = file.name.replace(/\[/g, '\\[').replace(/\]/g, '\\]');
     const isImage = mode === 'image' || (mode === 'auto' && file.type.startsWith('image/'));
-    return isImage ? `![${safeName}](${url})` : `[${safeName}](${url})`;
+    const dest = markdownLinkDestination(url);
+    return isImage ? `![${safeName}](${dest})` : `[${safeName}](${dest})`;
   }, []);
 
   const uploadAndInsertFiles = useCallback(async (files: File[], mode: 'image' | 'file' | 'auto') => {
